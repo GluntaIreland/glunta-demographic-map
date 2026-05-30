@@ -123,7 +123,8 @@
       color: var(--text);
     }
 
-    .select-control {
+    .select-control,
+    .search-control {
       width: 100%;
       box-sizing: border-box;
       padding: 10px 11px;
@@ -142,6 +143,60 @@
     .select-control option {
       color: var(--text);
       font-weight: 400;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .button {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: white;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 9px 11px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .button:hover {
+      background: var(--soft);
+    }
+
+    .button-primary {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: white;
+    }
+
+    .button-primary:hover {
+      background: var(--brand-dark);
+    }
+
+    .search-results {
+      margin-top: 8px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .search-result {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 9px 10px;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    .search-result:hover {
+      background: var(--soft);
     }
 
     .selected-indicator-card {
@@ -413,6 +468,16 @@
     </div>
 
     <div class="sidebar-section">
+      <label for="areaSearch" class="control-label">Search LEA</label>
+      <input id="areaSearch" class="search-control" type="search" placeholder="Search LEA, e.g. Ballina, Athlone..." />
+      <div class="button-row">
+        <button id="searchButton" class="button button-primary" type="button">Search</button>
+        <button id="resetButton" class="button" type="button">Reset map</button>
+      </div>
+      <div id="searchResults" class="search-results"></div>
+    </div>
+
+    <div class="sidebar-section">
       <p class="eyebrow">Selected LEA</p>
       <h2 id="areaName">No LEA selected</h2>
       <p id="areaIntro" class="empty-note">
@@ -665,6 +730,10 @@
 
     const indicatorSelectEl = document.getElementById("indicatorSelect");
     const indicatorNoteEl = document.getElementById("indicatorNote");
+    const areaSearchEl = document.getElementById("areaSearch");
+    const searchButtonEl = document.getElementById("searchButton");
+    const resetButtonEl = document.getElementById("resetButton");
+    const searchResultsEl = document.getElementById("searchResults");
     const areaNameEl = document.getElementById("areaName");
     const areaIntroEl = document.getElementById("areaIntro");
     const selectedIndicatorNameEl = document.getElementById("selectedIndicatorName");
@@ -678,6 +747,8 @@
     let selectedLayer = null;
     let legend;
     let sectionRowEls = [];
+    let allAreaLayers = [];
+    let fullMapBounds = null;
 
     function buildSidebarSections() {
       dataSectionsEl.innerHTML = "";
@@ -790,6 +861,20 @@
         : Math.max(0, Math.min(100, safePercent)) + "%";
     }
 
+    function resetSidebar() {
+      areaNameEl.textContent = "No LEA selected";
+      areaIntroEl.textContent = "Click a Local Electoral Area on the map to view its Census 2022 demographic profile.";
+      selectedIndicatorNameEl.textContent = "—";
+      selectedIndicatorValueEl.textContent = "—";
+      populationValueEl.textContent = "—";
+      countyValueEl.textContent = "County: —";
+
+      sectionRowEls.forEach(row => {
+        row.valueEl.textContent = "—";
+        row.barEl.style.width = "0%";
+      });
+    }
+
     function updateSidebar(props) {
       const indicatorConfig = indicatorConfigs[currentIndicator];
 
@@ -873,6 +958,8 @@
     }
 
     function bindLeaInteractions(feature, layer) {
+      allAreaLayers.push(layer);
+
       layer.on({
         mouseover: highlightFeature,
         mouseout: resetHighlight,
@@ -934,9 +1021,98 @@
       updateLegend();
     }
 
+    function normaliseText(value) {
+      return String(value || "")
+        .toLowerCase()
+        .replace("local electoral area", "")
+        .replace("lea", "")
+        .replace("county", "")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function performSearch() {
+      const query = normaliseText(areaSearchEl.value);
+      searchResultsEl.innerHTML = "";
+
+      if (!query) return;
+
+      const matches = allAreaLayers
+        .map(layer => ({
+          layer,
+          name: getAreaName(layer.feature.properties),
+          county: getCountyName(layer.feature.properties)
+        }))
+        .filter(item => {
+          const combined = normaliseText(item.name + " " + item.county);
+          return combined.includes(query);
+        })
+        .slice(0, 10);
+
+      if (matches.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "source-note";
+        empty.textContent = "No matching LEA found.";
+        searchResultsEl.appendChild(empty);
+        return;
+      }
+
+      matches.forEach(item => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "search-result";
+        button.textContent = `${item.name} (${item.county})`;
+
+        button.addEventListener("click", () => {
+          selectLayer(item.layer);
+          searchResultsEl.innerHTML = "";
+          areaSearchEl.value = item.name;
+        });
+
+        searchResultsEl.appendChild(button);
+      });
+    }
+
+    function resetMap() {
+      if (selectedLayer && leaLayer) {
+        leaLayer.resetStyle(selectedLayer);
+      }
+
+      selectedLayer = null;
+      map.closePopup();
+
+      if (fullMapBounds) {
+        map.fitBounds(fullMapBounds, {
+          padding: [20, 20]
+        });
+      }
+
+      areaSearchEl.value = "";
+      searchResultsEl.innerHTML = "";
+      resetSidebar();
+    }
+
     indicatorSelectEl.addEventListener("change", function (event) {
       updateMapIndicator(event.target.value);
     });
+
+    searchButtonEl.addEventListener("click", performSearch);
+
+    areaSearchEl.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        performSearch();
+      }
+    });
+
+    areaSearchEl.addEventListener("input", function () {
+      if (areaSearchEl.value.length >= 2) {
+        performSearch();
+      } else {
+        searchResultsEl.innerHTML = "";
+      }
+    });
+
+    resetButtonEl.addEventListener("click", resetMap);
 
     fetch("lea-demographics-map.geojson")
       .then(response => {
@@ -952,7 +1128,9 @@
           onEachFeature: bindLeaInteractions
         }).addTo(map);
 
-        map.fitBounds(leaLayer.getBounds(), {
+        fullMapBounds = leaLayer.getBounds();
+
+        map.fitBounds(fullMapBounds, {
           padding: [20, 20]
         });
 
