@@ -206,12 +206,12 @@ map.createPane("labelsPane");
 map.getPane("labelsPane").style.zIndex = 650;
 map.getPane("labelsPane").style.pointerEvents = "none";
 
-L.tileLayer("https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png", {
+L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png", {
   maxZoom: 19,
   attribution: "&copy; OpenStreetMap contributors &copy; CARTO"
 }).addTo(map);
 
-L.tileLayer("https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png", {
+L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png", {
   maxZoom: 19,
   pane: "labelsPane",
   attribution: "&copy; OpenStreetMap contributors &copy; CARTO"
