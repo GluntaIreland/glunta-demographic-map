@@ -1,152 +1,269 @@
-Glúnta Demographic Map
+<h1>Glúnta Demographic Map</h1>
 
-The Glúnta Demographic Map is an interactive visualisation of Census 2022 demographic data for Ireland.
+<h2>Overview</h2>
 
-It is part of the wider Glúnta Research mapping work, which seeks to help churches, church leaders, mission agencies, researchers, and interested members of the public better understand the demographic and missional context of communities across Ireland.
+<p>
+  The Glúnta Demographic Map is an interactive visualisation of Census 2022 demographic data for Ireland.
+</p>
 
-This is a demographic-context tool. It does not measure spiritual need, gospel openness, church health, church attendance, or ministry priority by itself. It is intended to prompt better questions, support local interpretation, and provide a clearer picture of the communities in which churches serve.
+<p>
+  It is part of the wider Glúnta Research mapping work, which seeks to help churches, church leaders, mission agencies, researchers, and interested members of the public better understand the demographic and missional context of communities across Ireland.
+</p>
 
-Live maps
+<p>
+  This is a demographic-context tool. It does not measure spiritual need, gospel openness, church health, church attendance, or ministry priority by itself. It is intended to prompt better questions, support local interpretation, and provide a clearer picture of the communities in which churches serve.
+</p>
 
-The project currently includes two public map views.
+<h2>Live maps</h2>
 
-County / Local Authority map
+<p>
+  The project currently includes two public map views.
+</p>
 
-This map shows demographic data for Ireland’s administrative counties and local authority areas.
+<h3>County / Local Authority map</h3>
 
-https://gluntaireland.github.io/glunta-demographic-map/
+<p>
+  This map shows demographic data for Ireland’s administrative counties and local authority areas.
+</p>
 
-Local Electoral Area map
+<p>
+  <a href="https://gluntaireland.github.io/glunta-demographic-map/">
+    https://gluntaireland.github.io/glunta-demographic-map/
+  </a>
+</p>
 
-This map shows demographic data for Local Electoral Areas.
+<h3>Local Electoral Area map</h3>
 
-https://gluntaireland.github.io/glunta-demographic-map/lea.html
+<p>
+  This map shows demographic data for Local Electoral Areas.
+</p>
 
-Current version
+<p>
+  <a href="https://gluntaireland.github.io/glunta-demographic-map/lea.html">
+    https://gluntaireland.github.io/glunta-demographic-map/lea.html
+  </a>
+</p>
 
-v0.2.0
+<h2>Current version</h2>
 
-Current public map views:
+<p>
+  <strong>v0.2.0</strong>
+</p>
 
-* County / Local Authority demographic map
-* Local Electoral Area demographic map
+<p>
+  Current public map views:
+</p>
 
-Relationship to the Glúnta Church Map
+<ul>
+  <li>County / Local Authority demographic map</li>
+  <li>Local Electoral Area demographic map</li>
+</ul>
 
-This project is related to, but separate from, the Glúnta Church Map.
+<h2>Relationship to the Glúnta Church Map</h2>
 
-The Glúnta Church Map asks:
+<p>
+  This project is related to, but separate from, the Glúnta Church Map.
+</p>
 
-Where are churches publicly listed across Ireland?
+<p>
+  The Glúnta Church Map asks:
+</p>
 
-The Glúnta Demographic Map asks:
+<blockquote>
+  <p>Where are churches publicly listed across Ireland?</p>
+</blockquote>
 
-What are the demographic profiles of the places where churches serve?
+<p>
+  The Glúnta Demographic Map asks:
+</p>
 
-The two maps are intended to be read together over time, but they are kept separate so that each tool remains clear, focused, and usable.
+<blockquote>
+  <p>What are the demographic profiles of the places where churches serve?</p>
+</blockquote>
 
-Future versions may include links between the two tools, allowing users to move from a church-presence view to a demographic-context view for the same county, local authority area, Local Electoral Area, or town.
+<p>
+  The two maps are intended to be read together over time, but they are kept separate so that each tool remains clear, focused, and usable.
+</p>
 
-What the maps currently include
+<p>
+  Future versions may include links between the two tools, allowing users to move from a church-presence view to a demographic-context view for the same county, local authority area, Local Electoral Area, or town.
+</p>
 
-The current maps include indicators for:
+<h2>What the maps currently include</h2>
 
-* Total population
-* Age structure
-* Religion
-* Birthplace, migration, and citizenship
-* Ethnicity and cultural background
-* Foreign-language speakers
-* Family / household indicators
-* Principal economic status
+<p>
+  The current maps include indicators for:
+</p>
 
-The County / Local Authority map also includes:
+<ul>
+  <li>Total population</li>
+  <li>Age structure</li>
+  <li>Religion</li>
+  <li>Birthplace, migration, and citizenship</li>
+  <li>Ethnicity and cultural background</li>
+  <li>Foreign-language speakers</li>
+  <li>Family / household indicators</li>
+  <li>Principal economic status</li>
+</ul>
 
-* Search by county or local authority
-* Reset map button
-* Selected indicator card
-* Area profile sidebar
-* About / methodology panel
-* Choropleth legend
-* Labelled basemap
+<h3>County / Local Authority map features</h3>
 
-The Local Electoral Area map includes:
+<p>
+  The County / Local Authority map includes:
+</p>
 
-* LEA demographic profile sidebar
-* Selected indicator card
-* Choropleth legend
-* Link back to the county map
+<ul>
+  <li>Search by county or local authority</li>
+  <li>Reset map button</li>
+  <li>Selected indicator card</li>
+  <li>Area profile sidebar</li>
+  <li>About / methodology panel</li>
+  <li>Choropleth legend</li>
+  <li>Labelled basemap</li>
+  <li>Link to the LEA map</li>
+</ul>
 
-Data sources
+<h3>Local Electoral Area map features</h3>
 
-Demographic data comes from the Central Statistics Office Census 2022 Small Area Population Statistics.
+<p>
+  The Local Electoral Area map includes:
+</p>
 
-Boundary data comes from public administrative and statistical boundary data made available through Tailte Éireann / data.gov.ie sources.
+<ul>
+  <li>LEA demographic profile sidebar</li>
+  <li>Selected indicator card</li>
+  <li>Choropleth legend</li>
+  <li>Link back to the county map</li>
+</ul>
 
-More detail is provided in methodology.md.
+<h2>Data sources</h2>
 
-Main files
+<p>
+  Demographic data comes from the Central Statistics Office Census 2022 Small Area Population Statistics.
+</p>
 
-The live county map uses:
+<p>
+  Boundary data comes from public administrative and statistical boundary data made available through Tailte Éireann / data.gov.ie sources.
+</p>
 
-index.html
-script.js
-county-demographics-map.geojson
+<p>
+  More detail is provided in <code>methodology.md</code>.
+</p>
 
-The live LEA map uses:
+<h2>Main files</h2>
 
-lea.html
-lea-demographics-map.geojson
+<p>
+  The live county map uses:
+</p>
 
-Supporting files include:
+<ul>
+  <li><code>index.html</code></li>
+  <li><code>script.js</code></li>
+  <li><code>county-demographics-map.geojson</code></li>
+</ul>
 
-lea-demographics-clean.csv
-lea-demographics-join-report.csv
-README.md
-methodology.md
-LICENSE
+<p>
+  The live LEA map uses:
+</p>
 
-Running the map locally
+<ul>
+  <li><code>lea.html</code></li>
+  <li><code>lea-demographics-map.geojson</code></li>
+</ul>
 
-From inside the project folder, run:
+<p>
+  Supporting files include:
+</p>
 
-python3 -m http.server 8000
+<ul>
+  <li><code>lea-demographics-clean.csv</code></li>
+  <li><code>lea-demographics-join-report.csv</code></li>
+  <li><code>README.md</code></li>
+  <li><code>methodology.md</code></li>
+  <li><code>LICENSE</code></li>
+</ul>
 
-Then open:
+<h2>Running the map locally</h2>
 
-http://localhost:8000
+<p>
+  From inside the project folder, run:
+</p>
 
-To view the LEA page locally, open:
+<pre><code>python3 -m http.server 8000</code></pre>
 
-http://localhost:8000/lea.html
+<p>
+  Then open:
+</p>
 
-Do not open index.html directly by double-clicking it. The maps load local GeoJSON data, so they should be served through a local web server.
+<pre><code>http://localhost:8000</code></pre>
 
-Current limitations
+<p>
+  To view the LEA page locally, open:
+</p>
 
-The project currently does not include:
+<pre><code>http://localhost:8000/lea.html</code></pre>
 
-* Town or settlement demographic profiles
-* Custom town-label overlays
-* Direct integration with the Glúnta Church Map
-* People-per-church or church-density analysis
-* Population change over time
-* State-average comparison panels
-* Exportable filtered summaries
+<p>
+  Do not open <code>index.html</code> directly by double-clicking it. The maps load local GeoJSON data, so they should be served through a local web server.
+</p>
 
-The county and LEA maps do not use identical family/household tables. The county map uses a family-with-children style table, while the LEA map currently uses a household/family-size table. This is documented in methodology.md.
+<h2>Current limitations</h2>
 
-Census categories are broad and should not be overinterpreted. Religious identity, ethnicity, language, citizenship, family structure, and economic status are complex realities that cannot be fully represented in a map.
+<p>
+  The project currently does not include:
+</p>
 
-This tool should be used alongside local knowledge, pastoral judgement, church-presence data, historical context, and direct community relationships.
+<ul>
+  <li>Town or settlement demographic profiles</li>
+  <li>Custom town-label overlays</li>
+  <li>Direct integration with the Glúnta Church Map</li>
+  <li>People-per-church or church-density analysis</li>
+  <li>Population change over time</li>
+  <li>State-average comparison panels</li>
+  <li>Exportable filtered summaries</li>
+</ul>
 
-Planned future development
+<p>
+  The county and LEA maps do not use identical family / household tables.
+</p>
 
-Likely future phases include:
+<p>
+  The county map uses a family-with-children style table, while the LEA map currently uses a household / family-size table. This is documented in <code>methodology.md</code>.
+</p>
 
-1. Search and reset tools for the LEA page
-2. Town / settlement demographic layer
-3. Custom place-name labels
-4. Comparison with county and State averages
-5. Links to the Glúnta Church Map
-6. Future opportunity-analysis layer combining church presence and demographic context
+<p>
+  Census categories are broad and should not be overinterpreted. Religious identity, ethnicity, language, citizenship, family structure, and economic status are complex realities that cannot be fully represented in a map.
+</p>
+
+<p>
+  This tool should be used alongside local knowledge, pastoral judgement, church-presence data, historical context, and direct community relationships.
+</p>
+
+<h2>Planned future development</h2>
+
+<p>
+  Likely future phases include:
+</p>
+
+<ol>
+  <li>Search and reset tools for the LEA page</li>
+  <li>Town / settlement demographic layer</li>
+  <li>Custom place-name labels</li>
+  <li>Comparison with county and State averages</li>
+  <li>Links to the Glúnta Church Map</li>
+  <li>Future opportunity-analysis layer combining church presence and demographic context</li>
+</ol>
+
+<h2>Interpretation note</h2>
+
+<p>
+  This project is intended to support careful missional reflection, not replace it.
+</p>
+
+<p>
+  Demographic mapping can help churches ask better questions about place, population, age, migration, language, family structure, and economic life. It cannot tell the whole story of a community. It cannot measure gospel need, church health, spiritual openness, or the strength of local relationships.
+</p>
+
+<p>
+  The map is therefore best used as a starting point for prayer, research, conversation, partnership, and local discernment.
+</p>
