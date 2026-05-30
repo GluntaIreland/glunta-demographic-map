@@ -1,0 +1,167 @@
+area_name,lea_name,county,matched_clean_data,population_2022,has_religion,has_migration,has_ethnicity,has_language,has_families,has_status
+"Carlow, Carlow",Carlow,Carlow,True,25168,True,True,True,True,True,True
+"Muinebeag, Carlow",Muinebeag,Carlow,True,16575,True,True,True,True,True,True
+"Tullow, Carlow",Tullow,Carlow,True,20225,True,True,True,True,True,True
+"Bailieborough-Cootehill, Cavan",Bailieborough-Cootehill,Cavan,True,26209,True,True,True,True,True,True
+"Ballyjamesduff, Cavan",Ballyjamesduff,Cavan,True,27980,True,True,True,True,True,True
+"Cavan-Belturbet, Cavan",Cavan-Belturbet,Cavan,True,27515,True,True,True,True,True,True
+"Ennis, Clare",Ennis,Clare,True,33952,True,True,True,True,True,True
+"Ennistimon, Clare",Ennistimon,Clare,True,18052,True,True,True,True,True,True
+"Killaloe, Clare",Killaloe,Clare,True,21871,True,True,True,True,True,True
+"Kilrush, Clare",Kilrush,Clare,True,22289,True,True,True,True,True,True
+"Shannon, Clare",Shannon,Clare,True,31774,True,True,True,True,True,True
+"Cork City North East, Cork City",Cork City North East,Cork City,True,44235,True,True,True,True,True,True
+"Cork City North West, Cork City",Cork City North West,Cork City,True,42306,True,True,True,True,True,True
+"Cork City South Central, Cork City",Cork City South Central,Cork City,True,41000,True,True,True,True,True,True
+"Cork City South East, Cork City",Cork City South East,Cork City,True,45400,True,True,True,True,True,True
+"Cork City South West, Cork City",Cork City South West,Cork City,True,51063,True,True,True,True,True,True
+"Bandon-Kinsale, Cork County",Bandon-Kinsale,Cork County,True,40387,True,True,True,True,True,True
+"Bantry-West Cork, Cork County",Bantry-West Cork,Cork County,True,24030,True,True,True,True,True,True
+"Carrigaline, Cork County",Carrigaline,Cork County,True,39145,True,True,True,True,True,True
+"Cobh, Cork County",Cobh,Cork County,True,37214,True,True,True,True,True,True
+"Fermoy, Cork County",Fermoy,Cork County,True,38935,True,True,True,True,True,True
+"Kanturk, Cork County",Kanturk,Cork County,True,26577,True,True,True,True,True,True
+"Macroom, Cork County",Macroom,Cork County,True,39847,True,True,True,True,True,True
+"Mallow, Cork County",Mallow,Cork County,True,31507,True,True,True,True,True,True
+"Midleton, Cork County",Midleton,Cork County,True,49539,True,True,True,True,True,True
+"Skibbereen-West Cork, Cork County",Skibbereen-West Cork,Cork County,True,32971,True,True,True,True,True,True
+"Buncrana, Donegal",Buncrana,Donegal,True,22618,True,True,True,True,True,True
+"Carndonagh, Donegal",Carndonagh,Donegal,True,17736,True,True,True,True,True,True
+"Donegal, Donegal",Donegal,Donegal,True,27924,True,True,True,True,True,True
+"Glenties, Donegal",Glenties,Donegal,True,25152,True,True,True,True,True,True
+"Letterkenny, Donegal",Letterkenny,Donegal,True,32266,True,True,True,True,True,True
+"Lifford-Stranorlar, Donegal",Lifford-Stranorlar,Donegal,True,26863,True,True,True,True,True,True
+"Milford, Donegal",Milford,Donegal,True,14525,True,True,True,True,True,True
+"Artane-Whitehall, Dublin City",Artane-Whitehall,Dublin City,True,52137,True,True,True,True,True,True
+"Ballyfermot-Drimnagh, Dublin City",Ballyfermot-Drimnagh,Dublin City,True,48563,True,True,True,True,True,True
+"Ballymun-Finglas, Dublin City",Ballymun-Finglas,Dublin City,True,56305,True,True,True,True,True,True
+"Cabra-Glasnevin, Dublin City",Cabra-Glasnevin,Dublin City,True,63073,True,True,True,True,True,True
+"Clontarf, Dublin City",Clontarf,Dublin City,True,56957,True,True,True,True,True,True
+"Donaghmede, Dublin City",Donaghmede,Dublin City,True,47080,True,True,True,True,True,True
+"Kimmage-Rathmines, Dublin City",Kimmage-Rathmines,Dublin City,True,59788,True,True,True,True,True,True
+"North Inner City, Dublin City",North Inner City,Dublin City,True,74708,True,True,True,True,True,True
+"Pembroke, Dublin City",Pembroke,Dublin City,True,45663,True,True,True,True,True,True
+"South East Inner City, Dublin City",South East Inner City,Dublin City,True,43586,True,True,True,True,True,True
+"South West Inner City, Dublin City",South West Inner City,Dublin City,True,44853,True,True,True,True,True,True
+"Blackrock, Dún Laoghaire-Rathdown",Blackrock,Dún Laoghaire-Rathdown,True,34280,True,True,True,True,True,True
+"Dundrum, Dún Laoghaire-Rathdown",Dundrum,Dún Laoghaire-Rathdown,True,31861,True,True,True,True,True,True
+"Dún Laoghaire, Dún Laoghaire-Rathdown",Dún Laoghaire,Dún Laoghaire-Rathdown,True,46603,True,True,True,True,True,True
+"Glencullen-Sandyford, Dún Laoghaire-Rathdown",Glencullen-Sandyford,Dún Laoghaire-Rathdown,True,48568,True,True,True,True,True,True
+"Killiney-Shankill, Dún Laoghaire-Rathdown",Killiney-Shankill,Dún Laoghaire-Rathdown,True,39352,True,True,True,True,True,True
+"Stillorgan, Dún Laoghaire-Rathdown",Stillorgan,Dún Laoghaire-Rathdown,True,33196,True,True,True,True,True,True
+"Balbriggan, Fingal",Balbriggan,Fingal,True,40476,True,True,True,True,True,True
+"Blanchardstown-Mulhuddart, Fingal",Blanchardstown-Mulhuddart,Fingal,True,40022,True,True,True,True,True,True
+"Castleknock, Fingal",Castleknock,Fingal,True,47149,True,True,True,True,True,True
+"Howth-Malahide, Fingal",Howth-Malahide,Fingal,True,69960,True,True,True,True,True,True
+"Ongar, Fingal",Ongar,Fingal,True,43905,True,True,True,True,True,True
+"Rush-Lusk, Fingal",Rush-Lusk,Fingal,True,40255,True,True,True,True,True,True
+"Swords, Fingal",Swords,Fingal,True,48739,True,True,True,True,True,True
+"Galway City Central, Galway City",Galway City Central,Galway City,True,29705,True,True,True,True,True,True
+"Galway City East, Galway City",Galway City East,Galway City,True,28091,True,True,True,True,True,True
+"Galway City West, Galway City",Galway City West,Galway City,True,26618,True,True,True,True,True,True
+"Athenry-Oranmore, Galway County",Athenry-Oranmore,Galway County,True,35105,True,True,True,True,True,True
+"Ballinasloe, Galway County",Ballinasloe,Galway County,True,29855,True,True,True,True,True,True
+"Conamara North, Galway County",Conamara North,Galway County,True,18053,True,True,True,True,True,True
+"Conamara South, Galway County",Conamara South,Galway County,True,23345,True,True,True,True,True,True
+"Gort-Kinvara, Galway County",Gort-Kinvara,Galway County,True,25923,True,True,True,True,True,True
+"Loughrea, Galway County",Loughrea,Galway County,True,25498,True,True,True,True,True,True
+"Tuam, Galway County",Tuam,Galway County,True,35544,True,True,True,True,True,True
+"Castleisland, Kerry",Castleisland,Kerry,True,18033,True,True,True,True,True,True
+"Corca Dhuibhne, Kerry",Corca Dhuibhne,Kerry,True,14971,True,True,True,True,True,True
+"Kenmare, Kerry",Kenmare,Kerry,True,27161,True,True,True,True,True,True
+"Killarney, Kerry",Killarney,Kerry,True,31086,True,True,True,True,True,True
+"Listowel, Kerry",Listowel,Kerry,True,29285,True,True,True,True,True,True
+"Tralee, Kerry",Tralee,Kerry,True,35922,True,True,True,True,True,True
+"Athy, Kildare",Athy,Kildare,True,28641,True,True,True,True,True,True
+"Celbridge, Kildare",Celbridge,Kildare,True,22718,True,True,True,True,True,True
+"Clane, Kildare",Clane,Kildare,True,31210,True,True,True,True,True,True
+"Kildare, Kildare",Kildare,Kildare,True,29759,True,True,True,True,True,True
+"Leixlip, Kildare",Leixlip,Kildare,True,16755,True,True,True,True,True,True
+"Maynooth, Kildare",Maynooth,Kildare,True,35202,True,True,True,True,True,True
+"Naas, Kildare",Naas,Kildare,True,46011,True,True,True,True,True,True
+"Newbridge, Kildare",Newbridge,Kildare,True,37478,True,True,True,True,True,True
+"Callan-Thomastown, Kilkenny",Callan-Thomastown,Kilkenny,True,26818,True,True,True,True,True,True
+"Castlecomer, Kilkenny",Castlecomer,Kilkenny,True,24863,True,True,True,True,True,True
+"Kilkenny, Kilkenny",Kilkenny,Kilkenny,True,29653,True,True,True,True,True,True
+"Piltown, Kilkenny",Piltown,Kilkenny,True,22826,True,True,True,True,True,True
+"Borris-In-Ossory-Mountmellick, Laois",Borris-In-Ossory-Mountmellick,Laois,True,26452,True,True,True,True,True,True
+"Graiguecullen -Portarlington, Laois",Graiguecullen -Portarlington,Laois,True,30822,True,True,True,True,True,True
+"Portlaoise, Laois",Portlaoise,Laois,True,34603,True,True,True,True,True,True
+"Ballinamore, Leitrim",Ballinamore,Leitrim,True,10879,True,True,True,True,True,True
+"Carrick-On-Shannon, Leitrim",Carrick-On-Shannon,Leitrim,True,12634,True,True,True,True,True,True
+"Manorhamilton, Leitrim",Manorhamilton,Leitrim,True,11686,True,True,True,True,True,True
+"Adare-Rathkeale, Limerick",Adare-Rathkeale,Limerick,True,29311,True,True,True,True,True,True
+"Cappamore-Kilmallock, Limerick",Cappamore-Kilmallock,Limerick,True,36500,True,True,True,True,True,True
+"Limerick City East, Limerick",Limerick City East,Limerick,True,39653,True,True,True,True,True,True
+"Limerick City North, Limerick",Limerick City North,Limerick,True,36385,True,True,True,True,True,True
+"Limerick City West, Limerick",Limerick City West,Limerick,True,38654,True,True,True,True,True,True
+"Newcastle West, Limerick",Newcastle West,Limerick,True,29033,True,True,True,True,True,True
+"Ballymahon, Longford",Ballymahon,Longford,True,17922,True,True,True,True,True,True
+"Granard, Longford",Granard,Longford,True,11500,True,True,True,True,True,True
+"Longford, Longford",Longford,Longford,True,17329,True,True,True,True,True,True
+"Ardee, Louth",Ardee,Louth,True,27034,True,True,True,True,True,True
+"Drogheda Rural, Louth",Drogheda Rural,Louth,True,19845,True,True,True,True,True,True
+"Drogheda Urban, Louth",Drogheda Urban,Louth,True,28537,True,True,True,True,True,True
+"Dundalk South, Louth",Dundalk South,Louth,True,38195,True,True,True,True,True,True
+"Dundalk-Carlingford, Louth",Dundalk-Carlingford,Louth,True,26092,True,True,True,True,True,True
+"Ballina, Mayo",Ballina,Mayo,True,25858,True,True,True,True,True,True
+"Belmullet, Mayo",Belmullet,Mayo,True,12683,True,True,True,True,True,True
+"Castlebar, Mayo",Castlebar,Mayo,True,32080,True,True,True,True,True,True
+"Claremorris, Mayo",Claremorris,Mayo,True,29336,True,True,True,True,True,True
+"Swinford, Mayo",Swinford,Mayo,True,18066,True,True,True,True,True,True
+"Westport, Mayo",Westport,Mayo,True,19947,True,True,True,True,True,True
+"Ashbourne, Meath",Ashbourne,Meath,True,33516,True,True,True,True,True,True
+"Kells, Meath",Kells,Meath,True,34575,True,True,True,True,True,True
+"Laytown-Bettystown, Meath",Laytown-Bettystown,Meath,True,40660,True,True,True,True,True,True
+"Navan, Meath",Navan,Meath,True,39294,True,True,True,True,True,True
+"Ratoath, Meath",Ratoath,Meath,True,39326,True,True,True,True,True,True
+"Trim, Meath",Trim,Meath,True,33455,True,True,True,True,True,True
+"Ballybay-Clones, Monaghan",Ballybay-Clones,Monaghan,True,18421,True,True,True,True,True,True
+"Carrickmacross-Castleblayney, Monaghan",Carrickmacross-Castleblayney,Monaghan,True,23469,True,True,True,True,True,True
+"Monaghan, Monaghan",Monaghan,Monaghan,True,23398,True,True,True,True,True,True
+"Birr, Offaly",Birr,Offaly,True,27004,True,True,True,True,True,True
+"Edenderry, Offaly",Edenderry,Offaly,True,25188,True,True,True,True,True,True
+"Tullamore, Offaly",Tullamore,Offaly,True,30958,True,True,True,True,True,True
+"Athlone, Roscommon",Athlone,Roscommon,True,21130,True,True,True,True,True,True
+"Boyle, Roscommon",Boyle,Roscommon,True,24421,True,True,True,True,True,True
+"Roscommon, Roscommon",Roscommon,Roscommon,True,24708,True,True,True,True,True,True
+"Ballymote-Tobercurry, Sligo",Ballymote-Tobercurry,Sligo,True,28449,True,True,True,True,True,True
+"Sligo-Drumcliff, Sligo",Sligo-Drumcliff,Sligo,True,18817,True,True,True,True,True,True
+"Sligo-Strandhill, Sligo",Sligo-Strandhill,Sligo,True,22932,True,True,True,True,True,True
+"Clondalkin, South Dublin",Clondalkin,South Dublin,True,52878,True,True,True,True,True,True
+"Firhouse-Bohernabreena, South Dublin",Firhouse-Bohernabreena,South Dublin,True,37643,True,True,True,True,True,True
+"Lucan, South Dublin",Lucan,South Dublin,True,55785,True,True,True,True,True,True
+"Palmerstown-Fonthill, South Dublin",Palmerstown-Fonthill,South Dublin,True,22142,True,True,True,True,True,True
+"Rathfarnham-Templeogue, South Dublin",Rathfarnham-Templeogue,South Dublin,True,52805,True,True,True,True,True,True
+"Tallaght Central, South Dublin",Tallaght Central,South Dublin,True,36178,True,True,True,True,True,True
+"Tallaght South, South Dublin",Tallaght South,South Dublin,True,43644,True,True,True,True,True,True
+"Cahir, Tipperary",Cahir,Tipperary,True,15387,True,True,True,True,True,True
+"Carrick-On-Suir, Tipperary",Carrick-On-Suir,Tipperary,True,20191,True,True,True,True,True,True
+"Cashel-Tipperary, Tipperary",Cashel-Tipperary,Tipperary,True,29145,True,True,True,True,True,True
+"Clonmel, Tipperary",Clonmel,Tipperary,True,25003,True,True,True,True,True,True
+"Nenagh, Tipperary",Nenagh,Tipperary,True,23354,True,True,True,True,True,True
+"Newport, Tipperary",Newport,Tipperary,True,17525,True,True,True,True,True,True
+"Roscrea-Templemore, Tipperary",Roscrea-Templemore,Tipperary,True,17310,True,True,True,True,True,True
+"Thurles, Tipperary",Thurles,Tipperary,True,19980,True,True,True,True,True,True
+"Dungarvan, Waterford",Dungarvan,Waterford,True,22335,True,True,True,True,True,True
+"Lismore, Waterford",Lismore,Waterford,True,11403,True,True,True,True,True,True
+"Portlaw-Kilmacthomas, Waterford",Portlaw-Kilmacthomas,Waterford,True,18414,True,True,True,True,True,True
+"Tramore-Waterford City West, Waterford",Tramore-Waterford City West,Waterford,True,24803,True,True,True,True,True,True
+"Waterford City East, Waterford",Waterford City East,Waterford,True,24397,True,True,True,True,True,True
+"Waterford City South, Waterford",Waterford City South,Waterford,True,26011,True,True,True,True,True,True
+"Athlone, Westmeath",Athlone,Westmeath,True,24308,True,True,True,True,True,True
+"Kinnegad, Westmeath",Kinnegad,Westmeath,True,23368,True,True,True,True,True,True
+"Moate, Westmeath",Moate,Westmeath,True,20385,True,True,True,True,True,True
+"Mullingar, Westmeath",Mullingar,Westmeath,True,28160,True,True,True,True,True,True
+"Enniscorthy, Wexford",Enniscorthy,Wexford,True,29314,True,True,True,True,True,True
+"Gorey, Wexford",Gorey,Wexford,True,31140,True,True,True,True,True,True
+"Kilmuckridge, Wexford",Kilmuckridge,Wexford,True,18399,True,True,True,True,True,True
+"New Ross, Wexford",New Ross,Wexford,True,29946,True,True,True,True,True,True
+"Rosslare, Wexford",Rosslare,Wexford,True,23573,True,True,True,True,True,True
+"Wexford, Wexford",Wexford,Wexford,True,31547,True,True,True,True,True,True
+"Arklow, Wicklow",Arklow,Wicklow,True,27866,True,True,True,True,True,True
+"Baltinglass, Wicklow",Baltinglass,Wicklow,True,28041,True,True,True,True,True,True
+"Bray East, Wicklow",Bray East,Wicklow,True,17728,True,True,True,True,True,True
+"Bray West, Wicklow",Bray West,Wicklow,True,19144,True,True,True,True,True,True
+"Greystones, Wicklow",Greystones,Wicklow,True,30479,True,True,True,True,True,True
+"Wicklow, Wicklow",Wicklow,Wicklow,True,32593,True,True,True,True,True,True
