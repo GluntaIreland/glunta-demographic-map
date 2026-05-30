@@ -1,14 +1,553 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2685.6">
-  <style type="text/css">
+  <meta charset="utf-8" />
+  <title>Glúnta LEA Population Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    :root {
+      --panel-width: 360px;
+      --brand: #0f766e;
+      --brand-dark: #0f4f49;
+      --border: #d8dee4;
+      --text: #172026;
+      --muted: #5f6b76;
+      --bg: #f6f8fa;
+      --soft: #f3f7f7;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+    }
+
+    body {
+      display: flex;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    #sidebar {
+      width: var(--panel-width);
+      height: 100vh;
+      background: white;
+      border-right: 1px solid var(--border);
+      box-shadow: 2px 0 14px rgba(0,0,0,0.08);
+      z-index: 1000;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: 18px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbfb 100%);
+    }
+
+    .sidebar-header h1 {
+      margin: 0 0 6px 0;
+      font-size: 22px;
+      line-height: 1.15;
+    }
+
+    .sidebar-header p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    .sidebar-section {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .eyebrow {
+      margin: 0 0 6px 0;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+      color: var(--brand-dark);
+    }
+
+    #areaName {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.2;
+    }
+
+    .empty-note {
+      margin: 8px 0 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .metric-card {
+      margin-top: 12px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: white;
+    }
+
+    .metric-label {
+      margin: 0 0 4px 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .metric-value {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.1;
+      font-weight: 800;
+      color: var(--brand-dark);
+    }
+
+    .data-grid {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .data-row {
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--soft);
+    }
+
+    .data-row-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      margin-bottom: 7px;
+    }
+
+    .data-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .data-value {
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .bar-track {
+      width: 100%;
+      height: 9px;
+      border-radius: 999px;
+      background: #dce7e6;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: var(--brand);
+      transition: width 0.2s ease;
+    }
+
+    .source-note {
+      margin: 10px 0 0 0;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    #map {
+      height: 100vh;
+      flex: 1;
+      background: #eef2f3;
+    }
+
+    .legend {
+      line-height: 1.4;
+      background: white;
+      padding: 10px 12px;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+      font-size: 13px;
+    }
+
+    .legend-title {
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 3px 0;
+    }
+
+    .legend-color {
+      width: 16px;
+      height: 16px;
+      border: 1px solid #555;
+    }
+
+    .leaflet-control-zoom {
+      margin-left: 12px !important;
+      margin-top: 12px !important;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        display: block;
+        overflow: auto;
+      }
+
+      #sidebar {
+        width: 100%;
+        height: auto;
+        max-height: 58vh;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      #map {
+        height: 42vh;
+        width: 100%;
+      }
+    }
   </style>
 </head>
+
 <body>
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <h1>Glúnta LEA Test</h1>
+      <p>Local Electoral Area population and age structure from Census 2022. Temporary v0.2 test page.</p>
+    </div>
+
+    <div class="sidebar-section">
+      <p class="eyebrow">Selected LEA</p>
+      <h2 id="areaName">No LEA selected</h2>
+      <p id="areaIntro" class="empty-note">
+        Click a Local Electoral Area on the map to view its Census 2022 population profile.
+      </p>
+    </div>
+
+    <div class="sidebar-section">
+      <p class="eyebrow">Population</p>
+
+      <div class="metric-card">
+        <p class="metric-label">Population, 2022</p>
+        <p id="populationValue" class="metric-value">—</p>
+      </div>
+
+      <p id="countyValue" class="source-note">County: —</p>
+      <p class="source-note">Source: CSO Census 2022, SAP2022T1T1ALEA22.</p>
+    </div>
+
+    <div class="sidebar-section">
+      <p class="eyebrow">Age structure</p>
+
+      <div class="data-grid">
+        <div class="data-row">
+          <div class="data-row-top">
+            <span class="data-label">Children, 0 to 14</span>
+            <span id="age0014Value" class="data-value">—</span>
+          </div>
+          <div class="bar-track">
+            <div id="age0014Bar" class="bar-fill"></div>
+          </div>
+        </div>
+
+        <div class="data-row">
+          <div class="data-row-top">
+            <span class="data-label">Young adults, 15 to 34</span>
+            <span id="age1534Value" class="data-value">—</span>
+          </div>
+          <div class="bar-track">
+            <div id="age1534Bar" class="bar-fill"></div>
+          </div>
+        </div>
+
+        <div class="data-row">
+          <div class="data-row-top">
+            <span class="data-label">Adults, 35 to 64</span>
+            <span id="age3564Value" class="data-value">—</span>
+          </div>
+          <div class="bar-track">
+            <div id="age3564Bar" class="bar-fill"></div>
+          </div>
+        </div>
+
+        <div class="data-row">
+          <div class="data-row-top">
+            <span class="data-label">Older adults, 65+</span>
+            <span id="age65Value" class="data-value">—</span>
+          </div>
+          <div class="bar-track">
+            <div id="age65Bar" class="bar-fill"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main id="map"></main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    if (typeof L === "undefined") {
+      console.error("Leaflet did not load.");
+      throw new Error("Leaflet did not load.");
+    }
+
+    const DEFAULT_FILL_OPACITY = 0.62;
+    const HOVER_FILL_OPACITY = 0.72;
+    const SELECTED_FILL_OPACITY = 0.78;
+
+    const map = L.map("map", { zoomControl: true }).setView([53.4, -8.1], 7);
+
+    map.createPane("labelsPane");
+    map.getPane("labelsPane").style.zIndex = 650;
+    map.getPane("labelsPane").style.pointerEvents = "none";
+
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors &copy; CARTO"
+    }).addTo(map);
+
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png", {
+      maxZoom: 19,
+      pane: "labelsPane",
+      attribution: "&copy; OpenStreetMap contributors &copy; CARTO"
+    }).addTo(map);
+
+    const areaNameEl = document.getElementById("areaName");
+    const areaIntroEl = document.getElementById("areaIntro");
+    const populationValueEl = document.getElementById("populationValue");
+    const countyValueEl = document.getElementById("countyValue");
+
+    const age0014ValueEl = document.getElementById("age0014Value");
+    const age0014BarEl = document.getElementById("age0014Bar");
+
+    const age1534ValueEl = document.getElementById("age1534Value");
+    const age1534BarEl = document.getElementById("age1534Bar");
+
+    const age3564ValueEl = document.getElementById("age3564Value");
+    const age3564BarEl = document.getElementById("age3564Bar");
+
+    const age65ValueEl = document.getElementById("age65Value");
+    const age65BarEl = document.getElementById("age65Bar");
+
+    let leaLayer;
+    let selectedLayer = null;
+    let legend;
+
+    const populationGrades = [
+      { min: 75000, label: "75,000+" },
+      { min: 50000, label: "50,001 to 75,000" },
+      { min: 35000, label: "35,001 to 50,000" },
+      { min: 25000, label: "25,001 to 35,000" },
+      { min: 15000, label: "15,001 to 25,000" },
+      { min: -Infinity, label: "Up to 15,000" }
+    ];
+
+    const populationColors = [
+      "#08306b",
+      "#08519c",
+      "#2171b5",
+      "#4292c6",
+      "#9ecae1",
+      "#deebf7"
+    ];
+
+    function getPopulationColor(value) {
+      const number = Number(value);
+      if (Number.isNaN(number)) return "#f0f0f0";
+
+      const matchedIndex = populationGrades.findIndex(grade => number >= grade.min);
+      return populationColors[matchedIndex] || populationColors[populationColors.length - 1];
+    }
+
+    function styleLea(feature) {
+      const value = feature.properties.population_2022;
+
+      return {
+        fillColor: getPopulationColor(value),
+        weight: 0.9,
+        opacity: 1,
+        color: "#333",
+        fillOpacity: DEFAULT_FILL_OPACITY
+      };
+    }
+
+    function formatNumber(value) {
+      const number = Number(value);
+      if (Number.isNaN(number)) return "—";
+      return number.toLocaleString("en-IE");
+    }
+
+    function formatPercent(value) {
+      const number = Number(value);
+      if (Number.isNaN(number)) return "—";
+      return number.toFixed(1) + "%";
+    }
+
+    function getAreaName(props) {
+      return props.area_name || props.CSO_LEA || props.LEA_OFFICIAL || "Unknown LEA";
+    }
+
+    function setAgeRow(valueEl, barEl, count, percent) {
+      valueEl.textContent = `${formatNumber(count)} (${formatPercent(percent)})`;
+
+      const safePercent = Number(percent);
+      barEl.style.width = Number.isNaN(safePercent)
+        ? "0%"
+        : Math.max(0, Math.min(100, safePercent)) + "%";
+    }
+
+    function updateSidebar(props) {
+      areaNameEl.textContent = getAreaName(props);
+      areaIntroEl.textContent = "Census 2022 population profile for this Local Electoral Area.";
+      populationValueEl.textContent = formatNumber(props.population_2022);
+      countyValueEl.textContent = "County: " + (props.county || props.COUNTY || "—");
+
+      setAgeRow(age0014ValueEl, age0014BarEl, props.age_0_14, props.age_0_14_pct);
+      setAgeRow(age1534ValueEl, age1534BarEl, props.age_15_34, props.age_15_34_pct);
+      setAgeRow(age3564ValueEl, age3564BarEl, props.age_35_64, props.age_35_64_pct);
+      setAgeRow(age65ValueEl, age65BarEl, props.age_65_plus, props.age_65_plus_pct);
+    }
+
+    function highlightFeature(e) {
+      const layer = e.target;
+
+      if (layer !== selectedLayer) {
+        layer.setStyle({
+          weight: 2,
+          color: "#111",
+          fillOpacity: HOVER_FILL_OPACITY
+        });
+      }
+
+      layer.bringToFront();
+    }
+
+    function resetHighlight(e) {
+      const layer = e.target;
+
+      if (layer !== selectedLayer) {
+        leaLayer.resetStyle(layer);
+      }
+    }
+
+    function selectLayer(layer) {
+      const props = layer.feature.properties;
+
+      if (selectedLayer) {
+        leaLayer.resetStyle(selectedLayer);
+      }
+
+      selectedLayer = layer;
+
+      layer.setStyle({
+        weight: 3,
+        color: "#000",
+        fillOpacity: SELECTED_FILL_OPACITY
+      });
+
+      layer.bringToFront();
+      updateSidebar(props);
+
+      map.fitBounds(layer.getBounds(), {
+        padding: [30, 30]
+      });
+
+      layer.bindPopup(`
+        <div>
+          <h2 style="margin:0 0 6px 0;font-size:17px;">${getAreaName(props)}</h2>
+          <p style="margin:4px 0;"><strong>County:</strong> ${props.county || props.COUNTY || "—"}</p>
+          <p style="margin:4px 0;"><strong>Population, 2022:</strong> ${formatNumber(props.population_2022)}</p>
+        </div>
+      `).openPopup();
+    }
+
+    function bindLeaInteractions(feature, layer) {
+      layer.on({
+        mouseover: highlightFeature,
+        mouseout: resetHighlight,
+        click: function (e) {
+          selectLayer(e.target);
+        }
+      });
+    }
+
+    function updateLegend() {
+      if (legend) {
+        map.removeControl(legend);
+      }
+
+      legend = L.control({ position: "bottomright" });
+
+      legend.onAdd = function () {
+        const div = L.DomUtil.create("div", "legend");
+
+        div.innerHTML = `<div class="legend-title">LEA population, 2022</div>`;
+
+        populationGrades.forEach((item, index) => {
+          div.innerHTML += `
+            <div class="legend-row">
+              <span class="legend-color" style="background:${populationColors[index]}; opacity:${DEFAULT_FILL_OPACITY};"></span>
+              <span>${item.label}</span>
+            </div>
+          `;
+        });
+
+        return div;
+      };
+
+      legend.addTo(map);
+    }
+
+    fetch("lea-population-map.geojson")
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Could not load lea-population-map.geojson. HTTP status: " + response.status);
+        }
+
+        return response.json();
+      })
+      .then(data => {
+        leaLayer = L.geoJSON(data, {
+          style: styleLea,
+          onEachFeature: bindLeaInteractions
+        }).addTo(map);
+
+        map.fitBounds(leaLayer.getBounds(), {
+          padding: [20, 20]
+        });
+
+        updateLegend();
+
+        console.log("Loaded " + data.features.length + " LEA areas.");
+      })
+      .catch(error => {
+        console.error(error);
+        alert(
+          "The LEA population GeoJSON file could not be loaded. Check that the filename is exactly lea-population-map.geojson and that you are using http://localhost:8000."
+        );
+      });
+  </script>
 </body>
 </html>
