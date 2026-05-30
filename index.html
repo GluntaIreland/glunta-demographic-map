@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Glunta Demographic Map</title>
+  <title>Glúnta County Demographic Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -61,6 +61,30 @@
       font-size: 13px;
       line-height: 1.45;
       color: var(--muted);
+    }
+
+    .top-link-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .nav-link-button {
+      display: inline-block;
+      text-decoration: none;
+      border: 1px solid var(--brand);
+      color: var(--brand-dark);
+      background: white;
+      border-radius: 10px;
+      padding: 9px 11px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .nav-link-button:hover {
+      background: var(--soft);
     }
 
     .sidebar-section {
@@ -155,7 +179,6 @@
     }
 
     .about-button {
-      margin-top: 12px;
       border-color: var(--brand);
       color: var(--brand-dark);
     }
@@ -463,9 +486,13 @@
 <body>
   <aside id="sidebar">
     <div class="sidebar-header">
-      <h1>Glunta Demographic Map</h1>
+      <h1>Glúnta County Demographic Map</h1>
       <p>County and local authority demographic data from Census 2022.</p>
-      <button id="aboutButton" class="about-button" type="button">About this map</button>
+
+      <div class="top-link-row">
+        <a href="lea.html" class="nav-link-button">View LEA map</a>
+        <button id="aboutButton" class="about-button" type="button">About this map</button>
+      </div>
     </div>
 
     <div class="sidebar-section">
@@ -587,7 +614,7 @@
       </div>
 
       <div class="about-panel-content">
-        <p>The Glunta Demographic Map is an interactive visualisation of Census 2022 demographic data for Ireland’s administrative county and local authority areas.</p>
+        <p>The Glúnta County Demographic Map is an interactive visualisation of Census 2022 demographic data for Ireland’s administrative county and local authority areas.</p>
         <p>It is designed to help churches, church leaders, mission agencies, researchers and interested members of the public better understand the demographic shape of communities across Ireland.</p>
 
         <h3>What this map does not show</h3>
