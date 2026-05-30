@@ -1,4 +1,4 @@
-// Glunta Demographic Map
+// Glúnta County Demographic Map
 // County / local authority demographic prototype using Census 2022 data
 
 if (typeof L === "undefined") {
@@ -35,13 +35,25 @@ const sidebarSections = [
   },
   {
     title: "Migration and citizenship",
-    note: "Source: CSO Census 2022, SAP2022T2T1ACTY. This table includes birthplace and citizenship categories, but not a separate dual citizenship field.",
+    note: "Source: CSO Census 2022, SAP2022T2T1ACTY.",
     barClass: "migration-bar",
     rows: [
       { label: "Born in Ireland", count: "born_ireland", pct: "born_ireland_pct" },
       { label: "Born outside Ireland", count: "born_outside_ireland", pct: "born_outside_ireland_pct" },
       { label: "Irish citizenship", count: "citizen_ireland", pct: "citizen_ireland_pct" },
       { label: "Non-Irish citizenship", count: "non_irish_citizenship", pct: "non_irish_citizenship_pct" }
+    ]
+  },
+  {
+    title: "Birthplace outside Ireland",
+    note: "Selected non-Ireland birthplace categories from CSO Census 2022. “Rest of World” excludes Ireland, UK, Poland, India and Other EU countries.",
+    barClass: "migration-bar",
+    rows: [
+      { label: "Born in UK", count: "born_uk", pct: "born_uk_pct" },
+      { label: "Born in Poland", count: "born_poland", pct: "born_poland_pct" },
+      { label: "Born in India", count: "born_india", pct: "born_india_pct" },
+      { label: "Born in Other EU", count: "born_other_eu", pct: "born_other_eu_pct" },
+      { label: "Born in Rest of World", count: "born_rest_world", pct: "born_rest_world_pct" }
     ]
   },
   {
@@ -54,7 +66,8 @@ const sidebarSections = [
       { label: "Other White", count: "ethnicity_other_white", pct: "ethnicity_other_white_pct" },
       { label: "Black or Black Irish", count: "ethnicity_black_or_black_irish", pct: "ethnicity_black_or_black_irish_pct" },
       { label: "Asian or Asian Irish", count: "ethnicity_asian_or_asian_irish", pct: "ethnicity_asian_or_asian_irish_pct" },
-      { label: "Other", count: "ethnicity_other", pct: "ethnicity_other_pct" }
+      { label: "Other", count: "ethnicity_other", pct: "ethnicity_other_pct" },
+      { label: "Not stated", count: "ethnicity_not_stated", pct: "ethnicity_not_stated_pct" }
     ]
   },
   {
@@ -71,7 +84,7 @@ const sidebarSections = [
   },
   {
     title: "Families",
-    note: "Source: CSO Census 2022, SAP2022T4T2CTY. This table describes family units by number and age of children. It does not provide lone-parent family data.",
+    note: "Source: CSO Census 2022, SAP2022T4T2CTY. This table describes family units by number and age of children.",
     barClass: "families-bar",
     rows: [
       { label: "Families with children", count: "families_with_children", pct: "families_with_children_pct" },
@@ -88,7 +101,7 @@ const sidebarSections = [
   },
   {
     title: "Principal economic status",
-    note: "Source: CSO Census 2022, SAP2022T8T1CTY. Percentages use the population aged 15 years and over as the denominator. Unemployed combines looking for first regular job, short-term unemployed and long-term unemployed.",
+    note: "Source: CSO Census 2022, SAP2022T8T1CTY. Percentages use the population aged 15 years and over as the denominator.",
     barClass: "status-bar",
     rows: [
       { label: "At work", count: "status_at_work", pct: "status_at_work_pct" },
@@ -206,6 +219,9 @@ map.createPane("labelsPane");
 map.getPane("labelsPane").style.zIndex = 650;
 map.getPane("labelsPane").style.pointerEvents = "none";
 
+map.createPane("churchPane");
+map.getPane("churchPane").style.zIndex = 720;
+
 L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png", {
   maxZoom: 19,
   attribution: "&copy; OpenStreetMap contributors &copy; CARTO"
@@ -223,6 +239,7 @@ const areaSearchEl = document.getElementById("areaSearch");
 const searchButtonEl = document.getElementById("searchButton");
 const resetButtonEl = document.getElementById("resetButton");
 const searchResultsEl = document.getElementById("searchResults");
+const churchOverlayToggleEl = document.getElementById("churchOverlayToggle");
 const aboutButtonEl = document.getElementById("aboutButton");
 const aboutPanelEl = document.getElementById("aboutPanel");
 const aboutCloseButtonEl = document.getElementById("aboutCloseButton");
@@ -241,6 +258,9 @@ let legend;
 let sectionRowEls = [];
 let allAreaLayers = [];
 let fullMapBounds = null;
+
+let churchLayer = L.layerGroup();
+let churchesLoaded = false;
 
 function buildSidebarSections() {
   dataSectionsEl.innerHTML = "";
@@ -294,6 +314,15 @@ function buildSidebarSections() {
 }
 
 buildSidebarSections();
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
 function getColorForValue(value, indicatorKey) {
   const config = indicatorConfigs[indicatorKey];
@@ -435,9 +464,9 @@ function selectLayer(layer) {
 
   layer.bindPopup(`
     <div class="county-popup">
-      <h2>${name}</h2>
+      <h2>${escapeHtml(name)}</h2>
       <p><strong>Population, 2022:</strong> ${population}</p>
-      <p><strong>${currentLabel}:</strong> ${currentValue}</p>
+      <p><strong>${escapeHtml(currentLabel)}:</strong> ${escapeHtml(currentValue)}</p>
     </div>
   `).openPopup();
 }
@@ -468,13 +497,13 @@ function updateLegend() {
     const config = indicatorConfigs[currentIndicator];
     const colors = colorSets[config.colorSet] || colorSets.blue;
 
-    div.innerHTML = `<div class="legend-title">${config.legendTitle}</div>`;
+    div.innerHTML = `<div class="legend-title">${escapeHtml(config.legendTitle)}</div>`;
 
     config.grades.forEach((item, index) => {
       div.innerHTML += `
         <div class="legend-row">
           <span class="legend-color" style="background:${colors[index]}; opacity:${DEFAULT_FILL_OPACITY}; border:1px solid #555;"></span>
-          <span>${item.label}</span>
+          <span>${escapeHtml(item.label)}</span>
         </div>
       `;
     });
@@ -587,6 +616,145 @@ function closeAboutPanel() {
   aboutPanelEl.setAttribute("aria-hidden", "true");
 }
 
+function parseCsvLine(line) {
+  const result = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const next = line[i + 1];
+
+    if (char === '"' && inQuotes && next === '"') {
+      current += '"';
+      i++;
+    } else if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === "," && !inQuotes) {
+      result.push(current);
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+
+  result.push(current);
+  return result;
+}
+
+function parseCsv(text) {
+  const lines = text
+    .replace(/\r/g, "")
+    .split("\n")
+    .filter(line => line.trim().length > 0);
+
+  if (lines.length < 2) return [];
+
+  const headers = parseCsvLine(lines[0]).map(header => header.trim());
+
+  return lines.slice(1).map(line => {
+    const values = parseCsvLine(line);
+    const row = {};
+
+    headers.forEach((header, index) => {
+      row[header] = values[index] ? values[index].trim() : "";
+    });
+
+    return row;
+  });
+}
+
+function buildChurchPopup(row) {
+  const name = escapeHtml(row.name || "Church");
+  const town = escapeHtml(row.town || "");
+  const county = escapeHtml(row.county || "");
+  const website = String(row.website || "").trim();
+
+  const placeParts = [town, county].filter(Boolean);
+  const placeLine = placeParts.length > 0
+    ? `<p>${placeParts.join(", ")}</p>`
+    : "";
+
+  const websiteLine = website
+    ? `<p><a href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">View website</a></p>`
+    : "";
+
+  return `
+    <div class="church-popup">
+      <h2>${name}</h2>
+      ${placeLine}
+      ${websiteLine}
+    </div>
+  `;
+}
+
+function loadChurchOverlay() {
+  if (churchesLoaded) {
+    churchLayer.addTo(map);
+    return;
+  }
+
+  fetch("churches-points.csv")
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Could not load churches-points.csv. HTTP status: " + response.status);
+      }
+
+      return response.text();
+    })
+    .then(csvText => {
+      const rows = parseCsv(csvText);
+      let addedCount = 0;
+
+      rows.forEach(row => {
+        const lat = Number(row.latitude);
+        const lng = Number(row.longitude);
+
+        if (Number.isNaN(lat) || Number.isNaN(lng)) {
+          return;
+        }
+
+        const marker = L.circleMarker([lat, lng], {
+          pane: "churchPane",
+          radius: 4,
+          color: "#111827",
+          weight: 1.3,
+          fillColor: "#ffffff",
+          fillOpacity: 0.95
+        });
+
+        marker.bindPopup(buildChurchPopup(row));
+        marker.addTo(churchLayer);
+        addedCount++;
+      });
+
+      churchesLoaded = true;
+      churchLayer.addTo(map);
+
+      console.log("Loaded " + addedCount + " church overlay points.");
+    })
+    .catch(error => {
+      console.error(error);
+      alert(
+        "The church overlay file could not be loaded. Check that churches-points.csv is in the root of this GitHub Pages site and has columns: name,town,county,latitude,longitude,website."
+      );
+
+      if (churchOverlayToggleEl) {
+        churchOverlayToggleEl.checked = false;
+      }
+    });
+}
+
+function toggleChurchOverlay() {
+  if (!churchOverlayToggleEl) return;
+
+  if (churchOverlayToggleEl.checked) {
+    loadChurchOverlay();
+  } else {
+    map.removeLayer(churchLayer);
+  }
+}
+
 indicatorSelectEl.addEventListener("change", function (event) {
   updateMapIndicator(event.target.value);
 });
@@ -608,6 +776,10 @@ areaSearchEl.addEventListener("input", function () {
 });
 
 resetButtonEl.addEventListener("click", resetMap);
+
+if (churchOverlayToggleEl) {
+  churchOverlayToggleEl.addEventListener("change", toggleChurchOverlay);
+}
 
 aboutButtonEl.addEventListener("click", openAboutPanel);
 aboutCloseButtonEl.addEventListener("click", closeAboutPanel);
@@ -651,6 +823,6 @@ fetch("county-demographics-map.geojson")
   .catch(error => {
     console.error(error);
     alert(
-      "The county demographics GeoJSON file could not be loaded. Check that the filename is exactly county-demographics-map.geojson and that you are using http://localhost:8000."
+      "The county demographics GeoJSON file could not be loaded. Check that the filename is exactly county-demographics-map.geojson."
     );
   });
