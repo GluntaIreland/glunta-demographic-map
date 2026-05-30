@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Glúnta LEA Demographics Test</title>
+  <title>Glúnta LEA Demographic Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -63,6 +63,29 @@
       font-size: 13px;
       line-height: 1.45;
       color: var(--muted);
+    }
+
+    .top-link-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .nav-link-button {
+      display: inline-block;
+      text-decoration: none;
+      border: 1px solid var(--brand);
+      color: var(--brand-dark);
+      background: white;
+      border-radius: 10px;
+      padding: 9px 11px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .nav-link-button:hover {
+      background: var(--soft);
     }
 
     .sidebar-section {
@@ -305,8 +328,12 @@
 <body>
   <aside id="sidebar">
     <div class="sidebar-header">
-      <h1>Glúnta LEA Test</h1>
-      <p>Local Electoral Area demographic data from Census 2022. Temporary v0.2 test page.</p>
+      <h1>Glúnta LEA Demographic Map</h1>
+      <p>Local Electoral Area demographic data from Census 2022.</p>
+
+      <div class="top-link-row">
+        <a href="index.html" class="nav-link-button">View county map</a>
+      </div>
     </div>
 
     <div class="sidebar-section">
@@ -463,8 +490,8 @@
         ]
       },
       {
-        title: "Birthplace detail",
-        note: "Selected birthplace categories from CSO Census 2022.",
+        title: "Birthplace outside Ireland",
+        note: "Selected non-Ireland birthplace categories from CSO Census 2022. “Rest of World” excludes Ireland, UK, Poland, India and Other EU countries.",
         barClass: "migration-bar",
         rows: [
           { label: "Born in UK", count: "born_uk", pct: "born_uk_pct" },
