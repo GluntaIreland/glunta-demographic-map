@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Glunta Demographic Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    :root {
+      --panel-width: 410px;
+      --brand: #0f766e;
+      --brand-dark: #0f4f49;
+      --border: #d8dee4;
+      --text: #172026;
+      --muted: #5f6b76;
+      --bg: #f6f8fa;
+      --card-bg: #ffffff;
+      --soft: #f3f7f7;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+    }
+
+    body {
+      display: flex;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    #sidebar {
+      width: var(--panel-width);
+      height: 100vh;
+      background: white;
+      border-right: 1px solid var(--border);
+      box-shadow: 2px 0 14px rgba(0,0,0,0.08);
+      z-index: 1000;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: 18px 18px 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbfb 100%);
+    }
+
+    .sidebar-header h1 {
+      margin: 0 0 6px 0;
+      font-size: 22px;
+      line-height: 1.15;
+    }
+
+    .sidebar-header p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    .sidebar-section {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .eyebrow {
+      margin: 0 0 6px 0;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+      color: var(--brand-dark);
+    }
+
+    #areaName {
+      margin: 0;
+      font-size: 21px;
+      line-height: 1.2;
+    }
+
+    .empty-note {
+      margin: 8px 0 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .control-label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .select-control,
+    .search-control {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 11px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: white;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .select-control optgroup {
+      font-weight: 700;
+      color: var(--brand-dark);
+    }
+
+    .select-control option {
+      color: var(--text);
+      font-weight: 400;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .button,
+    .about-button {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: white;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 9px 11px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .button:hover,
+    .about-button:hover {
+      background: var(--soft);
+    }
+
+    .button-primary {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: white;
+    }
+
+    .button-primary:hover {
+      background: var(--brand-dark);
+    }
+
+    .about-button {
+      margin-top: 12px;
+      border-color: var(--brand);
+      color: var(--brand-dark);
+    }
+
+    .search-results {
+      margin-top: 8px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .search-result {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 9px 10px;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    .search-result:hover {
+      background: var(--soft);
+    }
+
+    .selected-indicator-card {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid rgba(15, 118, 110, 0.28);
+      border-radius: 12px;
+      background: #f0fdfa;
+    }
+
+    .selected-indicator-label {
+      margin: 0 0 4px 0;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--brand-dark);
+    }
+
+    .selected-indicator-name {
+      margin: 0 0 5px 0;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .selected-indicator-value {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.1;
+      font-weight: 800;
+      color: var(--brand-dark);
+    }
+
+    .metric-card {
+      margin-top: 12px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--card-bg);
+    }
+
+    .metric-label {
+      margin: 0 0 4px 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .metric-value {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.1;
+      font-weight: 750;
+      color: var(--brand-dark);
+    }
+
+    .data-grid {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .data-row {
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--soft);
+    }
+
+    .data-row-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      margin-bottom: 7px;
+    }
+
+    .data-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .data-value {
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .bar-track {
+      width: 100%;
+      height: 9px;
+      border-radius: 999px;
+      background: #dce7e6;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: var(--brand);
+      transition: width 0.2s ease;
+    }
+
+    .age-bar { background: #0f766e; }
+    .religion-bar { background: #7c3aed; }
+    .migration-bar { background: #c2410c; }
+    .ethnicity-bar { background: #15803d; }
+    .language-bar { background: #b91c1c; }
+    .families-bar { background: #0369a1; }
+    .status-bar { background: #be123c; }
+
+    .source-note {
+      margin: 10px 0 0 0;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    #map {
+      height: 100vh;
+      flex: 1;
+      background: #eef2f3;
+    }
+
+    .legend {
+      line-height: 1.4;
+      background: white;
+      padding: 10px 12px;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+      font-size: 13px;
+    }
+
+    .legend-title {
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 3px 0;
+    }
+
+    .legend-color {
+      width: 16px;
+      height: 16px;
+      border: 1px solid #555;
+    }
+
+    .county-popup h2 {
+      margin: 0 0 6px 0;
+      font-size: 17px;
+    }
+
+    .county-popup p {
+      margin: 4px 0;
+      font-size: 14px;
+    }
+
+    .leaflet-control-zoom {
+      margin-left: 12px !important;
+      margin-top: 12px !important;
+    }
+
+    .about-panel {
+      position: fixed;
+      inset: 0;
+      z-index: 3000;
+      background: rgba(15, 23, 42, 0.42);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .about-panel.is-open {
+      display: flex;
+    }
+
+    .about-panel-inner {
+      width: min(720px, 100%);
+      max-height: 86vh;
+      overflow-y: auto;
+      background: white;
+      border-radius: 18px;
+      box-shadow: 0 18px 60px rgba(0,0,0,0.28);
+      border: 1px solid var(--border);
+    }
+
+    .about-panel-header {
+      position: sticky;
+      top: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      background: white;
+      z-index: 1;
+    }
+
+    .about-panel-header h2 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.2;
+    }
+
+    .about-close-button {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: white;
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      font-size: 24px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .about-close-button:hover {
+      background: var(--soft);
+    }
+
+    .about-panel-content {
+      padding: 20px;
+    }
+
+    .about-panel-content h3 {
+      margin: 22px 0 8px 0;
+      font-size: 15px;
+      color: var(--brand-dark);
+    }
+
+    .about-panel-content p {
+      margin: 0 0 12px 0;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    @media (max-width: 760px) {
+      body {
+        display: block;
+        overflow: auto;
+      }
+
+      #sidebar {
+        width: 100%;
+        height: auto;
+        max-height: 64vh;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      #map {
+        height: 36vh;
+        width: 100%;
+      }
+
+      .metric-value {
+        font-size: 26px;
+      }
+
+      .about-panel {
+        padding: 12px;
+      }
+
+      .about-panel-inner {
+        max-height: 90vh;
+        border-radius: 14px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <h1>Glunta Demographic Map</h1>
+      <p>County and local authority demographic data from Census 2022.</p>
+      <button id="aboutButton" class="about-button" type="button">About this map</button>
+    </div>
+
+    <div class="sidebar-section">
+      <label for="indicatorSelect" class="control-label">Colour map by</label>
+      <select id="indicatorSelect" class="select-control">
+        <optgroup label="Population">
+          <option value="population_2022">Total population</option>
+        </optgroup>
+
+        <optgroup label="Age structure">
+          <option value="age_0_14_pct">Children, 0 to 14 %</option>
+          <option value="age_15_34_pct">Young adults, 15 to 34 %</option>
+          <option value="age_35_64_pct">Adults, 35 to 64 %</option>
+          <option value="age_65_plus_pct">Older adults, 65+ %</option>
+        </optgroup>
+
+        <optgroup label="Religion">
+          <option value="religion_catholic_pct">Catholic %</option>
+          <option value="religion_other_pct">Other religion %</option>
+          <option value="religion_none_pct">No religion %</option>
+          <option value="religion_not_stated_pct">Religion not stated %</option>
+        </optgroup>
+
+        <optgroup label="Migration and citizenship">
+          <option value="born_outside_ireland_pct">Born outside Ireland %</option>
+          <option value="born_ireland_pct">Born in Ireland %</option>
+          <option value="citizen_ireland_pct">Irish citizenship %</option>
+          <option value="non_irish_citizenship_pct">Non-Irish citizenship %</option>
+          <option value="born_uk_pct">Born in UK %</option>
+          <option value="born_poland_pct">Born in Poland %</option>
+          <option value="born_india_pct">Born in India %</option>
+          <option value="born_other_eu_pct">Born in Other EU %</option>
+          <option value="born_rest_world_pct">Born in Rest of World %</option>
+        </optgroup>
+
+        <optgroup label="Ethnicity / cultural background">
+          <option value="ethnicity_white_irish_pct">White Irish %</option>
+          <option value="ethnicity_white_irish_traveller_pct">White Irish Traveller %</option>
+          <option value="ethnicity_other_white_pct">Other White %</option>
+          <option value="ethnicity_black_or_black_irish_pct">Black or Black Irish %</option>
+          <option value="ethnicity_asian_or_asian_irish_pct">Asian or Asian Irish %</option>
+          <option value="ethnicity_other_pct">Other ethnic background %</option>
+          <option value="ethnicity_not_stated_pct">Ethnicity not stated %</option>
+        </optgroup>
+
+        <optgroup label="Language">
+          <option value="foreign_language_speakers_pct">Foreign-language speakers %</option>
+          <option value="language_spanish_pct">Spanish speakers %</option>
+          <option value="language_french_pct">French speakers %</option>
+          <option value="language_polish_pct">Polish speakers %</option>
+          <option value="language_other_incl_not_stated_pct">Other / not stated language %</option>
+        </optgroup>
+
+        <optgroup label="Families">
+          <option value="families_with_children_pct">Families with children %</option>
+          <option value="families_without_children_pct">Families without children %</option>
+          <option value="families_all_children_under15_pct">Families: all children under 15 %</option>
+          <option value="families_all_children_15_plus_pct">Families: all children 15+ %</option>
+          <option value="families_children_under_and_over15_pct">Families: children under and over 15 %</option>
+          <option value="families_1_child_pct">Families with 1 child %</option>
+          <option value="families_2_children_pct">Families with 2 children %</option>
+          <option value="families_3_children_pct">Families with 3 children %</option>
+          <option value="families_4_children_pct">Families with 4 children %</option>
+          <option value="families_5_plus_children_pct">Families with 5+ children %</option>
+        </optgroup>
+
+        <optgroup label="Principal economic status">
+          <option value="status_at_work_pct">At work %</option>
+          <option value="status_student_pct">Student %</option>
+          <option value="status_retired_pct">Retired %</option>
+          <option value="status_home_family_pct">Looking after home/family %</option>
+          <option value="status_unable_to_work_pct">Unable to work due to sickness/disability %</option>
+          <option value="status_unemployed_pct">Unemployed %</option>
+          <option value="status_other_pct">Other status %</option>
+        </optgroup>
+      </select>
+      <p id="indicatorNote" class="source-note">The map is currently coloured by total population.</p>
+    </div>
+
+    <div class="sidebar-section">
+      <label for="areaSearch" class="control-label">Search area</label>
+      <input id="areaSearch" class="search-control" type="search" placeholder="Search county or local authority..." />
+      <div class="button-row">
+        <button id="searchButton" class="button button-primary" type="button">Search</button>
+        <button id="resetButton" class="button" type="button">Reset map</button>
+      </div>
+      <div id="searchResults" class="search-results"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <p class="eyebrow">Selected area</p>
+      <h2 id="areaName">No area selected</h2>
+      <p id="areaIntro" class="empty-note">Click a county or local authority area on the map to view its Census 2022 demographic profile.</p>
+
+      <div class="selected-indicator-card">
+        <p class="selected-indicator-label">Selected indicator</p>
+        <p id="selectedIndicatorName" class="selected-indicator-name">—</p>
+        <p id="selectedIndicatorValue" class="selected-indicator-value">—</p>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <p class="eyebrow">Population</p>
+      <div class="metric-card">
+        <p class="metric-label">Population, 2022</p>
+        <p id="populationValue" class="metric-value">—</p>
+      </div>
+      <p id="sourceNote" class="source-note">Source: CSO Census 2022, SAP2022T1T1ACTY.</p>
+    </div>
+
+    <div id="dataSections"></div>
+  </aside>
+
+  <div id="aboutPanel" class="about-panel" aria-hidden="true">
+    <div class="about-panel-inner">
+      <div class="about-panel-header">
+        <h2>About this map</h2>
+        <button id="aboutCloseButton" class="about-close-button" type="button" aria-label="Close about panel">×</button>
+      </div>
+
+      <div class="about-panel-content">
+        <p>The Glunta Demographic Map is an interactive visualisation of Census 2022 demographic data for Ireland’s administrative county and local authority areas.</p>
+        <p>It is designed to help churches, church leaders, mission agencies, researchers and interested members of the public better understand the demographic shape of communities across Ireland.</p>
+
+        <h3>What this map does not show</h3>
+        <p>This map does not measure spiritual need, gospel openness, church health or ministry priority by itself. It provides demographic context. The data should be interpreted carefully, locally and alongside other forms of knowledge, including church presence, community relationships, local history and pastoral judgement.</p>
+
+        <h3>Data sources</h3>
+        <p>Demographic data comes from the Central Statistics Office Census 2022 Small Area Population Statistics. Boundary data comes from Tailte Éireann / data.gov.ie administrative area boundaries.</p>
+
+        <h3>Geography</h3>
+        <p>This version uses administrative counties and local authorities. These are not always the same as traditional counties. For example, Dublin is divided into Dublin City, Fingal, South Dublin and Dún Laoghaire-Rathdown. Cork and Galway are also divided into city and county local authority areas.</p>
+
+        <h3>Percentages</h3>
+        <p>Most percentages are calculated using the relevant Census table total for each area. Some language percentages are calculated using total population as the denominator. Principal economic status percentages use the population aged 15 years and over.</p>
+
+        <h3>Limitations</h3>
+        <p>Census categories are broad. They should not be overinterpreted. Religious identity, ethnicity, language, citizenship and family structure are complex realities that cannot be fully represented in a map. This tool is intended to prompt better questions, not provide final conclusions.</p>
+      </div>
+    </div>
+  </div>
+
+  <main id="map"></main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
