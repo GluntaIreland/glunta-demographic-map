@@ -205,6 +205,22 @@
       background: var(--soft);
     }
 
+    .checkbox-control {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .checkbox-control input {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--brand);
+    }
+
     .selected-indicator-card {
       margin-top: 14px;
       padding: 14px;
@@ -363,6 +379,21 @@
     .county-popup p {
       margin: 4px 0;
       font-size: 14px;
+    }
+
+    .church-popup h2 {
+      margin: 0 0 6px 0;
+      font-size: 16px;
+    }
+
+    .church-popup p {
+      margin: 4px 0;
+      font-size: 13px;
+    }
+
+    .church-popup a {
+      color: var(--brand-dark);
+      font-weight: 700;
     }
 
     .leaflet-control-zoom {
@@ -583,6 +614,19 @@
     </div>
 
     <div class="sidebar-section">
+      <p class="eyebrow">Reference layers</p>
+
+      <label class="checkbox-control">
+        <input id="churchOverlayToggle" type="checkbox" />
+        <span>Show church locations</span>
+      </label>
+
+      <p class="source-note">
+        Church points are shown for visual context only. This overlay does not include denomination or tradition filters from the main Glúnta Church Map.
+      </p>
+    </div>
+
+    <div class="sidebar-section">
       <p class="eyebrow">Selected area</p>
       <h2 id="areaName">No area selected</h2>
       <p id="areaIntro" class="empty-note">Click a county or local authority area on the map to view its Census 2022 demographic profile.</p>
@@ -628,6 +672,9 @@
 
         <h3>Percentages</h3>
         <p>Most percentages are calculated using the relevant Census table total for each area. Some language percentages are calculated using total population as the denominator. Principal economic status percentages use the population aged 15 years and over.</p>
+
+        <h3>Church overlay</h3>
+        <p>The church-location overlay is included for visual context only. It is not intended to replace the full Glúnta Church Map and does not include denomination, tradition, church-density or opportunity analysis.</p>
 
         <h3>Limitations</h3>
         <p>Census categories are broad. They should not be overinterpreted. Religious identity, ethnicity, language, citizenship and family structure are complex realities that cannot be fully represented in a map. This tool is intended to prompt better questions, not provide final conclusions.</p>
