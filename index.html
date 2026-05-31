@@ -98,18 +98,13 @@
       border-color: var(--brand);
     }
 
-    .nav-link-button.is-disabled {
-      opacity: 0.48;
-      cursor: not-allowed;
-      pointer-events: none;
-      border-color: var(--border);
-      color: var(--muted);
-      background: #f8fafc;
-    }
-
     .sidebar-section {
       padding: 16px 18px;
       border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-section.is-hidden {
+      display: none;
     }
 
     .eyebrow {
@@ -152,6 +147,11 @@
       background: white;
       font-size: 14px;
       color: var(--text);
+    }
+
+    .select-control:disabled {
+      color: var(--muted);
+      background: #f8fafc;
     }
 
     .select-control optgroup {
@@ -389,14 +389,12 @@
       border: 1px solid #555;
     }
 
-    .county-popup h2,
     .area-popup h2,
     .church-popup h2 {
       margin: 0 0 6px 0;
       font-size: 16px;
     }
 
-    .county-popup p,
     .area-popup p,
     .church-popup p {
       margin: 4px 0;
@@ -535,12 +533,12 @@
       <div class="top-link-row">
         <button id="countyViewButton" class="nav-link-button is-active" type="button">County</button>
         <button id="leaViewButton" class="nav-link-button" type="button">LEA</button>
-        <button id="townViewButton" class="nav-link-button is-disabled" type="button" disabled>Town</button>
+        <button id="townViewButton" class="nav-link-button" type="button">Town</button>
         <button id="aboutButton" class="nav-action-button" type="button">About This Map</button>
       </div>
     </div>
 
-    <div class="sidebar-section">
+    <div id="indicatorSection" class="sidebar-section">
       <label for="indicatorSelect" class="control-label">Colour map by</label>
       <select id="indicatorSelect" class="select-control"></select>
       <p id="indicatorNote" class="source-note">The map is currently coloured by total population.</p>
@@ -574,14 +572,14 @@
       <h2 id="areaName">No area selected</h2>
       <p id="areaIntro" class="empty-note">Click a county or local authority area on the map to view its Census 2022 demographic profile.</p>
 
-      <div class="selected-indicator-card">
+      <div id="selectedIndicatorCard" class="selected-indicator-card">
         <p class="selected-indicator-label">Selected indicator</p>
         <p id="selectedIndicatorName" class="selected-indicator-name">—</p>
         <p id="selectedIndicatorValue" class="selected-indicator-value">—</p>
       </div>
     </div>
 
-    <div class="sidebar-section">
+    <div id="populationSection" class="sidebar-section">
       <p class="eyebrow">Population</p>
       <div class="metric-card">
         <p class="metric-label">Population, 2022</p>
@@ -602,7 +600,7 @@
       </div>
 
       <div class="about-panel-content">
-        <p>The Glúnta Demographic Map is an interactive visualisation of Census 2022 demographic data for Ireland.</p>
+        <p>The Glúnta Demographic Map is an interactive visualisation of Census 2022 demographic data and statistical boundaries for Ireland.</p>
         <p>It is designed to help churches, church leaders, mission agencies, researchers and interested members of the public better understand the demographic shape of communities across Ireland.</p>
 
         <h3>What this map does not show</h3>
@@ -612,7 +610,7 @@
         <p>Demographic data comes from the Central Statistics Office Census 2022 Small Area Population Statistics. Boundary data comes from Tailte Éireann / data.gov.ie administrative and statistical boundary sources.</p>
 
         <h3>Geography</h3>
-        <p>The County view uses administrative counties and local authorities. The LEA view uses Local Electoral Areas. The Town view will use Census 2022 Built Up Areas / Urban Areas when enabled.</p>
+        <p>The County view uses administrative counties and local authorities. The LEA view uses Local Electoral Areas. The Town view uses Census 2022 Built Up Areas / Urban Areas. At this stage, the Town view shows boundaries only.</p>
 
         <h3>Church overlay</h3>
         <p>The church-location overlay is included for visual context only. It is not intended to replace the full Glúnta Church Map and does not include denomination, tradition, church-density or opportunity analysis.</p>
