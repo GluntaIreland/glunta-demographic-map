@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <title>Glúnta Demographic Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
@@ -19,7 +20,8 @@
       --soft: #f3f7f7;
     }
 
-    html, body {
+    html,
+    body {
       margin: 0;
       padding: 0;
       height: 100%;
@@ -82,6 +84,7 @@
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
+      font-family: inherit;
     }
 
     .nav-link-button:hover,
@@ -102,11 +105,6 @@
       border-color: var(--border);
       color: var(--muted);
       background: #f8fafc;
-    }
-
-    .nav-action-button {
-      appearance: none;
-      font-family: inherit;
     }
 
     .sidebar-section {
@@ -172,8 +170,7 @@
       margin-top: 10px;
     }
 
-    .button,
-    .about-button {
+    .button {
       appearance: none;
       border: 1px solid var(--border);
       background: white;
@@ -183,10 +180,10 @@
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
+      font-family: inherit;
     }
 
-    .button:hover,
-    .about-button:hover {
+    .button:hover {
       background: var(--soft);
     }
 
@@ -198,11 +195,6 @@
 
     .button-primary:hover {
       background: var(--brand-dark);
-    }
-
-    .about-button {
-      border-color: var(--brand);
-      color: var(--brand-dark);
     }
 
     .search-results {
@@ -397,21 +389,15 @@
       border: 1px solid #555;
     }
 
-    .county-popup h2 {
-      margin: 0 0 6px 0;
-      font-size: 17px;
-    }
-
-    .county-popup p {
-      margin: 4px 0;
-      font-size: 14px;
-    }
-
+    .county-popup h2,
+    .area-popup h2,
     .church-popup h2 {
       margin: 0 0 6px 0;
       font-size: 16px;
     }
 
+    .county-popup p,
+    .area-popup p,
     .church-popup p {
       margin: 4px 0;
       font-size: 13px;
@@ -544,95 +530,24 @@
   <aside id="sidebar">
     <div class="sidebar-header">
       <h1>Glúnta Demographic Map</h1>
-      <p>County and local authority demographic data from Census 2022.</p>
+      <p id="mapSubtitle">County and local authority demographic data from Census 2022.</p>
 
       <div class="top-link-row">
-        <a href="index.html" class="nav-link-button is-active">County</a>
-        <a href="lea.html" class="nav-link-button">LEA</a>
-        <a href="#" class="nav-link-button is-disabled" aria-disabled="true">Town</a>
+        <button id="countyViewButton" class="nav-link-button is-active" type="button">County</button>
+        <button id="leaViewButton" class="nav-link-button" type="button">LEA</button>
+        <button id="townViewButton" class="nav-link-button is-disabled" type="button" disabled>Town</button>
         <button id="aboutButton" class="nav-action-button" type="button">About This Map</button>
       </div>
     </div>
 
     <div class="sidebar-section">
       <label for="indicatorSelect" class="control-label">Colour map by</label>
-      <select id="indicatorSelect" class="select-control">
-        <optgroup label="Population">
-          <option value="population_2022">Total population</option>
-        </optgroup>
-
-        <optgroup label="Age structure">
-          <option value="age_0_14_pct">Children, 0 to 14 %</option>
-          <option value="age_15_34_pct">Young adults, 15 to 34 %</option>
-          <option value="age_35_64_pct">Adults, 35 to 64 %</option>
-          <option value="age_65_plus_pct">Older adults, 65+ %</option>
-        </optgroup>
-
-        <optgroup label="Religion">
-          <option value="religion_catholic_pct">Catholic %</option>
-          <option value="religion_other_pct">Other religion %</option>
-          <option value="religion_none_pct">No religion %</option>
-          <option value="religion_not_stated_pct">Religion not stated %</option>
-        </optgroup>
-
-        <optgroup label="Migration and citizenship">
-          <option value="born_outside_ireland_pct">Born outside Ireland %</option>
-          <option value="born_ireland_pct">Born in Ireland %</option>
-          <option value="citizen_ireland_pct">Irish citizenship %</option>
-          <option value="non_irish_citizenship_pct">Non-Irish citizenship %</option>
-          <option value="born_uk_pct">Born in UK %</option>
-          <option value="born_poland_pct">Born in Poland %</option>
-          <option value="born_india_pct">Born in India %</option>
-          <option value="born_other_eu_pct">Born in Other EU %</option>
-          <option value="born_rest_world_pct">Born in Rest of World %</option>
-        </optgroup>
-
-        <optgroup label="Ethnicity / cultural background">
-          <option value="ethnicity_white_irish_pct">White Irish %</option>
-          <option value="ethnicity_white_irish_traveller_pct">White Irish Traveller %</option>
-          <option value="ethnicity_other_white_pct">Other White %</option>
-          <option value="ethnicity_black_or_black_irish_pct">Black or Black Irish %</option>
-          <option value="ethnicity_asian_or_asian_irish_pct">Asian or Asian Irish %</option>
-          <option value="ethnicity_other_pct">Other ethnic background %</option>
-          <option value="ethnicity_not_stated_pct">Ethnicity not stated %</option>
-        </optgroup>
-
-        <optgroup label="Language">
-          <option value="foreign_language_speakers_pct">Foreign-language speakers %</option>
-          <option value="language_spanish_pct">Spanish speakers %</option>
-          <option value="language_french_pct">French speakers %</option>
-          <option value="language_polish_pct">Polish speakers %</option>
-          <option value="language_other_incl_not_stated_pct">Other / not stated language %</option>
-        </optgroup>
-
-        <optgroup label="Families">
-          <option value="families_with_children_pct">Families with children %</option>
-          <option value="families_without_children_pct">Families without children %</option>
-          <option value="families_all_children_under15_pct">Families: all children under 15 %</option>
-          <option value="families_all_children_15_plus_pct">Families: all children 15+ %</option>
-          <option value="families_children_under_and_over15_pct">Families: children under and over 15 %</option>
-          <option value="families_1_child_pct">Families with 1 child %</option>
-          <option value="families_2_children_pct">Families with 2 children %</option>
-          <option value="families_3_children_pct">Families with 3 children %</option>
-          <option value="families_4_children_pct">Families with 4 children %</option>
-          <option value="families_5_plus_children_pct">Families with 5+ children %</option>
-        </optgroup>
-
-        <optgroup label="Principal economic status">
-          <option value="status_at_work_pct">At work %</option>
-          <option value="status_student_pct">Student %</option>
-          <option value="status_retired_pct">Retired %</option>
-          <option value="status_home_family_pct">Looking after home/family %</option>
-          <option value="status_unable_to_work_pct">Unable to work due to sickness/disability %</option>
-          <option value="status_unemployed_pct">Unemployed %</option>
-          <option value="status_other_pct">Other status %</option>
-        </optgroup>
-      </select>
+      <select id="indicatorSelect" class="select-control"></select>
       <p id="indicatorNote" class="source-note">The map is currently coloured by total population.</p>
     </div>
 
     <div class="sidebar-section">
-      <label for="areaSearch" class="control-label">Search area</label>
+      <label id="searchLabel" for="areaSearch" class="control-label">Search area</label>
       <input id="areaSearch" class="search-control" type="search" placeholder="Search county or local authority..." />
       <div class="button-row">
         <button id="searchButton" class="button button-primary" type="button">Search</button>
@@ -655,7 +570,7 @@
     </div>
 
     <div class="sidebar-section">
-      <p class="eyebrow">Selected area</p>
+      <p id="selectedAreaEyebrow" class="eyebrow">Selected area</p>
       <h2 id="areaName">No area selected</h2>
       <p id="areaIntro" class="empty-note">Click a county or local authority area on the map to view its Census 2022 demographic profile.</p>
 
@@ -672,7 +587,8 @@
         <p class="metric-label">Population, 2022</p>
         <p id="populationValue" class="metric-value">—</p>
       </div>
-      <p id="sourceNote" class="source-note">Source: CSO Census 2022, SAP2022T1T1ACTY.</p>
+      <p id="contextValue" class="source-note"></p>
+      <p id="sourceNote" class="source-note">Source: CSO Census 2022.</p>
     </div>
 
     <div id="dataSections"></div>
@@ -693,13 +609,10 @@
         <p>This map does not measure spiritual need, gospel openness, church health or ministry priority by itself. It provides demographic context. The data should be interpreted carefully, locally and alongside other forms of knowledge, including church presence, community relationships, local history and pastoral judgement.</p>
 
         <h3>Data sources</h3>
-        <p>Demographic data comes from the Central Statistics Office Census 2022 Small Area Population Statistics. Boundary data comes from Tailte Éireann / data.gov.ie administrative area boundaries.</p>
+        <p>Demographic data comes from the Central Statistics Office Census 2022 Small Area Population Statistics. Boundary data comes from Tailte Éireann / data.gov.ie administrative and statistical boundary sources.</p>
 
         <h3>Geography</h3>
-        <p>This county view uses administrative counties and local authorities. These are not always the same as traditional counties. For example, Dublin is divided into Dublin City, Fingal, South Dublin and Dún Laoghaire-Rathdown. Cork and Galway are also divided into city and county local authority areas.</p>
-
-        <h3>Percentages</h3>
-        <p>Most percentages are calculated using the relevant Census table total for each area. Some language percentages are calculated using total population as the denominator. Principal economic status percentages use the population aged 15 years and over.</p>
+        <p>The County view uses administrative counties and local authorities. The LEA view uses Local Electoral Areas. The Town view will use Census 2022 Built Up Areas / Urban Areas when enabled.</p>
 
         <h3>Church overlay</h3>
         <p>The church-location overlay is included for visual context only. It is not intended to replace the full Glúnta Church Map and does not include denomination, tradition, church-density or opportunity analysis.</p>
