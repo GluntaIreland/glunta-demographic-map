@@ -19,8 +19,6 @@ const GEOGRAPHIES = {
     emptyName: "No area selected",
     emptyIntro: "Click a county or local authority area on the map to view its Census 2022 demographic profile.",
     selectedIntro: "Census 2022 demographic profile for this county or local authority area.",
-    searchLabel: "Search area",
-    searchPlaceholder: "Search county or local authority...",
     sourceNote: "Source: CSO Census 2022, county / local authority SAPS tables.",
     contextLabel: "",
     hasDemographics: true,
@@ -34,8 +32,6 @@ const GEOGRAPHIES = {
     emptyName: "No LEA selected",
     emptyIntro: "Click a Local Electoral Area on the map to view its Census 2022 demographic profile.",
     selectedIntro: "Census 2022 demographic profile for this Local Electoral Area.",
-    searchLabel: "Search LEA",
-    searchPlaceholder: "Search LEA, e.g. Ballina, Athlone...",
     sourceNote: "Source: CSO Census 2022, LEA-level SAPS tables.",
     contextLabel: "County",
     hasDemographics: true,
@@ -49,8 +45,6 @@ const GEOGRAPHIES = {
     emptyName: "No town selected",
     emptyIntro: "Click an urban boundary on the map to view its name, county, and urban area code.",
     selectedIntro: "Census 2022 Built Up Area / Urban Area boundary.",
-    searchLabel: "Search town",
-    searchPlaceholder: "Search town or urban area...",
     sourceNote: "Source: Census 2022 Urban Areas / Built Up Areas boundary file.",
     contextLabel: "County",
     hasDemographics: false,
@@ -651,14 +645,9 @@ const aboutButtonEl = document.getElementById("aboutButton");
 const aboutPanelEl = document.getElementById("aboutPanel");
 const aboutCloseButtonEl = document.getElementById("aboutCloseButton");
 
-const indicatorSectionEl = document.getElementById("indicatorSection");
 const indicatorSelectEl = document.getElementById("indicatorSelect");
 const indicatorNoteEl = document.getElementById("indicatorNote");
-const searchLabelEl = document.getElementById("searchLabel");
-const areaSearchEl = document.getElementById("areaSearch");
-const searchButtonEl = document.getElementById("searchButton");
 const resetButtonEl = document.getElementById("resetButton");
-const searchResultsEl = document.getElementById("searchResults");
 const churchOverlayToggleEl = document.getElementById("churchOverlayToggle");
 
 const selectedAreaEyebrowEl = document.getElementById("selectedAreaEyebrow");
@@ -961,7 +950,7 @@ function highlightFeature(e) {
 
   if (layer !== selectedLayer) {
     layer.setStyle({
-      weight: currentGeography === "town" ? 2.5 : 2.5,
+      weight: 2.5,
       color: "#111",
       fillOpacity: currentGeography === "town" ? 0.18 : HOVER_FILL_OPACITY
     });
@@ -1009,7 +998,6 @@ function selectLayer(layer) {
     padding: [30, 30]
   });
 
-  const geography = GEOGRAPHIES[currentGeography];
   const areaName = getAreaName(props);
   const countyName = getCountyName(props);
   const code = getUrbanAreaCode(props);
@@ -1124,72 +1112,6 @@ function updateMapIndicator(indicatorKey) {
   updateLegend();
 }
 
-function normaliseText(value) {
-  return String(value || "")
-    .toLowerCase()
-    .replace("county council", "")
-    .replace("city council", "")
-    .replace("city and county council", "")
-    .replace("local electoral area", "")
-    .replace("urban area", "")
-    .replace("built up area", "")
-    .replace("lea", "")
-    .replace("county", "")
-    .replace("city", "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function performSearch() {
-  const query = normaliseText(areaSearchEl.value);
-  searchResultsEl.innerHTML = "";
-
-  if (!query) return;
-
-  const matches = allAreaLayers
-    .map(layer => ({
-      layer,
-      name: getAreaName(layer.feature.properties),
-      county: getCountyName(layer.feature.properties)
-    }))
-    .filter(item => {
-      const combined = normaliseText(`${item.name} ${item.county}`);
-      return combined.includes(query);
-    })
-    .slice(0, 10);
-
-  if (matches.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "source-note";
-    empty.textContent =
-      currentGeography === "lea" ? "No matching LEA found." :
-      currentGeography === "town" ? "No matching town / urban area found." :
-      "No matching area found.";
-    searchResultsEl.appendChild(empty);
-    return;
-  }
-
-  matches.forEach(item => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "search-result";
-
-    if ((currentGeography === "lea" || currentGeography === "town") && item.county) {
-      button.textContent = `${item.name} (${item.county})`;
-    } else {
-      button.textContent = item.name;
-    }
-
-    button.addEventListener("click", () => {
-      selectLayer(item.layer);
-      searchResultsEl.innerHTML = "";
-      areaSearchEl.value = item.name;
-    });
-
-    searchResultsEl.appendChild(button);
-  });
-}
-
 function resetMap() {
   if (selectedLayer && activeLayer) {
     activeLayer.resetStyle(selectedLayer);
@@ -1206,8 +1128,6 @@ function resetMap() {
     });
   }
 
-  areaSearchEl.value = "";
-  searchResultsEl.innerHTML = "";
   resetSidebar();
 }
 
@@ -1219,16 +1139,7 @@ function setActiveNavButton() {
 
 function configureViewText() {
   const geography = GEOGRAPHIES[currentGeography];
-
   mapSubtitleEl.textContent = geography.subtitle;
-  searchLabelEl.textContent = geography.searchLabel;
-  areaSearchEl.placeholder = geography.searchPlaceholder;
-
-  if (geography.hasDemographics) {
-    indicatorSectionEl.style.display = "";
-  } else {
-    indicatorSectionEl.style.display = "";
-  }
 }
 
 function switchGeography(geographyKey) {
@@ -1247,8 +1158,6 @@ function switchGeography(geographyKey) {
 
   currentGeography = geographyKey;
   allAreaLayers = [];
-  searchResultsEl.innerHTML = "";
-  areaSearchEl.value = "";
 
   setActiveNavButton();
   configureViewText();
@@ -1474,22 +1383,6 @@ townViewButtonEl.addEventListener("click", function () {
 indicatorSelectEl.addEventListener("change", function (event) {
   if (!GEOGRAPHIES[currentGeography].hasDemographics) return;
   updateMapIndicator(event.target.value);
-});
-
-searchButtonEl.addEventListener("click", performSearch);
-
-areaSearchEl.addEventListener("keydown", function (event) {
-  if (event.key === "Enter") {
-    performSearch();
-  }
-});
-
-areaSearchEl.addEventListener("input", function () {
-  if (areaSearchEl.value.length >= 2) {
-    performSearch();
-  } else {
-    searchResultsEl.innerHTML = "";
-  }
 });
 
 resetButtonEl.addEventListener("click", resetMap);
