@@ -103,10 +103,6 @@
       border-bottom: 1px solid var(--border);
     }
 
-    .sidebar-section.is-hidden {
-      display: none;
-    }
-
     .eyebrow {
       margin: 0 0 6px 0;
       font-size: 11px;
@@ -137,8 +133,7 @@
       color: var(--text);
     }
 
-    .select-control,
-    .search-control {
+    .select-control {
       width: 100%;
       box-sizing: border-box;
       padding: 10px 11px;
@@ -195,28 +190,6 @@
 
     .button-primary:hover {
       background: var(--brand-dark);
-    }
-
-    .search-results {
-      margin-top: 8px;
-      display: grid;
-      gap: 6px;
-    }
-
-    .search-result {
-      width: 100%;
-      text-align: left;
-      border: 1px solid var(--border);
-      background: #ffffff;
-      border-radius: 10px;
-      padding: 9px 10px;
-      font-size: 13px;
-      cursor: pointer;
-      color: var(--text);
-    }
-
-    .search-result:hover {
-      background: var(--soft);
     }
 
     .checkbox-control {
@@ -545,13 +518,10 @@
     </div>
 
     <div class="sidebar-section">
-      <label id="searchLabel" for="areaSearch" class="control-label">Search area</label>
-      <input id="areaSearch" class="search-control" type="search" placeholder="Search county or local authority..." />
-      <div class="button-row">
-        <button id="searchButton" class="button button-primary" type="button">Search</button>
-        <button id="resetButton" class="button" type="button">Reset map</button>
-      </div>
-      <div id="searchResults" class="search-results"></div>
+      <button id="resetButton" class="button button-primary" type="button">Reset map</button>
+      <p class="source-note">
+        Use the County, LEA, and Town buttons above to switch the main boundary layer.
+      </p>
     </div>
 
     <div class="sidebar-section">
