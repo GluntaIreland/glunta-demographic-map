@@ -1,5 +1,6 @@
 // Glúnta Demographic Map
 // Unified County + LEA + Town boundary view
+// Adds Small Area outlines inside a selected Town / Urban Area boundary
 
 if (typeof L === "undefined") {
   console.error("Leaflet did not load. Check your internet connection or CDN access.");
@@ -43,9 +44,9 @@ const GEOGRAPHIES = {
     dataUrl: "urban-areas-boundaries.geojson",
     selectedEyebrow: "Selected town / urban area",
     emptyName: "No town selected",
-    emptyIntro: "Click an urban boundary on the map to view its name, county, and urban area code.",
-    selectedIntro: "Census 2022 Built Up Area / Urban Area boundary.",
-    sourceNote: "Source: Census 2022 Urban Areas / Built Up Areas boundary file.",
+    emptyIntro: "Click an urban boundary on the map to view its name, county, and internal Small Areas.",
+    selectedIntro: "Census 2022 Built Up Area / Urban Area boundary with internal Small Area outlines.",
+    sourceNote: "Source: Census 2022 Urban Areas / Built Up Areas boundary file and Small Area boundary file.",
     contextLabel: "County",
     hasDemographics: false,
     weight: 1.5
@@ -407,205 +408,84 @@ const indicatorConfigs = {
       [15000, "15,001 to 25,000"],
       [-Infinity, "Up to 15,000"]
     ])
-  },
-
-  age_0_14_pct: {
-    county: pct("Children, 0 to 14 %", "residents aged 0 to 14", "Children, 0 to 14", "blue", percentGrades),
-    lea: pct("Children, 0 to 14 %", "residents aged 0 to 14", "Children, 0 to 14", "blue", percentGrades)
-  },
-  age_15_34_pct: {
-    county: pct("Young adults, 15 to 34 %", "residents aged 15 to 34", "Young adults, 15 to 34", "blue", percentGrades),
-    lea: pct("Young adults, 15 to 34 %", "residents aged 15 to 34", "Young adults, 15 to 34", "blue", percentGrades)
-  },
-  age_35_64_pct: {
-    county: pct("Adults, 35 to 64 %", "residents aged 35 to 64", "Adults, 35 to 64", "blue", percentGrades),
-    lea: pct("Adults, 35 to 64 %", "residents aged 35 to 64", "Adults, 35 to 64", "blue", percentGrades)
-  },
-  age_65_plus_pct: {
-    county: pct("Older adults, 65+ %", "residents aged 65 and over", "Older adults, 65+", "blue", percentGrades),
-    lea: pct("Older adults, 65+ %", "residents aged 65 and over", "Older adults, 65+", "blue", percentGrades)
-  },
-
-  religion_catholic_pct: {
-    county: pct("Catholic %", "residents recorded as Catholic", "Catholic", "purple", percentGrades),
-    lea: pct("Catholic %", "residents recorded as Catholic", "Catholic", "purple", percentGrades)
-  },
-  religion_other_pct: {
-    county: pct("Other religion %", "residents recorded under Other religion", "Other religion", "purple", percentGrades),
-    lea: pct("Other religion %", "residents recorded under Other religion", "Other religion", "purple", percentGrades)
-  },
-  religion_none_pct: {
-    county: pct("No religion %", "residents recorded as having No religion", "No religion", "purple", percentGrades),
-    lea: pct("No religion %", "residents recorded as having No religion", "No religion", "purple", percentGrades)
-  },
-  religion_not_stated_pct: {
-    county: pct("Religion not stated %", "residents who did not state a religion", "Religion not stated", "purple", percentGrades),
-    lea: pct("Religion not stated %", "residents who did not state a religion", "Religion not stated", "purple", percentGrades)
-  },
-
-  born_outside_ireland_pct: {
-    county: pct("Born outside Ireland %", "residents born outside Ireland", "Born outside Ireland", "orange", percentGrades),
-    lea: pct("Born outside Ireland %", "residents born outside Ireland", "Born outside Ireland", "orange", percentGrades)
-  },
-  born_ireland_pct: {
-    county: pct("Born in Ireland %", "residents born in Ireland", "Born in Ireland", "orange", percentGrades),
-    lea: pct("Born in Ireland %", "residents born in Ireland", "Born in Ireland", "orange", percentGrades)
-  },
-  citizen_ireland_pct: {
-    county: pct("Irish citizenship %", "residents with Irish citizenship", "Irish citizenship", "orange", percentGrades),
-    lea: pct("Irish citizenship %", "residents with Irish citizenship", "Irish citizenship", "orange", percentGrades)
-  },
-  non_irish_citizenship_pct: {
-    county: pct("Non-Irish citizenship %", "residents with non-Irish citizenship", "Non-Irish citizenship", "orange", percentGrades),
-    lea: pct("Non-Irish citizenship %", "residents with non-Irish citizenship", "Non-Irish citizenship", "orange", percentGrades)
-  },
-  born_uk_pct: {
-    county: pct("Born in UK %", "residents born in the United Kingdom", "Born in UK", "orange", percentGrades),
-    lea: pct("Born in UK %", "residents born in the United Kingdom", "Born in UK", "orange", percentGrades)
-  },
-  born_poland_pct: {
-    county: pct("Born in Poland %", "residents born in Poland", "Born in Poland", "orange", percentGrades),
-    lea: pct("Born in Poland %", "residents born in Poland", "Born in Poland", "orange", percentGrades)
-  },
-  born_india_pct: {
-    county: pct("Born in India %", "residents born in India", "Born in India", "orange", percentGrades),
-    lea: pct("Born in India %", "residents born in India", "Born in India", "orange", percentGrades)
-  },
-  born_other_eu_pct: {
-    county: pct("Born in Other EU %", "residents born in EU countries other than Ireland and Poland", "Born in Other EU", "orange", percentGrades),
-    lea: pct("Born in Other EU %", "residents born in EU countries other than Ireland and Poland", "Born in Other EU", "orange", percentGrades)
-  },
-  born_rest_world_pct: {
-    county: pct("Born in Rest of World %", "residents born outside Ireland, UK, Poland, India and Other EU", "Born in Rest of World", "orange", percentGrades),
-    lea: pct("Born in Rest of World %", "residents born outside Ireland, UK, Poland, India and Other EU", "Born in Rest of World", "orange", percentGrades)
-  },
-
-  ethnicity_white_irish_pct: {
-    county: pct("White Irish %", "residents recorded as White Irish", "White Irish", "green", percentGrades),
-    lea: pct("White Irish %", "residents recorded as White Irish", "White Irish", "green", percentGrades)
-  },
-  ethnicity_white_irish_traveller_pct: {
-    county: pct("White Irish Traveller %", "residents recorded as White Irish Traveller", "White Irish Traveller", "green", percentGrades),
-    lea: pct("White Irish Traveller %", "residents recorded as White Irish Traveller", "White Irish Traveller", "green", percentGrades)
-  },
-  ethnicity_other_white_pct: {
-    county: pct("Other White %", "residents recorded as Other White", "Other White", "green", percentGrades),
-    lea: pct("Other White %", "residents recorded as Other White", "Other White", "green", percentGrades)
-  },
-  ethnicity_black_or_black_irish_pct: {
-    county: pct("Black or Black Irish %", "residents recorded as Black or Black Irish", "Black or Black Irish", "green", percentGrades),
-    lea: pct("Black or Black Irish %", "residents recorded as Black or Black Irish", "Black or Black Irish", "green", percentGrades)
-  },
-  ethnicity_asian_or_asian_irish_pct: {
-    county: pct("Asian or Asian Irish %", "residents recorded as Asian or Asian Irish", "Asian or Asian Irish", "green", percentGrades),
-    lea: pct("Asian or Asian Irish %", "residents recorded as Asian or Asian Irish", "Asian or Asian Irish", "green", percentGrades)
-  },
-  ethnicity_other_pct: {
-    county: pct("Other ethnic background %", "residents recorded as Other ethnic background", "Other ethnic background", "green", percentGrades),
-    lea: pct("Other ethnic background %", "residents recorded as Other ethnic background", "Other ethnic background", "green", percentGrades)
-  },
-  ethnicity_not_stated_pct: {
-    county: pct("Ethnicity not stated %", "residents whose ethnicity was not stated", "Ethnicity not stated", "green", percentGrades),
-    lea: pct("Ethnicity not stated %", "residents whose ethnicity was not stated", "Ethnicity not stated", "green", percentGrades)
-  },
-
-  foreign_language_speakers_pct: {
-    county: pct("Foreign-language speakers %", "residents who speak a foreign language", "Foreign-language speakers", "red", percentGrades),
-    lea: pct("Foreign-language speakers %", "residents who speak a foreign language", "Foreign-language speakers", "red", percentGrades)
-  },
-  language_spanish_pct: {
-    county: pct("Spanish speakers %", "residents recorded as Spanish speakers", "Spanish speakers", "red", percentGrades),
-    lea: pct("Spanish speakers %", "residents recorded as Spanish speakers", "Spanish speakers", "red", percentGrades)
-  },
-  language_french_pct: {
-    county: pct("French speakers %", "residents recorded as French speakers", "French speakers", "red", percentGrades),
-    lea: pct("French speakers %", "residents recorded as French speakers", "French speakers", "red", percentGrades)
-  },
-  language_polish_pct: {
-    county: pct("Polish speakers %", "residents recorded as Polish speakers", "Polish speakers", "red", percentGrades),
-    lea: pct("Polish speakers %", "residents recorded as Polish speakers", "Polish speakers", "red", percentGrades)
-  },
-  language_other_incl_not_stated_pct: {
-    county: pct("Other / not stated language %", "residents recorded as speaking other foreign languages, including not stated", "Other / not stated language", "red", percentGrades),
-    lea: pct("Other / not stated language %", "residents recorded as speaking other foreign languages, including not stated", "Other / not stated language", "red", percentGrades)
-  },
-
-  families_with_children_pct: {
-    county: pct("Families with children %", "family units with children", "Families with children", "cyan", percentGrades)
-  },
-  families_without_children_pct: {
-    county: pct("Families without children %", "family units without children", "Families without children", "cyan", percentGrades)
-  },
-  families_all_children_under15_pct: {
-    county: pct("Families: all children under 15 %", "families where all children are under 15", "All children under 15", "cyan", percentGrades)
-  },
-  families_all_children_15_plus_pct: {
-    county: pct("Families: all children 15+ %", "families where all children are 15 or over", "All children 15+", "cyan", percentGrades)
-  },
-  families_children_under_and_over15_pct: {
-    county: pct("Families: children under and over 15 %", "families with children both under and over 15", "Children under and over 15", "cyan", percentGrades)
-  },
-  families_1_child_pct: {
-    county: pct("Families with 1 child %", "families with 1 child", "Families with 1 child", "cyan", percentGrades)
-  },
-  families_2_children_pct: {
-    county: pct("Families with 2 children %", "families with 2 children", "Families with 2 children", "cyan", percentGrades)
-  },
-  families_3_children_pct: {
-    county: pct("Families with 3 children %", "families with 3 children", "Families with 3 children", "cyan", percentGrades)
-  },
-  families_4_children_pct: {
-    county: pct("Families with 4 children %", "families with 4 children", "Families with 4 children", "cyan", percentGrades)
-  },
-  families_5_plus_children_pct: {
-    county: pct("Families with 5+ children %", "families with 5 or more children", "Families with 5+ children", "cyan", percentGrades)
-  },
-
-  families_household_size_2_persons_pct: {
-    lea: pct("2-person households %", "households / family units with 2 persons", "2-person households", "cyan", percentGrades)
-  },
-  families_household_size_3_persons_pct: {
-    lea: pct("3-person households %", "households / family units with 3 persons", "3-person households", "cyan", percentGrades)
-  },
-  families_household_size_4_persons_pct: {
-    lea: pct("4-person households %", "households / family units with 4 persons", "4-person households", "cyan", percentGrades)
-  },
-  families_household_size_5_persons_pct: {
-    lea: pct("5-person households %", "households / family units with 5 persons", "5-person households", "cyan", percentGrades)
-  },
-  families_household_size_6_plus_persons_pct: {
-    lea: pct("6+ person households %", "households / family units with 6 or more persons", "6+ person households", "cyan", percentGrades)
-  },
-
-  status_at_work_pct: {
-    county: pct("At work %", "people aged 15+ who are at work", "At work", "rose", percentGrades),
-    lea: pct("At work %", "people aged 15+ who are at work", "At work", "rose", percentGrades)
-  },
-  status_student_pct: {
-    county: pct("Student %", "people aged 15+ who are students", "Student", "rose", percentGrades),
-    lea: pct("Student %", "people aged 15+ who are students", "Student", "rose", percentGrades)
-  },
-  status_retired_pct: {
-    county: pct("Retired %", "people aged 15+ who are retired", "Retired", "rose", percentGrades),
-    lea: pct("Retired %", "people aged 15+ who are retired", "Retired", "rose", percentGrades)
-  },
-  status_home_family_pct: {
-    county: pct("Looking after home/family %", "people aged 15+ looking after home or family", "Looking after home/family", "rose", percentGrades),
-    lea: pct("Looking after home/family %", "people aged 15+ looking after home or family", "Looking after home/family", "rose", percentGrades)
-  },
-  status_unable_to_work_pct: {
-    county: pct("Unable to work due to sickness/disability %", "people aged 15+ unable to work due to permanent sickness or disability", "Unable to work", "rose", percentGrades),
-    lea: pct("Unable to work due to sickness/disability %", "people aged 15+ unable to work due to permanent sickness or disability", "Unable to work", "rose", percentGrades)
-  },
-  status_unemployed_pct: {
-    county: pct("Unemployed %", "people aged 15+ who are unemployed", "Unemployed", "rose", percentGrades),
-    lea: pct("Unemployed %", "people aged 15+ who are unemployed", "Unemployed", "rose", percentGrades)
-  },
-  status_other_pct: {
-    county: pct("Other status %", "people aged 15+ in other principal economic status categories", "Other status", "rose", percentGrades),
-    lea: pct("Other status %", "people aged 15+ in other principal economic status categories", "Other status", "rose", percentGrades)
   }
 };
+
+[
+  "age_0_14_pct",
+  "age_15_34_pct",
+  "age_35_64_pct",
+  "age_65_plus_pct",
+  "religion_catholic_pct",
+  "religion_other_pct",
+  "religion_none_pct",
+  "religion_not_stated_pct",
+  "born_outside_ireland_pct",
+  "born_ireland_pct",
+  "citizen_ireland_pct",
+  "non_irish_citizenship_pct",
+  "born_uk_pct",
+  "born_poland_pct",
+  "born_india_pct",
+  "born_other_eu_pct",
+  "born_rest_world_pct",
+  "ethnicity_white_irish_pct",
+  "ethnicity_white_irish_traveller_pct",
+  "ethnicity_other_white_pct",
+  "ethnicity_black_or_black_irish_pct",
+  "ethnicity_asian_or_asian_irish_pct",
+  "ethnicity_other_pct",
+  "ethnicity_not_stated_pct",
+  "foreign_language_speakers_pct",
+  "language_spanish_pct",
+  "language_french_pct",
+  "language_polish_pct",
+  "language_other_incl_not_stated_pct",
+  "status_at_work_pct",
+  "status_student_pct",
+  "status_retired_pct",
+  "status_home_family_pct",
+  "status_unable_to_work_pct",
+  "status_unemployed_pct",
+  "status_other_pct"
+].forEach(key => {
+  const label = GROUPS.flatMap(group => group.options).find(option => option.value === key)?.label || key;
+  indicatorConfigs[key] = {
+    county: pct(label, label.replace(" %", "").toLowerCase(), label.replace(" %", ""), "blue", percentGrades),
+    lea: pct(label, label.replace(" %", "").toLowerCase(), label.replace(" %", ""), "blue", percentGrades)
+  };
+});
+
+[
+  "families_with_children_pct",
+  "families_without_children_pct",
+  "families_all_children_under15_pct",
+  "families_all_children_15_plus_pct",
+  "families_children_under_and_over15_pct",
+  "families_1_child_pct",
+  "families_2_children_pct",
+  "families_3_children_pct",
+  "families_4_children_pct",
+  "families_5_plus_children_pct"
+].forEach(key => {
+  const label = GROUPS.flatMap(group => group.options).find(option => option.value === key)?.label || key;
+  indicatorConfigs[key] = {
+    county: pct(label, label.replace(" %", "").toLowerCase(), label.replace(" %", ""), "cyan", percentGrades)
+  };
+});
+
+[
+  "families_household_size_2_persons_pct",
+  "families_household_size_3_persons_pct",
+  "families_household_size_4_persons_pct",
+  "families_household_size_5_persons_pct",
+  "families_household_size_6_plus_persons_pct"
+].forEach(key => {
+  const label = GROUPS.flatMap(group => group.options).find(option => option.value === key)?.label || key;
+  indicatorConfigs[key] = {
+    lea: pct(label, label.replace(" %", "").toLowerCase(), label.replace(" %", ""), "cyan", percentGrades)
+  };
+});
 
 const colorSets = {
   blue: ["#08306b", "#08519c", "#2171b5", "#4292c6", "#9ecae1", "#deebf7", "#eff3ff", "#f7fbff"],
@@ -622,6 +502,10 @@ const map = L.map("map", { zoomControl: true }).setView([53.4, -8.1], 7);
 map.createPane("labelsPane");
 map.getPane("labelsPane").style.zIndex = 650;
 map.getPane("labelsPane").style.pointerEvents = "none";
+
+map.createPane("smallAreaPane");
+map.getPane("smallAreaPane").style.zIndex = 690;
+map.getPane("smallAreaPane").style.pointerEvents = "none";
 
 map.createPane("churchPane");
 map.getPane("churchPane").style.zIndex = 720;
@@ -674,6 +558,10 @@ let fullMapBoundsByGeography = {};
 
 let churchLayer = L.layerGroup();
 let churchesLoaded = false;
+
+let smallAreasData = null;
+let smallAreasLoaded = false;
+let smallAreaDisplayLayer = L.layerGroup();
 
 function getIndicatorConfig(indicatorKey) {
   const entry = indicatorConfigs[indicatorKey];
@@ -742,7 +630,7 @@ function populateIndicatorSelect() {
     optionEl.value = "boundaries";
     optionEl.textContent = "Boundary view only";
     indicatorSelectEl.appendChild(optionEl);
-    indicatorNoteEl.textContent = "Town view currently shows Census 2022 Built Up Area / Urban Area boundaries only.";
+    indicatorNoteEl.textContent = "Town view currently shows Census 2022 Built Up Area / Urban Area boundaries only. Click a town to show internal Small Area outlines.";
     return;
   }
 
@@ -865,7 +753,7 @@ function setDataRow(valueEl, barEl, count, percent) {
     : Math.max(0, Math.min(100, safePercent)) + "%";
 }
 
-function updateSidebar(props) {
+function updateSidebar(props, smallAreaCount) {
   const geography = GEOGRAPHIES[currentGeography];
 
   selectedAreaEyebrowEl.textContent = geography.selectedEyebrow;
@@ -903,6 +791,7 @@ function updateSidebar(props) {
 
     if (countyName) parts.push(`County: ${countyName}`);
     if (code) parts.push(`Urban Area Code: ${code}`);
+    if (typeof smallAreaCount === "number") parts.push(`Small Areas shown: ${smallAreaCount}`);
 
     contextValueEl.textContent = parts.join(" · ");
   }
@@ -945,6 +834,18 @@ function styleArea(feature) {
   };
 }
 
+function styleSmallArea() {
+  return {
+    pane: "smallAreaPane",
+    fillColor: "#ffffff",
+    fillOpacity: 0.03,
+    color: "#0f766e",
+    weight: 0.8,
+    opacity: 0.95,
+    interactive: false
+  };
+}
+
 function highlightFeature(e) {
   const layer = e.target;
 
@@ -977,13 +878,17 @@ function selectLayer(layer) {
   selectedLayer = layer;
 
   if (currentGeography === "town") {
+    clearSmallAreas();
+
     layer.setStyle({
       weight: 3,
       color: "#000",
       dashArray: "",
-      fillOpacity: 0.2
+      fillOpacity: 0.18
     });
   } else {
+    clearSmallAreas();
+
     layer.setStyle({
       weight: 3.5,
       color: "#000",
@@ -998,6 +903,15 @@ function selectLayer(layer) {
     padding: [30, 30]
   });
 
+  if (currentGeography === "town") {
+    showSmallAreasInsideTown(layer);
+  }
+
+  openAreaPopup(layer);
+}
+
+function openAreaPopup(layer, smallAreaCount) {
+  const props = layer.feature.properties;
   const areaName = getAreaName(props);
   const countyName = getCountyName(props);
   const code = getUrbanAreaCode(props);
@@ -1015,7 +929,14 @@ function selectLayer(layer) {
     if (code) {
       popupHtml += `<p><strong>Urban Area Code:</strong> ${escapeHtml(code)}</p>`;
     }
-    popupHtml += `<p><strong>Current view:</strong> Boundary only</p>`;
+
+    if (typeof smallAreaCount === "number") {
+      popupHtml += `<p><strong>Small Areas shown:</strong> ${formatNumber(smallAreaCount)}</p>`;
+    } else {
+      popupHtml += `<p><strong>Small Areas:</strong> loading...</p>`;
+    }
+
+    popupHtml += `<p><strong>Current view:</strong> boundary and internal Small Area outlines</p>`;
   } else {
     const indicatorConfig = getIndicatorConfig(currentIndicator);
     const currentValue = formatIndicatorValue(props[currentIndicator], currentIndicator);
@@ -1056,6 +977,10 @@ function updateLegend() {
         <div class="legend-row">
           <span class="legend-color" style="background:#ffffff; opacity:0.3; border:2px dashed #0f4f49;"></span>
           <span>Census 2022 Built Up Areas</span>
+        </div>
+        <div class="legend-row">
+          <span class="legend-color" style="background:#ffffff; opacity:0.2; border:1px solid #0f766e;"></span>
+          <span>Small Areas inside selected town</span>
         </div>
       `;
       return div;
@@ -1119,6 +1044,7 @@ function resetMap() {
 
   selectedLayer = null;
   map.closePopup();
+  clearSmallAreas();
 
   const bounds = fullMapBoundsByGeography[currentGeography];
 
@@ -1151,6 +1077,7 @@ function switchGeography(geographyKey) {
 
   selectedLayer = null;
   map.closePopup();
+  clearSmallAreas();
 
   if (activeLayer) {
     map.removeLayer(activeLayer);
@@ -1219,6 +1146,188 @@ function loadGeographyLayer(geographyKey) {
       console.error(error);
       alert(`The ${geography.label} GeoJSON file could not be loaded. Check that ${geography.dataUrl} is in the root of this GitHub Pages site.`);
     });
+}
+
+function clearSmallAreas() {
+  smallAreaDisplayLayer.clearLayers();
+
+  if (map.hasLayer(smallAreaDisplayLayer)) {
+    map.removeLayer(smallAreaDisplayLayer);
+  }
+}
+
+function loadSmallAreas() {
+  if (smallAreasLoaded && smallAreasData) {
+    return Promise.resolve(smallAreasData);
+  }
+
+  return fetch("small-areas-2022.geojson")
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Could not load small-areas-2022.geojson. HTTP status: " + response.status);
+      }
+
+      return response.json();
+    })
+    .then(data => {
+      smallAreasData = data;
+      smallAreasLoaded = true;
+
+      console.log("Loaded " + data.features.length + " Small Areas.");
+
+      return data;
+    });
+}
+
+function showSmallAreasInsideTown(townLayer) {
+  const townFeature = townLayer.feature;
+  const townProps = townFeature.properties;
+
+  populationValueEl.textContent = "Loading...";
+  contextValueEl.textContent = "Loading Small Areas inside selected town...";
+
+  loadSmallAreas()
+    .then(data => {
+      clearSmallAreas();
+
+      const selectedGeometry = townFeature.geometry;
+      const selectedBounds = townLayer.getBounds();
+
+      const matchingFeatures = data.features.filter(feature => {
+        const centroid = getFeatureCentroid(feature);
+
+        if (!centroid) return false;
+
+        const latLng = L.latLng(centroid.lat, centroid.lng);
+
+        if (!selectedBounds.contains(latLng)) return false;
+
+        return pointInGeometry(centroid.lng, centroid.lat, selectedGeometry);
+      });
+
+      const layer = L.geoJSON(
+        {
+          type: "FeatureCollection",
+          features: matchingFeatures
+        },
+        {
+          pane: "smallAreaPane",
+          style: styleSmallArea,
+          interactive: false
+        }
+      );
+
+      smallAreaDisplayLayer = layer;
+      smallAreaDisplayLayer.addTo(map);
+
+      if (selectedLayer) {
+        selectedLayer.bringToFront();
+      }
+
+      updateSidebar(townProps, matchingFeatures.length);
+      openAreaPopup(townLayer, matchingFeatures.length);
+
+      console.log(
+        "Displayed " +
+        matchingFeatures.length +
+        " Small Areas inside " +
+        getAreaName(townProps) +
+        "."
+      );
+    })
+    .catch(error => {
+      console.error(error);
+      populationValueEl.textContent = "Boundary only";
+      contextValueEl.textContent = "Small Areas could not be loaded.";
+      alert("The Small Area boundary file could not be loaded. Check that small-areas-2022.geojson is in the root of this GitHub Pages site.");
+    });
+}
+
+function getFeatureCentroid(feature) {
+  const coords = [];
+  collectCoordinates(feature.geometry, coords);
+
+  if (coords.length === 0) return null;
+
+  let lngTotal = 0;
+  let latTotal = 0;
+
+  coords.forEach(coord => {
+    lngTotal += Number(coord[0]);
+    latTotal += Number(coord[1]);
+  });
+
+  return {
+    lng: lngTotal / coords.length,
+    lat: latTotal / coords.length
+  };
+}
+
+function collectCoordinates(geometry, output) {
+  if (!geometry) return;
+
+  if (geometry.type === "Polygon") {
+    geometry.coordinates.forEach(ring => {
+      ring.forEach(coord => output.push(coord));
+    });
+  }
+
+  if (geometry.type === "MultiPolygon") {
+    geometry.coordinates.forEach(polygon => {
+      polygon.forEach(ring => {
+        ring.forEach(coord => output.push(coord));
+      });
+    });
+  }
+}
+
+function pointInGeometry(lng, lat, geometry) {
+  if (!geometry) return false;
+
+  if (geometry.type === "Polygon") {
+    return pointInPolygon(lng, lat, geometry.coordinates);
+  }
+
+  if (geometry.type === "MultiPolygon") {
+    return geometry.coordinates.some(polygon => pointInPolygon(lng, lat, polygon));
+  }
+
+  return false;
+}
+
+function pointInPolygon(lng, lat, rings) {
+  if (!rings || rings.length === 0) return false;
+
+  const insideOuter = pointInRing(lng, lat, rings[0]);
+
+  if (!insideOuter) return false;
+
+  for (let i = 1; i < rings.length; i++) {
+    if (pointInRing(lng, lat, rings[i])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function pointInRing(lng, lat, ring) {
+  let inside = false;
+
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = Number(ring[i][0]);
+    const yi = Number(ring[i][1]);
+    const xj = Number(ring[j][0]);
+    const yj = Number(ring[j][1]);
+
+    const intersect =
+      yi > lat !== yj > lat &&
+      lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
+
+    if (intersect) inside = !inside;
+  }
+
+  return inside;
 }
 
 function openAboutPanel() {
