@@ -769,10 +769,6 @@ function getCountyName(props) {
   return props.county || props.COUNTY || "";
 }
 
-function getUrbanAreaCode(props) {
-  return props.URBAN_AREA_CODE || props.urban_area_code || "";
-}
-
 function getSmallAreaCode(props) {
   return String(props.SA_PUB2022 || props.SA_PUB2016 || props.SA_PUB2011 || "").trim();
 }
@@ -993,11 +989,9 @@ function updateSidebar(props, smallAreaCount, selectedTownValue, selectedTownPop
         ? formatNumber(selectedTownPopulation)
         : "Loading...";
 
-    const code = getUrbanAreaCode(props);
     const parts = [];
 
     if (countyName) parts.push(`County: ${countyName}`);
-    if (code) parts.push(`Urban Area Code: ${code}`);
     if (typeof smallAreaCount === "number") parts.push(`Small Areas shown: ${smallAreaCount}`);
 
     contextValueEl.textContent = parts.join(" · ");
@@ -1128,7 +1122,6 @@ function openAreaPopup(layer, smallAreaCount, selectedTownValue, selectedTownPop
   const props = layer.feature.properties;
   const areaName = getAreaName(props);
   const countyName = getCountyName(props);
-  const code = getUrbanAreaCode(props);
   const config = getIndicatorConfig(currentIndicator);
 
   let popupHtml = `
@@ -1141,10 +1134,6 @@ function openAreaPopup(layer, smallAreaCount, selectedTownValue, selectedTownPop
   }
 
   if (currentGeography === "town") {
-    if (code) {
-      popupHtml += `<p><strong>Urban Area Code:</strong> ${escapeHtml(code)}</p>`;
-    }
-
     if (typeof smallAreaCount === "number") {
       popupHtml += `<p><strong>Small Areas shown:</strong> ${formatNumber(smallAreaCount)}</p>`;
     } else {
@@ -1152,20 +1141,17 @@ function openAreaPopup(layer, smallAreaCount, selectedTownValue, selectedTownPop
     }
 
     if (typeof selectedTownPopulation === "number") {
-      popupHtml += `<p><strong>Population in shown Small Areas:</strong> ${formatNumber(selectedTownPopulation)}</p>`;
+      popupHtml += `<p><strong>Population:</strong> ${formatNumber(selectedTownPopulation)}</p>`;
     } else {
       popupHtml += `<p><strong>Population:</strong> loading...</p>`;
     }
 
-    if (typeof selectedTownValue === "number") {
-      const label = escapeHtml(config.label);
-      const value = currentIndicator === "population_2022"
-        ? formatNumber(selectedTownValue)
-        : formatPercent(selectedTownValue);
-
-      popupHtml += `<p><strong>${label}:</strong> ${value}</p>`;
-    } else {
-      popupHtml += `<p><strong>${escapeHtml(config.label)}:</strong> loading...</p>`;
+    if (currentIndicator !== "population_2022") {
+      if (typeof selectedTownValue === "number") {
+        popupHtml += `<p><strong>${escapeHtml(config.label)}:</strong> ${formatPercent(selectedTownValue)}</p>`;
+      } else {
+        popupHtml += `<p><strong>${escapeHtml(config.label)}:</strong> loading...</p>`;
+      }
     }
 
     popupHtml += `<p><strong>Current view:</strong> Small Areas coloured by selected demographic measure</p>`;
