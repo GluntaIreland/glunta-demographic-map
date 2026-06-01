@@ -367,7 +367,7 @@ map.getPane("smallAreaPane").style.zIndex = 690;
 map.getPane("smallAreaPane").style.pointerEvents = "none";
 
 map.createPane("churchPane");
-map.getPane("churchPane").style.zIndex = 720;
+map.getPane("churchPane").style.zIndex = 625;
 
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
