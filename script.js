@@ -367,7 +367,7 @@ map.getPane("smallAreaPane").style.zIndex = 690;
 map.getPane("smallAreaPane").style.pointerEvents = "none";
 
 map.createPane("churchPane");
-map.getPane("churchPane").style.zIndex = 625;
+map.getPane("churchPane").style.zIndex = 695;
 
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
@@ -1446,13 +1446,7 @@ function showSmallAreasInsideTown(townLayer) {
 
       const matchingFeatures = data.features
         .filter(feature => {
-          const centroid = getFeatureCentroid(feature);
-          if (!centroid) return false;
-
-          const latLng = L.latLng(centroid.lat, centroid.lng);
-          if (!selectedBounds.contains(latLng)) return false;
-
-          return pointInGeometry(centroid.lng, centroid.lat, selectedGeometry);
+          return smallAreaLikelyOverlapsTown(feature, selectedGeometry, selectedBounds);
         })
         .map(feature => {
           const code = getSmallAreaCode(feature.properties);
@@ -1530,6 +1524,10 @@ function showSmallAreasInsideTown(townLayer) {
         selectedLayer.bringToFront();
       }
 
+      if (churchesLoaded && map.hasLayer(churchLayer)) {
+        churchLayer.bringToFront();
+      }
+
       updateSidebar(townProps, matchingFeatures.length, selectedTownValue, selectedTownPopulation, townProfile);
       openAreaPopup(townLayer, matchingFeatures.length, selectedTownValue, selectedTownPopulation);
       updateLegend();
@@ -1545,6 +1543,68 @@ function showSmallAreasInsideTown(townLayer) {
     });
 }
 
+function smallAreaLikelyOverlapsTown(smallAreaFeature, townGeometry, townBounds) {
+  const smallAreaBounds = getFeatureBounds(smallAreaFeature);
+
+  if (!smallAreaBounds || !townBounds || !townBounds.intersects(smallAreaBounds)) {
+    return false;
+  }
+
+  const centroid = getFeatureCentroid(smallAreaFeature);
+
+  if (centroid && pointInGeometry(centroid.lng, centroid.lat, townGeometry)) {
+    return true;
+  }
+
+  const smallAreaPoints = [];
+  collectCoordinates(smallAreaFeature.geometry, smallAreaPoints);
+
+  for (const coord of smallAreaPoints) {
+    const lng = Number(coord[0]);
+    const lat = Number(coord[1]);
+
+    if (pointInGeometry(lng, lat, townGeometry)) {
+      return true;
+    }
+  }
+
+  const townPoints = [];
+  collectCoordinates(townGeometry, townPoints);
+
+  for (const coord of townPoints) {
+    const lng = Number(coord[0]);
+    const lat = Number(coord[1]);
+
+    if (pointInGeometry(lng, lat, smallAreaFeature.geometry)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function getFeatureBounds(feature) {
+  const coords = [];
+  collectCoordinates(feature.geometry, coords);
+
+  if (coords.length === 0) return null;
+
+  const latLngs = coords
+    .map(coord => {
+      const lng = Number(coord[0]);
+      const lat = Number(coord[1]);
+
+      if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+
+      return L.latLng(lat, lng);
+    })
+    .filter(Boolean);
+
+  if (latLngs.length === 0) return null;
+
+  return L.latLngBounds(latLngs);
+}
+
 function getFeatureCentroid(feature) {
   const coords = [];
   collectCoordinates(feature.geometry, coords);
@@ -1553,15 +1613,24 @@ function getFeatureCentroid(feature) {
 
   let lngTotal = 0;
   let latTotal = 0;
+  let validCount = 0;
 
   coords.forEach(coord => {
-    lngTotal += Number(coord[0]);
-    latTotal += Number(coord[1]);
+    const lng = Number(coord[0]);
+    const lat = Number(coord[1]);
+
+    if (Number.isNaN(lng) || Number.isNaN(lat)) return;
+
+    lngTotal += lng;
+    latTotal += lat;
+    validCount++;
   });
 
+  if (validCount === 0) return null;
+
   return {
-    lng: lngTotal / coords.length,
-    lat: latTotal / coords.length
+    lng: lngTotal / validCount,
+    lat: latTotal / validCount
   };
 }
 
@@ -1789,6 +1858,7 @@ function buildChurchPopup(row) {
 function loadChurchOverlay() {
   if (churchesLoaded) {
     churchLayer.addTo(map);
+    churchLayer.bringToFront();
     return;
   }
 
@@ -1812,11 +1882,11 @@ function loadChurchOverlay() {
 
         const marker = L.circleMarker([lat, lng], {
           pane: "churchPane",
-          radius: 4.4,
+          radius: 5,
           color: "#111827",
-          weight: 1.3,
+          weight: 1.8,
           fillColor: "#ffffff",
-          fillOpacity: 0.95
+          fillOpacity: 1
         });
 
         marker.bindPopup(buildChurchPopup(row));
@@ -1826,6 +1896,7 @@ function loadChurchOverlay() {
 
       churchesLoaded = true;
       churchLayer.addTo(map);
+      churchLayer.bringToFront();
       console.log("Loaded " + addedCount + " church overlay points.");
     })
     .catch(error => {
