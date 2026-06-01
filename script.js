@@ -987,10 +987,21 @@ function showDublinDetailAction() {
   dublinDetailActionEl.style.display = "block";
 }
 
+function resetDublinSmallAreaLayerStyle(layer) {
+  if (!layer || typeof layer.setStyle !== "function") return;
+  layer.setStyle(styleSmallArea(layer.feature));
+}
+
+function resetAllDublinSmallAreaStyles() {
+  if (!smallAreaDisplayLayer || typeof smallAreaDisplayLayer.eachLayer !== "function") return;
+
+  smallAreaDisplayLayer.eachLayer(function (layer) {
+    resetDublinSmallAreaLayerStyle(layer);
+  });
+}
+
 function clearDublinSmallAreaSelection() {
-  if (selectedDublinSmallAreaLayer) {
-    selectedDublinSmallAreaLayer.setStyle(styleSmallArea);
-  }
+  resetDublinSmallAreaLayerStyle(selectedDublinSmallAreaLayer);
 
   selectedDublinSmallAreaLayer = null;
   selectedDublinSmallAreaFeature = null;
@@ -1088,33 +1099,34 @@ function openDublinSmallAreaPopup(layer) {
 }
 
 function selectDublinSmallArea(layer) {
-  if (selectedDublinSmallAreaLayer && selectedDublinSmallAreaLayer !== layer) {
-    selectedDublinSmallAreaLayer.setStyle(styleSmallArea);
-  }
+  // Reset every Dublin Small Area first. This avoids old outlines being left behind
+  // and prevents a stale selected path from interfering with later clicks.
+  resetAllDublinSmallAreaStyles();
 
   selectedDublinSmallAreaLayer = layer;
   selectedDublinSmallAreaFeature = layer.feature;
 
   layer.setStyle({
-    fillOpacity: 0.86,
+    fillOpacity: 0.88,
     color: "#111827",
-    weight: 2.4
+    weight: 2.8
   });
 
-  layer.bringToFront();
-
-  // Keep the Dublin Small Area layer above the selected Dublin boundary so later
-  // Small Area clicks still reach the Small Area polygons.
   if (smallAreaDisplayLayer && typeof smallAreaDisplayLayer.bringToFront === "function") {
     smallAreaDisplayLayer.bringToFront();
   }
+
+  layer.bringToFront();
 
   if (churchesLoaded && map.hasLayer(churchLayer)) {
     churchLayer.bringToFront();
   }
 
   updateSidebarForDublinSmallArea(layer.feature);
-  openDublinSmallAreaPopup(layer);
+
+  // Do not open a Leaflet popup for Dublin Small Areas. The sidebar is the main detail view,
+  // and popups can make repeated click handling feel sticky on dense city geometry.
+  map.closePopup();
 }
 
 function resetSidebar() {
@@ -1843,7 +1855,7 @@ function showSmallAreasInsideTown(townLayer) {
               },
               click: function (event) {
                 if (event.originalEvent) {
-                  L.DomEvent.stopPropagation(event.originalEvent);
+                  L.DomEvent.stop(event.originalEvent);
                 }
                 selectDublinSmallArea(event.target);
               }
@@ -1875,7 +1887,12 @@ function showSmallAreasInsideTown(townLayer) {
         contextValueEl.textContent += " · Click a Small Area to inspect Dublin in more detail.";
       }
 
-      openAreaPopup(townLayer, matchingFeatures.length, selectedTownValue, selectedTownPopulation);
+      if (dublinMode) {
+        map.closePopup();
+      } else {
+        openAreaPopup(townLayer, matchingFeatures.length, selectedTownValue, selectedTownPopulation);
+      }
+
       updateLegend();
 
       console.log("Displayed " + matchingFeatures.length + " Small Areas inside " + getAreaName(townProps) + " using " + currentIndicator + (dublinMode ? " with Dublin Detail Mode enabled." : "."));
