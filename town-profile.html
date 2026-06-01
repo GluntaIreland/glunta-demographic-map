@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Town Mission Profile | Glúnta</title>
 
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIINfQ0K6QdRrgX7VUyC6JxyYwF1jLDWDrM="
+    crossorigin=""
+  />
+
   <link rel="stylesheet" href="town-profile.css" />
 </head>
 
@@ -27,10 +34,10 @@
     </header>
 
     <section class="town-summary-card">
-      <div class="town-image-placeholder">
-        <div>
-          <p class="placeholder-title">Town image</p>
-          <p class="placeholder-text">Image will appear here when added.</p>
+      <div class="town-map-preview-wrap">
+        <div id="townMapPreview" class="town-map-preview" aria-label="Selected town map preview"></div>
+        <div class="map-preview-label">
+          <span>Map-generated town view</span>
         </div>
       </div>
 
@@ -44,9 +51,13 @@
         </div>
 
         <p id="townDescription" class="town-description">
-          This page will use the selected town boundary, Small Area demographic data, and listed church
+          This page uses the selected town boundary, Small Area demographic data, and listed church
           locations to create a focused mission profile.
         </p>
+
+        <div id="loadingNotice" class="loading-notice">
+          Loading town boundary from the Glúnta demographic map data...
+        </div>
       </div>
     </section>
 
@@ -209,20 +220,19 @@
       </div>
 
       <p>
-        This profile will draw from Census 2022 Built Up Area boundaries, Small Area boundaries,
+        This profile draws from Census 2022 Built Up Area boundaries, Small Area boundaries,
         processed Small Area demographic tables, and the Glúnta church points dataset. Figures should be
         treated as planning and research aids, not as final local knowledge.
       </p>
     </section>
   </main>
 
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
 
-    if (code) {
-      document.getElementById("urbanAreaCode").textContent = "Urban Area Code: " + code;
-    }
-  </script>
+  <script src="town-profile.js"></script>
 </body>
 </html>
