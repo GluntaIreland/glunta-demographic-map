@@ -391,6 +391,8 @@ const selectedAreaEyebrowEl = document.getElementById("selectedAreaEyebrow");
 const areaNameEl = document.getElementById("areaName");
 const areaIntroEl = document.getElementById("areaIntro");
 const selectedIndicatorCardEl = document.getElementById("selectedIndicatorCard");
+const townProfileActionEl = document.getElementById("townProfileAction");
+const townProfileLinkEl = document.getElementById("townProfileLink");
 const selectedIndicatorNameEl = document.getElementById("selectedIndicatorName");
 const selectedIndicatorValueEl = document.getElementById("selectedIndicatorValue");
 const populationValueEl = document.getElementById("populationValue");
@@ -660,6 +662,43 @@ function getCountyName(props) {
   return props.county || props.COUNTY || "";
 }
 
+function getUrbanAreaCode(props) {
+  return String(
+    props.urban_area_code ||
+    props.URBAN_AREA_CODE ||
+    props.urbanAreaCode ||
+    props.URBAN_CODE ||
+    props.BUA_CODE ||
+    props.CSO_CODE ||
+    props.code ||
+    props.CODE ||
+    ""
+  ).trim();
+}
+
+function getTownProfileUrl(props) {
+  const code = getUrbanAreaCode(props);
+  if (!code) return "";
+
+  return `town-profile.html?code=${encodeURIComponent(code)}`;
+}
+
+function updateTownProfileAction(props) {
+  if (!townProfileActionEl || !townProfileLinkEl) return;
+
+  const shouldShow = currentGeography === "town" && props;
+  const url = shouldShow ? getTownProfileUrl(props) : "";
+
+  if (!url) {
+    townProfileActionEl.style.display = "none";
+    townProfileLinkEl.removeAttribute("href");
+    return;
+  }
+
+  townProfileLinkEl.href = url;
+  townProfileActionEl.style.display = "block";
+}
+
 function getSmallAreaCode(props) {
   return String(props.SA_PUB2022 || props.SA_PUB2016 || props.SA_PUB2011 || "").trim();
 }
@@ -880,6 +919,7 @@ function resetSidebar() {
   populationValueEl.textContent = geography.isTown ? "Select town" : "—";
   contextValueEl.textContent = "";
   sourceNoteEl.textContent = geography.sourceNote;
+  updateTownProfileAction(null);
 
   if (geography.isTown) {
     selectedIndicatorCardEl.style.display = "";
@@ -914,6 +954,7 @@ function updateSidebar(props, smallAreaCount, selectedTownValue, selectedTownPop
   areaIntroEl.textContent = geography.selectedIntro;
 
   const countyName = getCountyName(props);
+  updateTownProfileAction(geography.isTown ? props : null);
 
   if (geography.hasDemographics) {
     const indicatorConfig = getIndicatorConfig(currentIndicator);
@@ -1117,6 +1158,11 @@ function openAreaPopup(layer, smallAreaCount, selectedTownValue, selectedTownPop
     }
 
     popupHtml += `<p><strong>Current view:</strong> Small Areas coloured by selected demographic measure</p>`;
+
+    const profileUrl = getTownProfileUrl(props);
+    if (profileUrl) {
+      popupHtml += `<p><a href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener noreferrer"><strong>Open Town Mission Profile</strong></a></p>`;
+    }
   } else {
     const currentValue = formatIndicatorValue(props[currentIndicator], currentIndicator);
     popupHtml += `<p><strong>Population, 2022:</strong> ${formatNumber(props.population_2022)}</p>`;

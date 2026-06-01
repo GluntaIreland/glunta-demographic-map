@@ -243,6 +243,41 @@
       color: var(--brand-dark);
     }
 
+
+    .town-profile-action {
+      display: none;
+      margin-top: 12px;
+    }
+
+    .town-profile-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      box-sizing: border-box;
+      text-decoration: none;
+      border: 1px solid var(--brand);
+      background: var(--brand);
+      color: white;
+      border-radius: 12px;
+      padding: 11px 12px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .town-profile-button:hover {
+      background: var(--brand-dark);
+      border-color: var(--brand-dark);
+    }
+
+    .town-profile-note {
+      margin: 8px 0 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
     .metric-card {
       margin-top: 12px;
       padding: 14px;
@@ -546,6 +581,15 @@
         <p class="selected-indicator-label">Selected indicator</p>
         <p id="selectedIndicatorName" class="selected-indicator-name">—</p>
         <p id="selectedIndicatorValue" class="selected-indicator-value">—</p>
+      </div>
+
+      <div id="townProfileAction" class="town-profile-action">
+        <a id="townProfileLink" class="town-profile-button" href="#" target="_blank" rel="noopener noreferrer">
+          Open Town Mission Profile
+        </a>
+        <p class="town-profile-note">
+          Opens a printable town profile with the context map, demographic summary, listed churches, and mission observations.
+        </p>
       </div>
     </div>
 
