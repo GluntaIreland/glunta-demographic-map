@@ -1103,8 +1103,10 @@ function selectDublinSmallArea(layer) {
 
   layer.bringToFront();
 
-  if (selectedTownLayerForSmallAreas) {
-    selectedTownLayerForSmallAreas.bringToFront();
+  // Keep the Dublin Small Area layer above the selected Dublin boundary so later
+  // Small Area clicks still reach the Small Area polygons.
+  if (smallAreaDisplayLayer && typeof smallAreaDisplayLayer.bringToFront === "function") {
+    smallAreaDisplayLayer.bringToFront();
   }
 
   if (churchesLoaded && map.hasLayer(churchLayer)) {
@@ -2199,14 +2201,14 @@ function buildChurchPopup(row) {
   `;
 }
 
-function loadChurchOverlay() {
+function loadChurchOverlay(retryAttempt = 0) {
   if (churchesLoaded) {
     churchLayer.addTo(map);
     churchLayer.bringToFront();
     return;
   }
 
-  fetch("churches-points.csv")
+  fetch("churches-points.csv?v=" + Date.now())
     .then(response => {
       if (!response.ok) {
         throw new Error("Could not load churches-points.csv. HTTP status: " + response.status);
@@ -2218,9 +2220,11 @@ function loadChurchOverlay() {
       const rows = parseCsv(csvText);
       let addedCount = 0;
 
+      churchLayer.clearLayers();
+
       rows.forEach(row => {
-        const lat = Number(row.latitude);
-        const lng = Number(row.longitude);
+        const lat = Number(row.latitude || row.Latitude);
+        const lng = Number(row.longitude || row.Longitude);
 
         if (Number.isNaN(lat) || Number.isNaN(lng)) return;
 
@@ -2244,8 +2248,14 @@ function loadChurchOverlay() {
       console.log("Loaded " + addedCount + " church overlay points.");
     })
     .catch(error => {
-      console.error(error);
-      alert("The church overlay file could not be loaded. Check that churches-points.csv is in the root of this GitHub Pages site and has columns: name,county,website,latitude,longitude,lea.");
+      console.warn("Church overlay did not load on attempt " + (retryAttempt + 1) + ".", error);
+
+      // GitHub Pages can briefly serve stale/cached assets during deploys. Retry once
+      // without showing a blocking browser alert to the user.
+      if (retryAttempt < 1 && churchOverlayToggleEl && churchOverlayToggleEl.checked) {
+        setTimeout(() => loadChurchOverlay(retryAttempt + 1), 1200);
+        return;
+      }
 
       if (churchOverlayToggleEl) {
         churchOverlayToggleEl.checked = false;
