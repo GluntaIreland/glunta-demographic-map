@@ -1,7 +1,8 @@
 // Glúnta Demographic Map
 // Unified County + LEA + Town view
 // Town view shows Small Areas inside a selected Built Up Area and colours them by selected Small Area demographic data.
-// Town view also includes a predictive town search placed above Reference Layers and a left-panel demographic profile.
+// Town view includes a predictive town search placed above Reference Layers and a left-panel demographic profile.
+// Switching between County, LEA, and Town preserves the current map view.
 
 if (typeof L === "undefined") {
   console.error("Leaflet did not load. Check your internet connection or CDN access.");
@@ -684,7 +685,7 @@ function ensureTownSearchSection() {
   if (!townSearchSectionEl) {
     townSearchSectionEl = document.createElement("div");
     townSearchSectionEl.className = "sidebar-section town-search-section";
-    townSearchSectionEl.style.padding = "24px 26px";
+    townSearchSectionEl.style.padding = "19px 21px";
     townSearchSectionEl.style.borderTop = "1px solid #d8e0e6";
     townSearchSectionEl.style.borderBottom = "1px solid #d8e0e6";
     townSearchSectionEl.style.background = "#ffffff";
@@ -692,7 +693,7 @@ function ensureTownSearchSection() {
     const heading = document.createElement("p");
     heading.className = "eyebrow";
     heading.textContent = "Search town";
-    heading.style.marginBottom = "12px";
+    heading.style.marginBottom = "9px";
     townSearchSectionEl.appendChild(heading);
 
     townSearchInputEl = document.createElement("input");
@@ -702,28 +703,28 @@ function ensureTownSearchSection() {
     townSearchInputEl.autocomplete = "off";
     townSearchInputEl.setAttribute("aria-label", "Search town");
     townSearchInputEl.style.width = "100%";
-    townSearchInputEl.style.fontSize = "1rem";
-    townSearchInputEl.style.lineHeight = "1.4";
-    townSearchInputEl.style.padding = "13px 14px";
+    townSearchInputEl.style.fontSize = "0.9rem";
+    townSearchInputEl.style.lineHeight = "1.3";
+    townSearchInputEl.style.padding = "10px 12px";
     townSearchInputEl.style.border = "1px solid #cfd8df";
-    townSearchInputEl.style.borderRadius = "10px";
+    townSearchInputEl.style.borderRadius = "9px";
     townSearchInputEl.style.color = "#17212b";
     townSearchInputEl.style.boxSizing = "border-box";
     townSearchSectionEl.appendChild(townSearchInputEl);
 
     townSearchResultsEl = document.createElement("div");
     townSearchResultsEl.className = "town-search-results";
-    townSearchResultsEl.style.marginTop = "10px";
+    townSearchResultsEl.style.marginTop = "8px";
     townSearchResultsEl.style.display = "grid";
-    townSearchResultsEl.style.gap = "8px";
+    townSearchResultsEl.style.gap = "7px";
     townSearchSectionEl.appendChild(townSearchResultsEl);
 
     const note = document.createElement("p");
     note.className = "source-note";
     note.textContent = "Search results match town names from the Census 2022 Built Up Area boundary file.";
-    note.style.fontSize = "1rem";
-    note.style.lineHeight = "1.45";
-    note.style.marginTop = "12px";
+    note.style.fontSize = "0.9rem";
+    note.style.lineHeight = "1.35";
+    note.style.marginTop = "10px";
     townSearchSectionEl.appendChild(note);
 
     townSearchInputEl.addEventListener("input", updateTownSearchResults);
@@ -1253,6 +1254,9 @@ function configureViewText() {
 function switchGeography(geographyKey) {
   if (!GEOGRAPHIES[geographyKey]) return;
 
+  const previousCenter = map.getCenter();
+  const previousZoom = map.getZoom();
+
   if (selectedLayer && activeLayer) {
     activeLayer.resetStyle(selectedLayer);
   }
@@ -1284,18 +1288,21 @@ function switchGeography(geographyKey) {
     activeLayer.setStyle(styleArea);
     updateLegend();
 
-    const bounds = fullMapBoundsByGeography[currentGeography];
-    if (bounds) {
-      map.fitBounds(bounds, { padding: [20, 20] });
-    }
+    map.setView(previousCenter, previousZoom, {
+      animate: false
+    });
 
     return;
   }
 
-  loadGeographyLayer(currentGeography);
+  loadGeographyLayer(currentGeography, {
+    preserveView: true,
+    center: previousCenter,
+    zoom: previousZoom
+  });
 }
 
-function loadGeographyLayer(geographyKey) {
+function loadGeographyLayer(geographyKey, options = {}) {
   const geography = GEOGRAPHIES[geographyKey];
 
   fetch(geography.dataUrl)
@@ -1320,9 +1327,15 @@ function loadGeographyLayer(geographyKey) {
 
       fullMapBoundsByGeography[geographyKey] = activeLayer.getBounds();
 
-      map.fitBounds(fullMapBoundsByGeography[geographyKey], {
-        padding: [20, 20]
-      });
+      if (options.preserveView && options.center && typeof options.zoom === "number") {
+        map.setView(options.center, options.zoom, {
+          animate: false
+        });
+      } else {
+        map.fitBounds(fullMapBoundsByGeography[geographyKey], {
+          padding: [20, 20]
+        });
+      }
 
       updateLegend();
 
@@ -1651,9 +1664,9 @@ function updateTownSearchResults() {
     const empty = document.createElement("div");
     empty.className = "town-search-empty";
     empty.textContent = "No matching towns found.";
-    empty.style.fontSize = "1rem";
+    empty.style.fontSize = "0.9rem";
     empty.style.color = "#5f6b76";
-    empty.style.padding = "8px 2px";
+    empty.style.padding = "7px 2px";
     townSearchResultsEl.appendChild(empty);
     return;
   }
@@ -1666,17 +1679,17 @@ function updateTownSearchResults() {
     button.style.textAlign = "left";
     button.style.border = "1px solid #d8e0e6";
     button.style.background = "#f8fbfc";
-    button.style.borderRadius = "10px";
-    button.style.padding = "11px 12px";
+    button.style.borderRadius = "9px";
+    button.style.padding = "9px 10px";
     button.style.cursor = "pointer";
-    button.style.fontSize = "1rem";
+    button.style.fontSize = "0.9rem";
     button.style.color = "#17212b";
     button.style.display = "grid";
-    button.style.gap = "3px";
+    button.style.gap = "2px";
 
     button.innerHTML = `
       <span style="font-weight:700;">${escapeHtml(item.name)}</span>
-      ${item.county ? `<small style="font-size:0.9rem;color:#5f6b76;">${escapeHtml(item.county)}</small>` : ""}
+      ${item.county ? `<small style="font-size:0.82rem;color:#5f6b76;">${escapeHtml(item.county)}</small>` : ""}
     `;
 
     button.addEventListener("click", function () {
