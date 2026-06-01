@@ -110,7 +110,7 @@ h1 {
 
 .town-summary-card {
   display: grid;
-  grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.15fr);
+  grid-template-columns: minmax(280px, 0.95fr) minmax(0, 1.05fr);
   gap: 0;
   overflow: hidden;
   margin-bottom: 22px;
@@ -120,27 +120,35 @@ h1 {
   box-shadow: var(--shadow);
 }
 
-.town-image-placeholder {
-  min-height: 320px;
-  display: grid;
-  place-items: center;
-  padding: 28px;
+.town-map-preview-wrap {
+  position: relative;
+  min-height: 360px;
+  background: #dfe9e7;
+}
+
+.town-map-preview {
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+}
+
+.town-map-preview .leaflet-control-attribution {
+  font-size: 0.65rem;
+}
+
+.map-preview-label {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  z-index: 500;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  padding: 8px 12px;
   color: #ffffff;
-  background:
-    linear-gradient(135deg, rgba(15, 79, 73, 0.88), rgba(31, 95, 139, 0.76)),
-    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.28), transparent 16rem);
-}
-
-.placeholder-title {
-  margin-bottom: 8px;
-  font-size: 1.5rem;
-  font-weight: 900;
-}
-
-.placeholder-text {
-  margin-bottom: 0;
-  color: rgba(255, 255, 255, 0.84);
-  font-size: 1rem;
+  background: rgba(15, 79, 73, 0.88);
+  font-size: 0.8rem;
+  font-weight: 800;
+  backdrop-filter: blur(5px);
 }
 
 .town-summary-content {
@@ -173,10 +181,30 @@ h1 {
 }
 
 .town-description {
-  margin-bottom: 0;
+  margin-bottom: 18px;
   color: var(--muted);
   font-size: 1.08rem;
   line-height: 1.6;
+}
+
+.loading-notice {
+  border: 1px solid var(--soft-border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: var(--muted);
+  background: var(--wash);
+  font-size: 0.96rem;
+  line-height: 1.45;
+}
+
+.loading-notice.is-success {
+  color: var(--green-dark);
+  background: #edf8f5;
+}
+
+.loading-notice.is-error {
+  color: #8a1f11;
+  background: #fff1ed;
 }
 
 .metric-grid {
@@ -359,8 +387,9 @@ h1 {
     padding: 20px;
   }
 
-  .town-image-placeholder {
-    min-height: 220px;
+  .town-map-preview-wrap,
+  .town-map-preview {
+    min-height: 250px;
   }
 }
 
@@ -388,5 +417,9 @@ h1 {
 
   .profile-hero {
     margin-bottom: 18px;
+  }
+
+  .map-preview-label {
+    display: none;
   }
 }
