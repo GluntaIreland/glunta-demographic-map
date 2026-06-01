@@ -1,6 +1,7 @@
 // Glúnta Demographic Map
-// Unified County + LEA + Town boundary view
-// Town view shows Small Areas inside a selected Built Up Area and colours them by selected Small Area demographic data
+// Unified County + LEA + Town view
+// Town view shows Small Areas inside a selected Built Up Area and colours them by selected Small Area demographic data.
+// Town view also includes a predictive town search and a left-panel demographic profile.
 
 if (typeof L === "undefined") {
   console.error("Leaflet did not load. Check your internet connection or CDN access.");
@@ -46,7 +47,7 @@ const GEOGRAPHIES = {
     dataUrl: "urban-areas-boundaries.geojson",
     selectedEyebrow: "Selected town / urban area",
     emptyName: "No town selected",
-    emptyIntro: "Click a town / urban boundary to show its Census 2022 Built Up Area and the Small Areas inside it.",
+    emptyIntro: "Click a town boundary or search for a town to show its Census 2022 Built Up Area and the Small Areas inside it.",
     selectedIntro: "This view shows the Census 2022 Built Up Area boundary and the Small Areas inside the selected town, coloured by the selected demographic measure.",
     sourceNote: "Source: Census 2022 Built Up Areas / Urban Areas boundary file, Small Area boundary file, and processed Census 2022 Small Area demographic tables.",
     contextLabel: "County",
@@ -243,211 +244,142 @@ const TOWN_GROUPS = [
   }
 ];
 
+const sharedProfileSections = [
+  {
+    title: "Age structure",
+    note: "Age groups are simplified from the five-year Census 2022 age bands.",
+    barClass: "age-bar",
+    rows: [
+      { label: "Children, 0 to 14", count: "age_0_14", pct: "age_0_14_pct" },
+      { label: "Young adults, 15 to 34", count: "age_15_34", pct: "age_15_34_pct" },
+      { label: "Adults, 35 to 64", count: "age_35_64", pct: "age_35_64_pct" },
+      { label: "Older adults, 65+", count: "age_65_plus", pct: "age_65_plus_pct" }
+    ]
+  },
+  {
+    title: "Religion",
+    note: "Source: CSO Census 2022 religion table.",
+    barClass: "religion-bar",
+    rows: [
+      { label: "Catholic", count: "religion_catholic", pct: "religion_catholic_pct" },
+      { label: "Other religion", count: "religion_other", pct: "religion_other_pct" },
+      { label: "No religion", count: "religion_none", pct: "religion_none_pct" },
+      { label: "Not stated", count: "religion_not_stated", pct: "religion_not_stated_pct" }
+    ]
+  },
+  {
+    title: "Migration and citizenship",
+    note: "Source: CSO Census 2022 birthplace and citizenship table.",
+    barClass: "migration-bar",
+    rows: [
+      { label: "Born in Ireland", count: "born_ireland", pct: "born_ireland_pct" },
+      { label: "Born outside Ireland", count: "born_outside_ireland", pct: "born_outside_ireland_pct" },
+      { label: "Irish citizenship", count: "citizen_ireland", pct: "citizen_ireland_pct" },
+      { label: "Non-Irish citizenship", count: "non_irish_citizenship", pct: "non_irish_citizenship_pct" }
+    ]
+  },
+  {
+    title: "Birthplace outside Ireland",
+    note: "Selected non-Ireland birthplace categories from CSO Census 2022.",
+    barClass: "migration-bar",
+    rows: [
+      { label: "Born in UK", count: "born_uk", pct: "born_uk_pct" },
+      { label: "Born in Poland", count: "born_poland", pct: "born_poland_pct" },
+      { label: "Born in India", count: "born_india", pct: "born_india_pct" },
+      { label: "Born in Other EU", count: "born_other_eu", pct: "born_other_eu_pct" },
+      { label: "Born in Rest of World", count: "born_rest_world", pct: "born_rest_world_pct" }
+    ]
+  },
+  {
+    title: "Ethnicity / cultural background",
+    note: "Source: CSO Census 2022 ethnicity and cultural background table.",
+    barClass: "ethnicity-bar",
+    rows: [
+      { label: "White Irish", count: "ethnicity_white_irish", pct: "ethnicity_white_irish_pct" },
+      { label: "White Irish Traveller", count: "ethnicity_white_irish_traveller", pct: "ethnicity_white_irish_traveller_pct" },
+      { label: "Other White", count: "ethnicity_other_white", pct: "ethnicity_other_white_pct" },
+      { label: "Black or Black Irish", count: "ethnicity_black_or_black_irish", pct: "ethnicity_black_or_black_irish_pct" },
+      { label: "Asian or Asian Irish", count: "ethnicity_asian_or_asian_irish", pct: "ethnicity_asian_or_asian_irish_pct" },
+      { label: "Other", count: "ethnicity_other", pct: "ethnicity_other_pct" },
+      { label: "Not stated", count: "ethnicity_not_stated", pct: "ethnicity_not_stated_pct" }
+    ]
+  },
+  {
+    title: "Language",
+    note: "Source: CSO Census 2022 language table. Percentages are calculated using total population as the denominator.",
+    barClass: "language-bar",
+    rows: [
+      { label: "Foreign-language speakers", count: "foreign_language_speakers", pct: "foreign_language_speakers_pct" },
+      { label: "Spanish speakers", count: "language_spanish", pct: "language_spanish_pct" },
+      { label: "French speakers", count: "language_french", pct: "language_french_pct" },
+      { label: "Polish speakers", count: "language_polish", pct: "language_polish_pct" },
+      { label: "Other / not stated language", count: "language_other_incl_not_stated", pct: "language_other_incl_not_stated_pct" }
+    ]
+  },
+  {
+    title: "Principal economic status",
+    note: "Percentages are shown as a population-weighted average of the Small Areas inside the selected boundary.",
+    barClass: "status-bar",
+    rows: [
+      { label: "At work", count: "status_at_work", pct: "status_at_work_pct" },
+      { label: "Student", count: "status_student", pct: "status_student_pct" },
+      { label: "Retired", count: "status_retired", pct: "status_retired_pct" },
+      { label: "Looking after home/family", count: "status_home_family", pct: "status_home_family_pct" },
+      { label: "Unable to work due to sickness/disability", count: "status_unable_to_work", pct: "status_unable_to_work_pct" },
+      { label: "Unemployed", count: "status_unemployed", pct: "status_unemployed_pct" },
+      { label: "Other", count: "status_other", pct: "status_other_pct" }
+    ]
+  }
+];
+
+const countyFamilySection = {
+  title: "Families",
+  note: "This table describes family units by number and age of children.",
+  barClass: "families-bar",
+  rows: [
+    { label: "Families with children", count: "families_with_children", pct: "families_with_children_pct" },
+    { label: "Families without children", count: "families_without_children", pct: "families_without_children_pct" },
+    { label: "All children under 15", count: "families_all_children_under15", pct: "families_all_children_under15_pct" },
+    { label: "All children 15+", count: "families_all_children_15_plus", pct: "families_all_children_15_plus_pct" },
+    { label: "Children under and over 15", count: "families_children_under_and_over15", pct: "families_children_under_and_over15_pct" },
+    { label: "Families with 1 child", count: "families_1_child", pct: "families_1_child_pct" },
+    { label: "Families with 2 children", count: "families_2_children", pct: "families_2_children_pct" },
+    { label: "Families with 3 children", count: "families_3_children", pct: "families_3_children_pct" },
+    { label: "Families with 4 children", count: "families_4_children", pct: "families_4_children_pct" },
+    { label: "Families with 5+ children", count: "families_5_plus_children", pct: "families_5_plus_children_pct" }
+  ]
+};
+
+const householdFamilySection = {
+  title: "Household / family size",
+  note: "This table reflects household / family size categories in the processed Census 2022 data.",
+  barClass: "families-bar",
+  rows: [
+    { label: "2-person households", count: "families_household_size_2_persons", pct: "families_household_size_2_persons_pct" },
+    { label: "3-person households", count: "families_household_size_3_persons", pct: "families_household_size_3_persons_pct" },
+    { label: "4-person households", count: "families_household_size_4_persons", pct: "families_household_size_4_persons_pct" },
+    { label: "5-person households", count: "families_household_size_5_persons", pct: "families_household_size_5_persons_pct" },
+    { label: "6+ person households", count: "families_household_size_6_plus_persons", pct: "families_household_size_6_plus_persons_pct" }
+  ]
+};
+
 const sidebarSectionsByGeography = {
   county: [
-    {
-      title: "Age structure",
-      note: "Age groups are simplified from the five-year Census 2022 age bands.",
-      barClass: "age-bar",
-      rows: [
-        { label: "Children, 0 to 14", count: "age_0_14", pct: "age_0_14_pct" },
-        { label: "Young adults, 15 to 34", count: "age_15_34", pct: "age_15_34_pct" },
-        { label: "Adults, 35 to 64", count: "age_35_64", pct: "age_35_64_pct" },
-        { label: "Older adults, 65+", count: "age_65_plus", pct: "age_65_plus_pct" }
-      ]
-    },
-    {
-      title: "Religion",
-      note: "Source: CSO Census 2022 religion table.",
-      barClass: "religion-bar",
-      rows: [
-        { label: "Catholic", count: "religion_catholic", pct: "religion_catholic_pct" },
-        { label: "Other religion", count: "religion_other", pct: "religion_other_pct" },
-        { label: "No religion", count: "religion_none", pct: "religion_none_pct" },
-        { label: "Not stated", count: "religion_not_stated", pct: "religion_not_stated_pct" }
-      ]
-    },
-    {
-      title: "Migration and citizenship",
-      note: "Source: CSO Census 2022 birthplace and citizenship table.",
-      barClass: "migration-bar",
-      rows: [
-        { label: "Born in Ireland", count: "born_ireland", pct: "born_ireland_pct" },
-        { label: "Born outside Ireland", count: "born_outside_ireland", pct: "born_outside_ireland_pct" },
-        { label: "Irish citizenship", count: "citizen_ireland", pct: "citizen_ireland_pct" },
-        { label: "Non-Irish citizenship", count: "non_irish_citizenship", pct: "non_irish_citizenship_pct" }
-      ]
-    },
-    {
-      title: "Birthplace outside Ireland",
-      note: "Selected non-Ireland birthplace categories from CSO Census 2022.",
-      barClass: "migration-bar",
-      rows: [
-        { label: "Born in UK", count: "born_uk", pct: "born_uk_pct" },
-        { label: "Born in Poland", count: "born_poland", pct: "born_poland_pct" },
-        { label: "Born in India", count: "born_india", pct: "born_india_pct" },
-        { label: "Born in Other EU", count: "born_other_eu", pct: "born_other_eu_pct" },
-        { label: "Born in Rest of World", count: "born_rest_world", pct: "born_rest_world_pct" }
-      ]
-    },
-    {
-      title: "Ethnicity / cultural background",
-      note: "Source: CSO Census 2022 ethnicity and cultural background table.",
-      barClass: "ethnicity-bar",
-      rows: [
-        { label: "White Irish", count: "ethnicity_white_irish", pct: "ethnicity_white_irish_pct" },
-        { label: "White Irish Traveller", count: "ethnicity_white_irish_traveller", pct: "ethnicity_white_irish_traveller_pct" },
-        { label: "Other White", count: "ethnicity_other_white", pct: "ethnicity_other_white_pct" },
-        { label: "Black or Black Irish", count: "ethnicity_black_or_black_irish", pct: "ethnicity_black_or_black_irish_pct" },
-        { label: "Asian or Asian Irish", count: "ethnicity_asian_or_asian_irish", pct: "ethnicity_asian_or_asian_irish_pct" },
-        { label: "Other", count: "ethnicity_other", pct: "ethnicity_other_pct" },
-        { label: "Not stated", count: "ethnicity_not_stated", pct: "ethnicity_not_stated_pct" }
-      ]
-    },
-    {
-      title: "Language",
-      note: "Source: CSO Census 2022 language table. Percentages are calculated using total population as the denominator.",
-      barClass: "language-bar",
-      rows: [
-        { label: "Foreign-language speakers", count: "foreign_language_speakers", pct: "foreign_language_speakers_pct" },
-        { label: "Spanish speakers", count: "language_spanish", pct: "language_spanish_pct" },
-        { label: "French speakers", count: "language_french", pct: "language_french_pct" },
-        { label: "Polish speakers", count: "language_polish", pct: "language_polish_pct" },
-        { label: "Other / not stated language", count: "language_other_incl_not_stated", pct: "language_other_incl_not_stated_pct" }
-      ]
-    },
-    {
-      title: "Families",
-      note: "This county table describes family units by number and age of children.",
-      barClass: "families-bar",
-      rows: [
-        { label: "Families with children", count: "families_with_children", pct: "families_with_children_pct" },
-        { label: "Families without children", count: "families_without_children", pct: "families_without_children_pct" },
-        { label: "All children under 15", count: "families_all_children_under15", pct: "families_all_children_under15_pct" },
-        { label: "All children 15+", count: "families_all_children_15_plus", pct: "families_all_children_15_plus_pct" },
-        { label: "Children under and over 15", count: "families_children_under_and_over15", pct: "families_children_under_and_over15_pct" },
-        { label: "Families with 1 child", count: "families_1_child", pct: "families_1_child_pct" },
-        { label: "Families with 2 children", count: "families_2_children", pct: "families_2_children_pct" },
-        { label: "Families with 3 children", count: "families_3_children", pct: "families_3_children_pct" },
-        { label: "Families with 4 children", count: "families_4_children", pct: "families_4_children_pct" },
-        { label: "Families with 5+ children", count: "families_5_plus_children", pct: "families_5_plus_children_pct" }
-      ]
-    },
-    {
-      title: "Principal economic status",
-      note: "Percentages use the population aged 15 years and over as the denominator.",
-      barClass: "status-bar",
-      rows: [
-        { label: "At work", count: "status_at_work", pct: "status_at_work_pct" },
-        { label: "Student", count: "status_student", pct: "status_student_pct" },
-        { label: "Retired", count: "status_retired", pct: "status_retired_pct" },
-        { label: "Looking after home/family", count: "status_home_family", pct: "status_home_family_pct" },
-        { label: "Unable to work due to sickness/disability", count: "status_unable_to_work", pct: "status_unable_to_work_pct" },
-        { label: "Unemployed", count: "status_unemployed", pct: "status_unemployed_pct" },
-        { label: "Other", count: "status_other", pct: "status_other_pct" }
-      ]
-    }
+    ...sharedProfileSections.slice(0, 6),
+    countyFamilySection,
+    sharedProfileSections[6]
   ],
   lea: [
-    {
-      title: "Age structure",
-      note: "Age groups are simplified from the five-year Census 2022 age bands.",
-      barClass: "age-bar",
-      rows: [
-        { label: "Children, 0 to 14", count: "age_0_14", pct: "age_0_14_pct" },
-        { label: "Young adults, 15 to 34", count: "age_15_34", pct: "age_15_34_pct" },
-        { label: "Adults, 35 to 64", count: "age_35_64", pct: "age_35_64_pct" },
-        { label: "Older adults, 65+", count: "age_65_plus", pct: "age_65_plus_pct" }
-      ]
-    },
-    {
-      title: "Religion",
-      note: "Source: CSO Census 2022 religion table.",
-      barClass: "religion-bar",
-      rows: [
-        { label: "Catholic", count: "religion_catholic", pct: "religion_catholic_pct" },
-        { label: "Other religion", count: "religion_other", pct: "religion_other_pct" },
-        { label: "No religion", count: "religion_none", pct: "religion_none_pct" },
-        { label: "Not stated", count: "religion_not_stated", pct: "religion_not_stated_pct" }
-      ]
-    },
-    {
-      title: "Migration and citizenship",
-      note: "Source: CSO Census 2022 birthplace and citizenship table.",
-      barClass: "migration-bar",
-      rows: [
-        { label: "Born in Ireland", count: "born_ireland", pct: "born_ireland_pct" },
-        { label: "Born outside Ireland", count: "born_outside_ireland", pct: "born_outside_ireland_pct" },
-        { label: "Irish citizenship", count: "citizen_ireland", pct: "citizen_ireland_pct" },
-        { label: "Non-Irish citizenship", count: "non_irish_citizenship", pct: "non_irish_citizenship_pct" }
-      ]
-    },
-    {
-      title: "Birthplace outside Ireland",
-      note: "Selected non-Ireland birthplace categories from CSO Census 2022.",
-      barClass: "migration-bar",
-      rows: [
-        { label: "Born in UK", count: "born_uk", pct: "born_uk_pct" },
-        { label: "Born in Poland", count: "born_poland", pct: "born_poland_pct" },
-        { label: "Born in India", count: "born_india", pct: "born_india_pct" },
-        { label: "Born in Other EU", count: "born_other_eu", pct: "born_other_eu_pct" },
-        { label: "Born in Rest of World", count: "born_rest_world", pct: "born_rest_world_pct" }
-      ]
-    },
-    {
-      title: "Ethnicity / cultural background",
-      note: "Source: CSO Census 2022 ethnicity and cultural background table.",
-      barClass: "ethnicity-bar",
-      rows: [
-        { label: "White Irish", count: "ethnicity_white_irish", pct: "ethnicity_white_irish_pct" },
-        { label: "White Irish Traveller", count: "ethnicity_white_irish_traveller", pct: "ethnicity_white_irish_traveller_pct" },
-        { label: "Other White", count: "ethnicity_other_white", pct: "ethnicity_other_white_pct" },
-        { label: "Black or Black Irish", count: "ethnicity_black_or_black_irish", pct: "ethnicity_black_or_black_irish_pct" },
-        { label: "Asian or Asian Irish", count: "ethnicity_asian_or_asian_irish", pct: "ethnicity_asian_or_asian_irish_pct" },
-        { label: "Other", count: "ethnicity_other", pct: "ethnicity_other_pct" },
-        { label: "Not stated", count: "ethnicity_not_stated", pct: "ethnicity_not_stated_pct" }
-      ]
-    },
-    {
-      title: "Language",
-      note: "Source: CSO Census 2022 language table. Percentages are calculated using total population as the denominator.",
-      barClass: "language-bar",
-      rows: [
-        { label: "Foreign-language speakers", count: "foreign_language_speakers", pct: "foreign_language_speakers_pct" },
-        { label: "Spanish speakers", count: "language_spanish", pct: "language_spanish_pct" },
-        { label: "French speakers", count: "language_french", pct: "language_french_pct" },
-        { label: "Polish speakers", count: "language_polish", pct: "language_polish_pct" },
-        { label: "Other / not stated language", count: "language_other_incl_not_stated", pct: "language_other_incl_not_stated_pct" }
-      ]
-    },
-    {
-      title: "Household / family size",
-      note: "This LEA table reflects household / family size rather than the county family-with-children table.",
-      barClass: "families-bar",
-      rows: [
-        { label: "2-person households", count: "families_household_size_2_persons", pct: "families_household_size_2_persons_pct" },
-        { label: "3-person households", count: "families_household_size_3_persons", pct: "families_household_size_3_persons_pct" },
-        { label: "4-person households", count: "families_household_size_4_persons", pct: "families_household_size_4_persons_pct" },
-        { label: "5-person households", count: "families_household_size_5_persons", pct: "families_household_size_5_persons_pct" },
-        { label: "6+ person households", count: "families_household_size_6_plus_persons", pct: "families_household_size_6_plus_persons_pct" }
-      ]
-    },
-    {
-      title: "Principal economic status",
-      note: "Percentages use the population aged 15 years and over as the denominator.",
-      barClass: "status-bar",
-      rows: [
-        { label: "At work", count: "status_at_work", pct: "status_at_work_pct" },
-        { label: "Student", count: "status_student", pct: "status_student_pct" },
-        { label: "Retired", count: "status_retired", pct: "status_retired_pct" },
-        { label: "Looking after home/family", count: "status_home_family", pct: "status_home_family_pct" },
-        { label: "Unable to work due to sickness/disability", count: "status_unable_to_work", pct: "status_unable_to_work_pct" },
-        { label: "Unemployed", count: "status_unemployed", pct: "status_unemployed_pct" },
-        { label: "Other", count: "status_other", pct: "status_other_pct" }
-      ]
-    }
+    ...sharedProfileSections.slice(0, 6),
+    householdFamilySection,
+    sharedProfileSections[6]
   ],
-  town: []
+  town: [
+    ...sharedProfileSections.slice(0, 6),
+    countyFamilySection,
+    householdFamilySection,
+    sharedProfileSections[6]
+  ]
 };
 
 const map = L.map("map", { zoomControl: true }).setView([53.4, -8.1], 7);
@@ -497,6 +429,8 @@ let sectionRowEls = [];
 let allAreaLayers = [];
 let loadedLayers = {};
 let fullMapBoundsByGeography = {};
+let townSearchInputEl = null;
+let townSearchResultsEl = null;
 
 let churchLayer = L.layerGroup();
 let churchesLoaded = false;
@@ -853,6 +787,48 @@ function populateIndicatorSelect() {
 function buildSidebarSections() {
   dataSectionsEl.innerHTML = "";
   sectionRowEls = [];
+  townSearchInputEl = null;
+  townSearchResultsEl = null;
+
+  if (currentGeography === "town") {
+    const searchSectionEl = document.createElement("div");
+    searchSectionEl.className = "sidebar-section town-search-section";
+
+    const heading = document.createElement("p");
+    heading.className = "eyebrow";
+    heading.textContent = "Search town";
+    searchSectionEl.appendChild(heading);
+
+    const input = document.createElement("input");
+    input.type = "search";
+    input.className = "town-search-input";
+    input.placeholder = "Start typing a town name...";
+    input.autocomplete = "off";
+    input.setAttribute("aria-label", "Search town");
+    searchSectionEl.appendChild(input);
+
+    const results = document.createElement("div");
+    results.className = "town-search-results";
+    searchSectionEl.appendChild(results);
+
+    const note = document.createElement("p");
+    note.className = "source-note";
+    note.textContent = "Search results match town names from the Census 2022 Built Up Area boundary file.";
+    searchSectionEl.appendChild(note);
+
+    dataSectionsEl.appendChild(searchSectionEl);
+
+    townSearchInputEl = input;
+    townSearchResultsEl = results;
+
+    townSearchInputEl.addEventListener("input", updateTownSearchResults);
+    townSearchInputEl.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") {
+        townSearchInputEl.value = "";
+        clearTownSearchResults();
+      }
+    });
+  }
 
   const sections = sidebarSectionsByGeography[currentGeography] || [];
 
@@ -940,7 +916,7 @@ function setDataRow(valueEl, barEl, count, percent) {
     : Math.max(0, Math.min(100, safePercent)) + "%";
 }
 
-function updateSidebar(props, smallAreaCount, selectedTownValue, selectedTownPopulation) {
+function updateSidebar(props, smallAreaCount, selectedTownValue, selectedTownPopulation, townProfile) {
   const geography = GEOGRAPHIES[currentGeography];
 
   selectedAreaEyebrowEl.textContent = geography.selectedEyebrow;
@@ -953,10 +929,8 @@ function updateSidebar(props, smallAreaCount, selectedTownValue, selectedTownPop
     const indicatorConfig = getIndicatorConfig(currentIndicator);
 
     selectedIndicatorCardEl.style.display = "";
-
     selectedIndicatorNameEl.textContent = indicatorConfig.label;
     selectedIndicatorValueEl.textContent = formatIndicatorValue(props[currentIndicator], currentIndicator);
-
     populationValueEl.textContent = formatNumber(props.population_2022);
 
     contextValueEl.textContent = geography.contextLabel && countyName
@@ -966,7 +940,11 @@ function updateSidebar(props, smallAreaCount, selectedTownValue, selectedTownPop
     sectionRowEls.forEach(row => {
       setDataRow(row.valueEl, row.barEl, props[row.countKey], props[row.pctKey]);
     });
-  } else if (geography.isTown) {
+
+    return;
+  }
+
+  if (geography.isTown) {
     const config = getIndicatorConfig(currentIndicator);
 
     selectedIndicatorCardEl.style.display = "";
@@ -995,6 +973,12 @@ function updateSidebar(props, smallAreaCount, selectedTownValue, selectedTownPop
     if (typeof smallAreaCount === "number") parts.push(`Small Areas shown: ${smallAreaCount}`);
 
     contextValueEl.textContent = parts.join(" · ");
+
+    if (townProfile) {
+      sectionRowEls.forEach(row => {
+        setDataRow(row.valueEl, row.barEl, townProfile[row.countKey], townProfile[row.pctKey]);
+      });
+    }
   }
 
   sourceNoteEl.textContent = geography.sourceNote;
@@ -1071,11 +1055,11 @@ function resetHighlight(e) {
   }
 }
 
-function selectLayer(layer) {
+function selectLayer(layer, options = {}) {
   const props = layer.feature.properties;
   const isSameLayerAlreadySelected = selectedLayer === layer;
 
-  if (isSameLayerAlreadySelected && currentGeography === "town") {
+  if (isSameLayerAlreadySelected && currentGeography === "town" && !options.forceRefresh) {
     return;
   }
 
@@ -1262,6 +1246,12 @@ function resetMap() {
   map.closePopup();
   clearSmallAreas();
 
+  if (townSearchInputEl) {
+    townSearchInputEl.value = "";
+  }
+
+  clearTownSearchResults();
+
   const bounds = fullMapBoundsByGeography[currentGeography];
 
   if (bounds) {
@@ -1294,6 +1284,7 @@ function switchGeography(geographyKey) {
   selectedLayer = null;
   map.closePopup();
   clearSmallAreas();
+  clearTownSearchResults();
 
   if (activeLayer) {
     map.removeLayer(activeLayer);
@@ -1339,6 +1330,8 @@ function loadGeographyLayer(geographyKey) {
       return response.json();
     })
     .then(data => {
+      allAreaLayers = [];
+
       const layer = L.geoJSON(data, {
         style: styleArea,
         onEachFeature: bindAreaInteractions
@@ -1461,6 +1454,13 @@ function showSmallAreasInsideTown(townLayer) {
       let selectedTownWeight = 0;
       let selectedTownPopulationValue = 0;
 
+      const townProfile = {
+        population_2022: 0
+      };
+
+      const weightedPctTotals = {};
+      const weightedPctWeights = {};
+
       const matchingFeatures = data.features
         .filter(feature => {
           const centroid = getFeatureCentroid(feature);
@@ -1488,7 +1488,24 @@ function showSmallAreasInsideTown(townLayer) {
 
           if (!Number.isNaN(population)) {
             selectedTownPopulation += population;
+            townProfile.population_2022 += population;
           }
+
+          Object.keys(demographics).forEach(key => {
+            if (key === "SA_PUB2022") return;
+
+            const value = Number(demographics[key]);
+            if (Number.isNaN(value)) return;
+
+            if (key.endsWith("_pct")) {
+              if (!Number.isNaN(population) && population > 0) {
+                weightedPctTotals[key] = (weightedPctTotals[key] || 0) + value * population;
+                weightedPctWeights[key] = (weightedPctWeights[key] || 0) + population;
+              }
+            } else {
+              townProfile[key] = (townProfile[key] || 0) + value;
+            }
+          });
 
           if (currentIndicator === "population_2022") {
             if (!Number.isNaN(currentValue)) {
@@ -1501,6 +1518,12 @@ function showSmallAreasInsideTown(townLayer) {
 
           return feature;
         });
+
+      Object.keys(weightedPctTotals).forEach(key => {
+        townProfile[key] = weightedPctWeights[key] > 0
+          ? weightedPctTotals[key] / weightedPctWeights[key]
+          : null;
+      });
 
       const selectedTownValue = currentIndicator === "population_2022"
         ? selectedTownPopulationValue
@@ -1527,7 +1550,7 @@ function showSmallAreasInsideTown(townLayer) {
         selectedLayer.bringToFront();
       }
 
-      updateSidebar(townProps, matchingFeatures.length, selectedTownValue, selectedTownPopulation);
+      updateSidebar(townProps, matchingFeatures.length, selectedTownValue, selectedTownPopulation, townProfile);
       openAreaPopup(townLayer, matchingFeatures.length, selectedTownValue, selectedTownPopulation);
       updateLegend();
 
@@ -1635,6 +1658,70 @@ function pointInRing(lng, lat, ring) {
   }
 
   return inside;
+}
+
+function getTownSearchItems() {
+  if (currentGeography !== "town") return [];
+
+  return allAreaLayers
+    .map(layer => ({
+      name: getAreaName(layer.feature.properties),
+      county: getCountyName(layer.feature.properties),
+      layer
+    }))
+    .filter(item => item.name && item.name !== "Unknown area")
+    .sort((a, b) => a.name.localeCompare(b.name, "en-IE"));
+}
+
+function updateTownSearchResults() {
+  if (!townSearchInputEl || !townSearchResultsEl) return;
+
+  const query = townSearchInputEl.value.trim().toLowerCase();
+
+  clearTownSearchResults();
+
+  if (query.length === 0) return;
+
+  const items = getTownSearchItems();
+  const startsWithMatches = items.filter(item => item.name.toLowerCase().startsWith(query));
+  const containsMatches = items.filter(item => {
+    const name = item.name.toLowerCase();
+    return !name.startsWith(query) && name.includes(query);
+  });
+
+  const matches = [...startsWithMatches, ...containsMatches].slice(0, 12);
+
+  if (matches.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "town-search-empty";
+    empty.textContent = "No matching towns found.";
+    townSearchResultsEl.appendChild(empty);
+    return;
+  }
+
+  matches.forEach(item => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "town-search-result";
+    button.innerHTML = `
+      <span>${escapeHtml(item.name)}</span>
+      ${item.county ? `<small>${escapeHtml(item.county)}</small>` : ""}
+    `;
+
+    button.addEventListener("click", function () {
+      townSearchInputEl.value = item.name;
+      clearTownSearchResults();
+      selectLayer(item.layer, { forceRefresh: true });
+    });
+
+    townSearchResultsEl.appendChild(button);
+  });
+}
+
+function clearTownSearchResults() {
+  if (townSearchResultsEl) {
+    townSearchResultsEl.innerHTML = "";
+  }
 }
 
 function openAboutPanel() {
@@ -1818,6 +1905,7 @@ aboutPanelEl.addEventListener("click", function (event) {
 document.addEventListener("keydown", function (event) {
   if (event.key === "Escape") {
     closeAboutPanel();
+    clearTownSearchResults();
   }
 });
 
