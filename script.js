@@ -894,6 +894,13 @@ function resetHighlight(e) {
 
 function selectLayer(layer) {
   const props = layer.feature.properties;
+  const isSameLayerAlreadySelected = selectedLayer === layer;
+
+  if (isSameLayerAlreadySelected && currentGeography === "town") {
+    updateSidebar(props);
+    openAreaPopup(layer);
+    return;
+  }
 
   if (selectedLayer && activeLayer) {
     activeLayer.resetStyle(selectedLayer);
