@@ -373,6 +373,9 @@ map.getPane("dublinSelectedSmallAreaPane").style.pointerEvents = "none";
 map.createPane("churchPane");
 map.getPane("churchPane").style.zIndex = 695;
 
+map.createPane("unreachedTownPane");
+map.getPane("unreachedTownPane").style.zIndex = 710;
+
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -390,6 +393,7 @@ const indicatorSelectEl = document.getElementById("indicatorSelect");
 const indicatorNoteEl = document.getElementById("indicatorNote");
 const resetButtonEl = document.getElementById("resetButton");
 const churchOverlayToggleEl = document.getElementById("churchOverlayToggle");
+const unreachedTownsToggleEl = document.getElementById("unreachedTownsToggle");
 
 const selectedAreaEyebrowEl = document.getElementById("selectedAreaEyebrow");
 const areaNameEl = document.getElementById("areaName");
@@ -420,6 +424,11 @@ let townSearchResultsEl = null;
 
 let churchLayer = L.layerGroup();
 let churchesLoaded = false;
+
+let unreachedTownLayer = L.layerGroup();
+let unreachedTownsLoaded = false;
+let unreachedTownRows = [];
+let urbanAreaLookupData = null;
 
 let smallAreasData = null;
 let smallAreasLoaded = false;
@@ -2314,6 +2323,230 @@ function toggleChurchOverlay() {
   }
 }
 
+function parseLooseNumber(value) {
+  const cleaned = String(value || "").replace(/,/g, "").trim();
+  const number = Number(cleaned);
+  return Number.isNaN(number) ? null : number;
+}
+
+function getUnreachedTownName(row) {
+  return row.Town || row.town_name || row.town || row.Name || row.name || "Unreached town";
+}
+
+function getUnreachedTownCounty(row) {
+  return row.County || row.county || "";
+}
+
+function getUnreachedTownLatitude(row) {
+  return parseLooseNumber(row.Latitude || row.latitude || row.lat);
+}
+
+function getUnreachedTownLongitude(row) {
+  return parseLooseNumber(row.Longitude || row.longitude || row.lng || row.lon);
+}
+
+function getUnreachedTownPopulation(row) {
+  return parseLooseNumber(row.Population || row.population_2022 || row.population);
+}
+
+function normaliseTownNameForMatch(value) {
+  return normaliseName(String(value || "").replace(/\([^)]*\)/g, "").replace(/\s+/g, " "));
+}
+
+function loadUrbanAreaLookupData() {
+  if (urbanAreaLookupData) {
+    return Promise.resolve(urbanAreaLookupData);
+  }
+
+  return fetch("urban-areas-boundaries.geojson")
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Could not load urban-areas-boundaries.geojson. HTTP status: " + response.status);
+      }
+
+      return response.json();
+    })
+    .then(data => {
+      urbanAreaLookupData = data;
+      return data;
+    });
+}
+
+function findUrbanAreaFeatureForUnreachedTown(row, urbanData) {
+  const lat = getUnreachedTownLatitude(row);
+  const lng = getUnreachedTownLongitude(row);
+
+  if (urbanData && Array.isArray(urbanData.features) && lat !== null && lng !== null) {
+    const containingFeature = urbanData.features.find(feature => {
+      return pointInGeometry(lng, lat, feature.geometry);
+    });
+
+    if (containingFeature) return containingFeature;
+  }
+
+  const rowName = normaliseTownNameForMatch(getUnreachedTownName(row));
+  const rowCounty = normaliseName(getUnreachedTownCounty(row));
+
+  if (!rowName || !urbanData || !Array.isArray(urbanData.features)) return null;
+
+  return urbanData.features.find(feature => {
+    const props = feature.properties || {};
+    const featureName = normaliseTownNameForMatch(getAreaName(props));
+    const featureCounty = normaliseName(getCountyName(props));
+
+    if (featureName !== rowName) return false;
+    if (rowCounty && featureCounty && rowCounty !== featureCounty) return false;
+
+    return true;
+  }) || null;
+}
+
+function getUnreachedTownProfileUrl(row, matchedFeature) {
+  const explicitCode = String(
+    row.urban_area_code ||
+    row.URBAN_AREA_CODE ||
+    row.urbanAreaCode ||
+    row.URBAN_CODE ||
+    row.BUA_CODE ||
+    row.CSO_CODE ||
+    row.code ||
+    row.CODE ||
+    ""
+  ).trim();
+
+  const matchedCode = matchedFeature ? getUrbanAreaCode(matchedFeature.properties || {}) : "";
+  const code = explicitCode || matchedCode;
+
+  return code ? `town-profile.html?code=${encodeURIComponent(code)}` : "";
+}
+
+function buildUnreachedTownPopup(row, matchedFeature) {
+  const town = escapeHtml(getUnreachedTownName(row));
+  const county = escapeHtml(getUnreachedTownCounty(row));
+  const population = getUnreachedTownPopulation(row);
+  const opportunity = escapeHtml(row["Town opportunity"] || row.status || row.Status || "No listed church / priority research town");
+  const churchesCounted = escapeHtml(row["Churches counted in town"] || row.churches_counted || "0");
+  const nearestChurch = escapeHtml(row["Nearest counted church"] || "");
+  const nearestDistance = escapeHtml(row["Distance to nearest counted church km"] || "");
+  const profileUrl = getUnreachedTownProfileUrl(row, matchedFeature);
+
+  let html = `
+    <div class="unreached-town-popup">
+      <h2>${town}</h2>
+  `;
+
+  if (county) html += `<p><strong>County:</strong> ${county}</p>`;
+  if (population !== null) html += `<p><strong>Population:</strong> ${formatNumber(population)}</p>`;
+
+  html += `<p><strong>Status:</strong> ${opportunity}</p>`;
+  html += `<p><strong>Churches counted in town:</strong> ${churchesCounted}</p>`;
+
+  if (nearestChurch) {
+    html += `<p><strong>Nearest counted church:</strong> ${nearestChurch}${nearestDistance ? ` (${nearestDistance} km)` : ""}</p>`;
+  }
+
+  if (profileUrl) {
+    html += `<p><a href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener noreferrer">Open Town Mission Profile</a></p>`;
+  } else {
+    html += `<p><em>Town profile link unavailable until this town is matched to an urban boundary code.</em></p>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+function createUnreachedTownMarker(row, matchedFeature) {
+  const lat = getUnreachedTownLatitude(row);
+  const lng = getUnreachedTownLongitude(row);
+
+  if (lat === null || lng === null) return null;
+
+  const icon = L.divIcon({
+    className: "unreached-town-marker",
+    html: "",
+    iconSize: [14, 14],
+    iconAnchor: [7, 7]
+  });
+
+  const marker = L.marker([lat, lng], {
+    pane: "unreachedTownPane",
+    icon,
+    title: getUnreachedTownName(row)
+  });
+
+  marker.bindPopup(buildUnreachedTownPopup(row, matchedFeature));
+  marker.bindTooltip(getUnreachedTownName(row), {
+    direction: "top",
+    offset: [0, -8]
+  });
+
+  return marker;
+}
+
+function loadUnreachedTownsOverlay(retryAttempt = 0) {
+  if (unreachedTownsLoaded) {
+    unreachedTownLayer.addTo(map);
+    return;
+  }
+
+  Promise.all([
+    fetch("unreached-towns.csv?v=" + Date.now()).then(response => {
+      if (!response.ok) {
+        throw new Error("Could not load unreached-towns.csv. HTTP status: " + response.status);
+      }
+      return response.text();
+    }),
+    loadUrbanAreaLookupData().catch(error => {
+      console.warn("Urban area lookup data could not be loaded for unreached town profile links.", error);
+      return null;
+    })
+  ])
+    .then(([csvText, urbanData]) => {
+      const rows = parseCsv(csvText);
+      let addedCount = 0;
+
+      unreachedTownRows = rows;
+      unreachedTownLayer.clearLayers();
+
+      rows.forEach(row => {
+        const matchedFeature = findUrbanAreaFeatureForUnreachedTown(row, urbanData);
+        const marker = createUnreachedTownMarker(row, matchedFeature);
+
+        if (!marker) return;
+
+        marker.addTo(unreachedTownLayer);
+        addedCount++;
+      });
+
+      unreachedTownsLoaded = true;
+      unreachedTownLayer.addTo(map);
+      console.log("Loaded " + addedCount + " unreached town markers.");
+    })
+    .catch(error => {
+      console.warn("Unreached towns overlay did not load on attempt " + (retryAttempt + 1) + ".", error);
+
+      if (retryAttempt < 1 && unreachedTownsToggleEl && unreachedTownsToggleEl.checked) {
+        setTimeout(() => loadUnreachedTownsOverlay(retryAttempt + 1), 1200);
+        return;
+      }
+
+      if (unreachedTownsToggleEl) {
+        unreachedTownsToggleEl.checked = false;
+      }
+    });
+}
+
+function toggleUnreachedTownsOverlay() {
+  if (!unreachedTownsToggleEl) return;
+
+  if (unreachedTownsToggleEl.checked) {
+    loadUnreachedTownsOverlay();
+  } else {
+    map.removeLayer(unreachedTownLayer);
+  }
+}
+
+
 countyViewButtonEl.addEventListener("click", function () {
   switchGeography("county");
 });
@@ -2334,6 +2567,10 @@ resetButtonEl.addEventListener("click", resetMap);
 
 if (churchOverlayToggleEl) {
   churchOverlayToggleEl.addEventListener("change", toggleChurchOverlay);
+}
+
+if (unreachedTownsToggleEl) {
+  unreachedTownsToggleEl.addEventListener("change", toggleUnreachedTownsOverlay);
 }
 
 aboutButtonEl.addEventListener("click", openAboutPanel);

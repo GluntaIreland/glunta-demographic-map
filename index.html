@@ -278,6 +278,32 @@
       line-height: 1.4;
     }
 
+
+    .unreached-town-marker {
+      width: 14px !important;
+      height: 14px !important;
+      margin-left: -7px !important;
+      margin-top: -7px !important;
+      background: #dc2626;
+      border: 2px solid #7f1d1d;
+      box-shadow: 0 1px 5px rgba(127, 29, 29, 0.45);
+    }
+
+    .unreached-town-popup h2 {
+      margin: 0 0 6px 0;
+      font-size: 16px;
+    }
+
+    .unreached-town-popup p {
+      margin: 4px 0;
+      font-size: 13px;
+    }
+
+    .unreached-town-popup a {
+      color: var(--brand-dark);
+      font-weight: 700;
+    }
+
     .metric-card {
       margin-top: 12px;
       padding: 14px;
@@ -567,8 +593,13 @@
         <span>Show church locations</span>
       </label>
 
+      <label class="checkbox-control">
+        <input id="unreachedTownsToggle" type="checkbox" />
+        <span>Show unreached towns</span>
+      </label>
+
       <p class="source-note">
-        Church points are shown for visual context only. This overlay does not include denomination or tradition filters from the main Glúnta Church Map.
+        Church points are shown for visual context only. Red squares mark towns currently identified in the Glúnta research dataset as having no listed church inside the town boundary or requiring priority research.
       </p>
     </div>
 
