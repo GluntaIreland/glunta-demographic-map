@@ -1,16 +1,13 @@
 // Town Mission Profile
-// Interactive mini-map version.
+// Parent profile page.
 // Loads selected town, aggregates Small Area demographics,
 // lists churches inside / near the town, generates rule-based missiological insights,
-// and renders a contained contextual Leaflet map in the profile hero.
-
-if (typeof L === "undefined") {
-  console.error("Leaflet did not load.");
-  throw new Error("Leaflet did not load.");
-}
+// and passes the town code to the isolated iframe map.
 
 const params = new URLSearchParams(window.location.search);
 const selectedCode = params.get("code");
+
+const townMapFrameEl = document.getElementById("townMapFrame");
 
 const townNameEl = document.getElementById("townName");
 const countyNameEl = document.getElementById("countyName");
@@ -40,8 +37,6 @@ const religionNotStatedEl = document.getElementById("religionNotStated");
 const churchesInsideListEl = document.getElementById("churchesInsideList");
 const nearbyChurchesListEl = document.getElementById("nearbyChurchesList");
 const missionInsightsEl = document.getElementById("missionInsights");
-
-let miniMap = null;
 
 function escapeHtml(value) {
   return String(value || "")
@@ -359,18 +354,6 @@ function smallAreaLikelyOverlapsTown(smallAreaFeature, townGeometry, townBounds)
   return false;
 }
 
-function getColorForPopulation(value) {
-  const number = Number(value);
-
-  if (Number.isNaN(number)) return "#e5eef0";
-  if (number >= 800) return "#08306b";
-  if (number >= 600) return "#08519c";
-  if (number >= 400) return "#2171b5";
-  if (number >= 250) return "#4292c6";
-  if (number >= 100) return "#9ecae1";
-  return "#deebf7";
-}
-
 function buildSmallAreaLookup(rows) {
   const lookup = {};
 
@@ -514,106 +497,6 @@ function analyseChurches(churchRows, townFeature) {
   return { inside, nearby };
 }
 
-function initialiseMiniMap() {
-  if (miniMap) {
-    miniMap.remove();
-  }
-
-  miniMap = L.map("townMiniMap", {
-    zoomControl: true,
-    attributionControl: true,
-    scrollWheelZoom: true,
-    dragging: true,
-    doubleClickZoom: true,
-    boxZoom: false,
-    keyboard: true
-  });
-
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-  }).addTo(miniMap);
-}
-
-function renderMiniMap(townFeature, matchingSmallAreas, lookup, churchAnalysis) {
-  initialiseMiniMap();
-
-  const smallAreasLayer = L.geoJSON(
-    {
-      type: "FeatureCollection",
-      features: matchingSmallAreas.map(feature => {
-        const clone = JSON.parse(JSON.stringify(feature));
-        const code = getSmallAreaCode(clone.properties);
-        const data = lookup[code] || {};
-        clone.properties.population_2022 = data.population_2022;
-        return clone;
-      })
-    },
-    {
-      style: feature => ({
-        fillColor: getColorForPopulation(feature.properties.population_2022),
-        fillOpacity: 0.48,
-        color: "#0f172a",
-        weight: 0.55,
-        opacity: 0.65
-      }),
-      interactive: false
-    }
-  ).addTo(miniMap);
-
-  const townLayer = L.geoJSON(townFeature, {
-    style: {
-      color: "#111827",
-      weight: 3,
-      opacity: 0.95,
-      fillColor: "transparent",
-      fillOpacity: 0
-    }
-  }).addTo(miniMap);
-
-  churchAnalysis.inside.forEach(church => {
-    const marker = L.circleMarker([church.lat, church.lng], {
-      radius: 5.5,
-      color: "#111827",
-      weight: 2,
-      fillColor: "#ffffff",
-      fillOpacity: 1
-    });
-
-    marker.bindPopup(`<strong>${escapeHtml(getChurchName(church))}</strong><br>Listed inside this town`);
-    marker.addTo(miniMap);
-  });
-
-  churchAnalysis.nearby.slice(0, 5).forEach(church => {
-    const marker = L.circleMarker([church.lat, church.lng], {
-      radius: 4,
-      color: "#0f4f49",
-      weight: 1.8,
-      fillColor: "#ffffff",
-      fillOpacity: 0.45
-    });
-
-    marker.bindPopup(`<strong>${escapeHtml(getChurchName(church))}</strong><br>${church.distanceKm.toFixed(1)} km from town centre`);
-    marker.addTo(miniMap);
-  });
-
-  const bounds = townLayer.getBounds();
-
-  setTimeout(() => {
-    miniMap.invalidateSize(true);
-
-    if (bounds.isValid()) {
-      miniMap.fitBounds(bounds, {
-        padding: [90, 90],
-        maxZoom: 12,
-        animate: false
-      });
-    }
-
-    townLayer.bringToFront();
-  }, 250);
-}
-
 function renderProfileData(townFeature, matchingSmallAreas, lookup, churches) {
   const props = townFeature.properties || {};
   const townName = getAreaName(props);
@@ -662,7 +545,6 @@ function renderProfileData(townFeature, matchingSmallAreas, lookup, churches) {
   );
 
   renderMissiologicalInsights(profile, churchAnalysis, townName);
-  renderMiniMap(townFeature, matchingSmallAreas, lookup, churchAnalysis);
 }
 
 function addInsight(insights, title, text, priority = false) {
@@ -820,6 +702,12 @@ function showTownNotFoundState(code) {
 }
 
 function loadTownProfile() {
+  if (selectedCode) {
+    townMapFrameEl.src = `town-profile-map.html?code=${encodeURIComponent(selectedCode)}&v=iframe1`;
+  } else {
+    townMapFrameEl.src = "town-profile-map.html?v=iframe1";
+  }
+
   if (!selectedCode) {
     showMissingCodeState();
     return;
