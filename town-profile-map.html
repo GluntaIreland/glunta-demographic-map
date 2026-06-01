@@ -14,8 +14,7 @@
 
   <style>
     html,
-    body,
-    #map {
+    body {
       width: 100%;
       height: 100%;
       margin: 0;
@@ -32,21 +31,20 @@
         sans-serif;
     }
 
-    .leaflet-container {
-      width: 100%;
-      height: 100%;
+    #map {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
       background: #dfe9e7;
     }
 
+    /* Keep Leaflet tiles from inheriting responsive image rules. Do not override
+       Leaflet panes, transforms, or tile-container positioning. */
     .leaflet-tile,
     img.leaflet-tile {
-      width: 256px !important;
-      height: 256px !important;
       max-width: none !important;
       max-height: none !important;
-      min-width: 256px !important;
-      min-height: 256px !important;
-      object-fit: fill !important;
     }
 
     .leaflet-control-attribution {
@@ -72,7 +70,7 @@
       border-radius: 999px;
       padding: 8px 12px;
       color: #0f4f49;
-      background: rgba(255, 255, 255, 0.92);
+      background: rgba(255, 255, 255, 0.94);
       box-shadow: 0 10px 24px rgba(16, 24, 40, 0.12);
       font-size: 13px;
       font-weight: 800;
@@ -99,7 +97,7 @@
     const selectedCode = params.get("code");
     const mapStatusEl = document.getElementById("mapStatus");
 
-    let map = null;
+    let map;
 
     function escapeHtml(value) {
       return String(value || "")
@@ -165,7 +163,10 @@
 
     function loadJson(url) {
       return fetch(url).then(response => {
-        if (!response.ok) throw new Error(`Could not load ${url}. HTTP status: ${response.status}`);
+        if (!response.ok) {
+          throw new Error(`Could not load ${url}. HTTP status: ${response.status}`);
+        }
+
         return response.json();
       });
     }
@@ -173,7 +174,10 @@
     function loadCsv(url) {
       return fetch(url)
         .then(response => {
-          if (!response.ok) throw new Error(`Could not load ${url}. HTTP status: ${response.status}`);
+          if (!response.ok) {
+            throw new Error(`Could not load ${url}. HTTP status: ${response.status}`);
+          }
+
           return response.text();
         })
         .then(parseCsv);
@@ -190,10 +194,6 @@
         props.NAME ||
         "Unknown town"
       );
-    }
-
-    function getCountyName(props) {
-      return props.county || props.COUNTY || props.County || "";
     }
 
     function getUrbanAreaCode(props) {
@@ -491,48 +491,28 @@
       return { inside, nearby };
     }
 
-    function initialiseMap() {
-      map = L.map("map", {
-        zoomControl: true,
-        attributionControl: true,
-        scrollWheelZoom: true,
-        dragging: true,
-        doubleClickZoom: true,
-        boxZoom: false,
-        keyboard: true
-      });
-
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        tileSize: 256,
-        zoomOffset: 0,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(map);
-    }
-
     function renderMap(townFeature, matchingSmallAreas, lookup, churchAnalysis) {
-      const smallAreasLayer = L.geoJSON(
-        {
-          type: "FeatureCollection",
-          features: matchingSmallAreas.map(feature => {
-            const clone = JSON.parse(JSON.stringify(feature));
-            const code = getSmallAreaCode(clone.properties);
-            const data = lookup[code] || {};
-            clone.properties.population_2022 = data.population_2022;
-            return clone;
-          })
-        },
-        {
-          style: feature => ({
-            fillColor: getColorForPopulation(feature.properties.population_2022),
-            fillOpacity: 0.46,
-            color: "#0f172a",
-            weight: 0.55,
-            opacity: 0.65
-          }),
-          interactive: false
-        }
-      ).addTo(map);
+      const smallAreaCollection = {
+        type: "FeatureCollection",
+        features: matchingSmallAreas.map(feature => {
+          const clone = JSON.parse(JSON.stringify(feature));
+          const code = getSmallAreaCode(clone.properties);
+          const data = lookup[code] || {};
+          clone.properties.population_2022 = data.population_2022;
+          return clone;
+        })
+      };
+
+      L.geoJSON(smallAreaCollection, {
+        style: feature => ({
+          fillColor: getColorForPopulation(feature.properties.population_2022),
+          fillOpacity: 0.46,
+          color: "#0f172a",
+          weight: 0.55,
+          opacity: 0.65
+        }),
+        interactive: false
+      }).addTo(map);
 
       const townLayer = L.geoJSON(townFeature, {
         style: {
@@ -572,33 +552,47 @@
 
       const bounds = townLayer.getBounds();
 
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          map.invalidateSize(true);
+      setTimeout(() => {
+        map.invalidateSize(true);
 
-          if (bounds.isValid()) {
-            map.fitBounds(bounds, {
-              padding: [90, 90],
-              maxZoom: 12,
-              animate: false
-            });
-          }
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, {
+            padding: [90, 90],
+            maxZoom: 12,
+            animate: false
+          });
+        }
 
-          townLayer.bringToFront();
-          setStatus("", true);
-        }, 250);
+        townLayer.bringToFront();
+        setStatus("", true);
+      }, 350);
+    }
+
+    function initialiseMap() {
+      map = L.map("map", {
+        zoomControl: true,
+        attributionControl: true,
+        scrollWheelZoom: true,
+        dragging: true,
+        doubleClickZoom: true,
+        boxZoom: false,
+        keyboard: true
       });
+
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
     }
 
     function loadMap() {
+      initialiseMap();
+
       if (!selectedCode) {
         setStatus("No town code provided.");
-        initialiseMap();
         map.setView([53.4, -8.1], 7);
         return;
       }
-
-      initialiseMap();
 
       Promise.all([
         loadJson("urban-areas-boundaries.geojson"),
