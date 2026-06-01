@@ -138,9 +138,24 @@ h1 {
   background: #dfe9e7;
 }
 
+/* Important Leaflet fix: stop responsive image rules breaking map tiles */
+.town-map-preview img,
+.town-map-preview .leaflet-tile {
+  max-width: none !important;
+  max-height: none !important;
+}
+
 .town-map-preview .leaflet-container {
   width: 100% !important;
   height: 100% !important;
+}
+
+.town-map-preview .leaflet-pane,
+.town-map-preview .leaflet-map-pane,
+.town-map-preview .leaflet-tile-pane,
+.town-map-preview .leaflet-overlay-pane {
+  width: auto !important;
+  height: auto !important;
 }
 
 .town-map-preview .leaflet-control-attribution {
