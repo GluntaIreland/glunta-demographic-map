@@ -521,15 +521,9 @@ map.getPane("smallAreaPane").style.pointerEvents = "none";
 map.createPane("churchPane");
 map.getPane("churchPane").style.zIndex = 720;
 
-L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png", {
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
-  attribution: "&copy; OpenStreetMap contributors &copy; CARTO"
-}).addTo(map);
-
-L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png", {
-  maxZoom: 19,
-  pane: "labelsPane",
-  attribution: "&copy; OpenStreetMap contributors &copy; CARTO"
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
 
 const mapSubtitleEl = document.getElementById("mapSubtitle");
