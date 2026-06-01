@@ -1,11 +1,7 @@
 // Town Mission Profile
-// Loads selected town, renders a contained map preview, aggregates Small Area demographics,
+// Static SVG map-card version.
+// Loads selected town, aggregates Small Area demographics,
 // lists churches inside / near the town, and generates rule-based missiological insights.
-
-if (typeof L === "undefined") {
-  console.error("Leaflet did not load.");
-  throw new Error("Leaflet did not load.");
-}
 
 const params = new URLSearchParams(window.location.search);
 const selectedCode = params.get("code");
@@ -38,8 +34,11 @@ const religionNotStatedEl = document.getElementById("religionNotStated");
 const churchesInsideListEl = document.getElementById("churchesInsideList");
 const nearbyChurchesListEl = document.getElementById("nearbyChurchesList");
 const missionInsightsEl = document.getElementById("missionInsights");
+const townStaticMapEl = document.getElementById("townStaticMap");
 
-let previewMap = null;
+const SVG_WIDTH = 900;
+const SVG_HEIGHT = 620;
+const SVG_PADDING = 62;
 
 function escapeHtml(value) {
   return String(value || "")
@@ -123,26 +122,6 @@ function setNotice(message, state) {
 
   if (state === "success") loadingNoticeEl.classList.add("is-success");
   if (state === "error") loadingNoticeEl.classList.add("is-error");
-}
-
-function initialisePreviewMap() {
-  const mapEl = document.getElementById("townMapPreview");
-
-  previewMap = L.map(mapEl, {
-    zoomControl: false,
-    attributionControl: true,
-    dragging: false,
-    scrollWheelZoom: false,
-    doubleClickZoom: false,
-    boxZoom: false,
-    keyboard: false,
-    tap: false
-  }).setView([53.4, -8.1], 7);
-
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-  }).addTo(previewMap);
 }
 
 function parseCsvLine(line) {
@@ -262,20 +241,37 @@ function getFeatureBounds(feature) {
 
   if (coords.length === 0) return null;
 
-  const latLngs = coords
-    .map(coord => {
-      const lng = Number(coord[0]);
-      const lat = Number(coord[1]);
+  let minLng = Infinity;
+  let minLat = Infinity;
+  let maxLng = -Infinity;
+  let maxLat = -Infinity;
 
-      if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+  coords.forEach(coord => {
+    const lng = Number(coord[0]);
+    const lat = Number(coord[1]);
 
-      return L.latLng(lat, lng);
-    })
-    .filter(Boolean);
+    if (Number.isNaN(lng) || Number.isNaN(lat)) return;
 
-  if (latLngs.length === 0) return null;
+    minLng = Math.min(minLng, lng);
+    minLat = Math.min(minLat, lat);
+    maxLng = Math.max(maxLng, lng);
+    maxLat = Math.max(maxLat, lat);
+  });
 
-  return L.latLngBounds(latLngs);
+  if (!Number.isFinite(minLng)) return null;
+
+  return { minLng, minLat, maxLng, maxLat };
+}
+
+function boundsIntersect(a, b) {
+  if (!a || !b) return false;
+
+  return !(
+    b.minLng > a.maxLng ||
+    b.maxLng < a.minLng ||
+    b.minLat > a.maxLat ||
+    b.maxLat < a.minLat
+  );
 }
 
 function pointInRing(lng, lat, ring) {
@@ -327,7 +323,7 @@ function pointInGeometry(lng, lat, geometry) {
 function smallAreaLikelyOverlapsTown(smallAreaFeature, townGeometry, townBounds) {
   const smallAreaBounds = getFeatureBounds(smallAreaFeature);
 
-  if (!smallAreaBounds || !townBounds || !townBounds.intersects(smallAreaBounds)) {
+  if (!smallAreaBounds || !townBounds || !boundsIntersect(smallAreaBounds, townBounds)) {
     return false;
   }
 
@@ -363,7 +359,7 @@ function smallAreaLikelyOverlapsTown(smallAreaFeature, townGeometry, townBounds)
 function getColorForPopulation(value) {
   const number = Number(value);
 
-  if (Number.isNaN(number)) return "#f0f0f0";
+  if (Number.isNaN(number)) return "#e5eef0";
   if (number >= 800) return "#08306b";
   if (number >= 600) return "#08519c";
   if (number >= 400) return "#2171b5";
@@ -431,71 +427,128 @@ function aggregateSmallAreas(matchingFeatures, lookup) {
   return profile;
 }
 
-function renderTownPreview(townFeature, matchingSmallAreas, lookup) {
-  const boundsLayer = L.geoJSON(townFeature);
-  const bounds = boundsLayer.getBounds();
+function getCombinedBounds(features) {
+  let combined = null;
 
-  const smallAreaLayer = L.geoJSON(
-    {
-      type: "FeatureCollection",
-      features: matchingSmallAreas.map(feature => {
-        const clone = JSON.parse(JSON.stringify(feature));
-        const code = getSmallAreaCode(clone.properties);
-        const data = lookup[code] || {};
-        clone.properties.population_2022 = data.population_2022;
-        return clone;
-      })
-    },
-    {
-      style: feature => ({
-        fillColor: getColorForPopulation(feature.properties.population_2022),
-        fillOpacity: 0.62,
-        color: "#0f172a",
-        weight: 0.6,
-        opacity: 0.75
-      })
-    }
-  );
+  features.forEach(feature => {
+    const bounds = getFeatureBounds(feature);
+    if (!bounds) return;
 
-  const townLayer = L.geoJSON(townFeature, {
-    style: {
-      color: "#111827",
-      weight: 3,
-      opacity: 0.95,
-      fillColor: "transparent",
-      fillOpacity: 0
+    if (!combined) {
+      combined = { ...bounds };
+    } else {
+      combined.minLng = Math.min(combined.minLng, bounds.minLng);
+      combined.minLat = Math.min(combined.minLat, bounds.minLat);
+      combined.maxLng = Math.max(combined.maxLng, bounds.maxLng);
+      combined.maxLat = Math.max(combined.maxLat, bounds.maxLat);
     }
   });
 
-  function drawWhenReady() {
-    previewMap.invalidateSize(true);
+  return combined;
+}
 
-    smallAreaLayer.addTo(previewMap);
-    townLayer.addTo(previewMap);
-    townLayer.bringToFront();
+function createProjection(bounds) {
+  const lngSpan = Math.max(bounds.maxLng - bounds.minLng, 0.000001);
+  const latSpan = Math.max(bounds.maxLat - bounds.minLat, 0.000001);
 
-    if (bounds.isValid()) {
-      previewMap.fitBounds(bounds, {
-        padding: [28, 28],
-        animate: false
-      });
-    }
+  const scaleX = (SVG_WIDTH - SVG_PADDING * 2) / lngSpan;
+  const scaleY = (SVG_HEIGHT - SVG_PADDING * 2) / latSpan;
+  const scale = Math.min(scaleX, scaleY);
 
-    setTimeout(() => {
-      previewMap.invalidateSize(true);
+  const usedWidth = lngSpan * scale;
+  const usedHeight = latSpan * scale;
 
-      if (bounds.isValid()) {
-        previewMap.fitBounds(bounds, {
-          padding: [28, 28],
-          animate: false
-        });
-      }
-    }, 350);
+  const offsetX = (SVG_WIDTH - usedWidth) / 2;
+  const offsetY = (SVG_HEIGHT - usedHeight) / 2;
+
+  return function project(coord) {
+    const lng = Number(coord[0]);
+    const lat = Number(coord[1]);
+
+    const x = offsetX + (lng - bounds.minLng) * scale;
+    const y = offsetY + (bounds.maxLat - lat) * scale;
+
+    return [x, y];
+  };
+}
+
+function ringToPath(ring, project) {
+  if (!ring || ring.length === 0) return "";
+
+  return ring
+    .map((coord, index) => {
+      const [x, y] = project(coord);
+      return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+    })
+    .join(" ") + " Z";
+}
+
+function geometryToPath(geometry, project) {
+  if (!geometry) return "";
+
+  if (geometry.type === "Polygon") {
+    return geometry.coordinates.map(ring => ringToPath(ring, project)).join(" ");
   }
 
-  requestAnimationFrame(() => {
-    setTimeout(drawWhenReady, 200);
-  });
+  if (geometry.type === "MultiPolygon") {
+    return geometry.coordinates
+      .map(polygon => polygon.map(ring => ringToPath(ring, project)).join(" "))
+      .join(" ");
+  }
+
+  return "";
+}
+
+function renderStaticTownMap(townFeature, matchingSmallAreas, lookup, churchesInside) {
+  const featuresForBounds = matchingSmallAreas.length > 0 ? matchingSmallAreas : [townFeature];
+  const bounds = getCombinedBounds([...featuresForBounds, townFeature]);
+
+  if (!bounds) {
+    townStaticMapEl.innerHTML = `<div class="map-loading">Map preview unavailable.</div>`;
+    return;
+  }
+
+  const project = createProjection(bounds);
+
+  const smallAreaPaths = matchingSmallAreas.map(feature => {
+    const code = getSmallAreaCode(feature.properties);
+    const data = lookup[code] || {};
+    const fill = getColorForPopulation(data.population_2022);
+    const path = geometryToPath(feature.geometry, project);
+
+    return `<path class="map-small-area" d="${path}" fill="${fill}" fill-opacity="0.72"></path>`;
+  }).join("");
+
+  const townPath = geometryToPath(townFeature.geometry, project);
+
+  const churchPoints = churchesInside.map(church => {
+    const [x, y] = project([church.lng, church.lat]);
+
+    return `
+      <circle class="map-church-point" cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="7"></circle>
+    `;
+  }).join("");
+
+  townStaticMapEl.innerHTML = `
+    <svg viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}" role="img" aria-label="Static town boundary map">
+      <rect class="map-card-background" x="0" y="0" width="${SVG_WIDTH}" height="${SVG_HEIGHT}" rx="28"></rect>
+
+      <g>
+        ${smallAreaPaths}
+      </g>
+
+      <path class="map-town-outline" d="${townPath}"></path>
+
+      <g>
+        ${churchPoints}
+      </g>
+
+      <text class="map-north-label" x="${SVG_WIDTH - 96}" y="58" font-size="18">N ↑</text>
+      <text class="map-caption-label" x="58" y="${SVG_HEIGHT - 42}" font-size="16">
+        Small Areas shaded by population
+      </text>
+    </svg>
+  `;
 }
 
 function haversineKm(lat1, lng1, lat2, lng2) {
@@ -588,6 +641,7 @@ function renderProfileData(townFeature, matchingSmallAreas, lookup, churches) {
   const countyName = getCountyName(props);
   const urbanCode = getUrbanAreaCode(props) || selectedCode || "—";
   const profile = aggregateSmallAreas(matchingSmallAreas, lookup);
+  const churchAnalysis = analyseChurches(churches, townFeature);
 
   townNameEl.textContent = townName;
   countyNameEl.textContent = "County: " + countyName;
@@ -612,8 +666,6 @@ function renderProfileData(townFeature, matchingSmallAreas, lookup, churches) {
   religionNoneEl.textContent = formatPercent(profile.religion_none_pct);
   religionNotStatedEl.textContent = formatPercent(profile.religion_not_stated_pct);
 
-  const churchAnalysis = analyseChurches(churches, townFeature);
-
   churchesValueEl.textContent = formatNumber(churchAnalysis.inside.length);
   nearbyChurchesValueEl.textContent = formatNumber(churchAnalysis.nearby.length);
 
@@ -631,6 +683,7 @@ function renderProfileData(townFeature, matchingSmallAreas, lookup, churches) {
   );
 
   renderMissiologicalInsights(profile, churchAnalysis, townName);
+  renderStaticTownMap(townFeature, matchingSmallAreas, lookup, churchAnalysis.inside);
 }
 
 function addInsight(insights, title, text, priority = false) {
@@ -661,7 +714,7 @@ function renderMissiologicalInsights(profile, churchAnalysis, townName) {
     addInsight(
       insights,
       "Begin with existing witness",
-      `There is at least one listed church inside this urban boundary. Any new work should begin with listening, honouring existing ministry, and asking whether partnership, strengthening, or multiplication is wiser than starting something disconnected.`,
+      "There is at least one listed church inside this urban boundary. Any new work should begin with listening, honouring existing ministry, and asking whether partnership, strengthening, or multiplication is wiser than starting something disconnected.",
       true
     );
   } else {
@@ -677,16 +730,16 @@ function renderMissiologicalInsights(profile, churchAnalysis, townName) {
     addInsight(
       insights,
       "Population without listed church presence",
-      `The town has a meaningful urban population but no listed church inside the boundary. That combination should raise the priority of local research, especially around meeting places, community rhythms, and whether believers are already travelling elsewhere for fellowship.`,
+      "The town has a meaningful urban population but no listed church inside the boundary. That combination should raise the priority of local research, especially around meeting places, community rhythms, and whether believers are already travelling elsewhere for fellowship.",
       true
     );
   }
 
-  if (!Number.isNaN(bornOutside) && bornOutside >= 15 || !Number.isNaN(nonIrishCitizenship) && nonIrishCitizenship >= 10) {
+  if ((!Number.isNaN(bornOutside) && bornOutside >= 15) || (!Number.isNaN(nonIrishCitizenship) && nonIrishCitizenship >= 10)) {
     addInsight(
       insights,
       "Think interculturally from the beginning",
-      `The migration profile suggests that ministry here should not assume one settled Irish cultural pathway. A planter or partner church should ask which communities are present, what languages are spoken at home, where newcomers build trust, and whether hospitality could become a central missionary practice.`,
+      "The migration profile suggests that ministry here should not assume one settled Irish cultural pathway. A planter or partner church should ask which communities are present, what languages are spoken at home, where newcomers build trust, and whether hospitality could become a central missionary practice.",
       true
     );
   }
@@ -695,7 +748,7 @@ function renderMissiologicalInsights(profile, churchAnalysis, townName) {
     addInsight(
       insights,
       "Language may shape access",
-      `A noticeable foreign-language speaking population means that communication, friendship, translation, and multilingual relationships may matter. This does not necessarily mean launching language-specific services, but it does mean asking who is being unintentionally excluded by ordinary church habits.`
+      "A noticeable foreign-language speaking population means that communication, friendship, translation, and multilingual relationships may matter. This does not necessarily mean launching language-specific services, but it does mean asking who is being unintentionally excluded by ordinary church habits."
     );
   }
 
@@ -703,7 +756,7 @@ function renderMissiologicalInsights(profile, churchAnalysis, townName) {
     addInsight(
       insights,
       "Evangelism may need to begin further back",
-      `A higher non-religious profile suggests that mission may need to begin with patient trust-building, Bible discovery, apologetics, table fellowship, and visible community life rather than assuming people already share Christian categories.`,
+      "A higher non-religious profile suggests that mission may need to begin with patient trust-building, Bible discovery, apologetics, table fellowship, and visible community life rather than assuming people already share Christian categories.",
       true
     );
   }
@@ -712,7 +765,7 @@ function renderMissiologicalInsights(profile, churchAnalysis, townName) {
     addInsight(
       insights,
       "Religious plurality needs neighbourly clarity",
-      `The presence of other religious affiliation calls for a posture that is both hospitable and clear. Local mission should be prepared for interfaith friendships, careful listening, and gracious explanation of the gospel without reducing people to census categories.`
+      "The presence of other religious affiliation calls for a posture that is both hospitable and clear. Local mission should be prepared for interfaith friendships, careful listening, and gracious explanation of the gospel without reducing people to census categories."
     );
   }
 
@@ -720,7 +773,7 @@ function renderMissiologicalInsights(profile, churchAnalysis, townName) {
     addInsight(
       insights,
       "Family rhythms may be a key doorway",
-      `A significant children’s population points toward the importance of schools, sports clubs, parent-and-toddler relationships, youth work, and practical support for households. In a town like this, mission may move through ordinary family networks long before it moves through formal events.`
+      "A significant children’s population points toward the importance of schools, sports clubs, parent-and-toddler relationships, youth work, and practical support for households. In a town like this, mission may move through ordinary family networks long before it moves through formal events."
     );
   }
 
@@ -728,7 +781,7 @@ function renderMissiologicalInsights(profile, churchAnalysis, townName) {
     addInsight(
       insights,
       "Do not ignore younger adult networks",
-      `The younger adult profile suggests paying attention to work, commuting, rental housing, cafés, gyms, sports, and informal friendship networks. A church plant that only imagines Sunday attendance may miss where younger adults actually build community.`
+      "The younger adult profile suggests paying attention to work, commuting, rental housing, cafés, gyms, sports, and informal friendship networks. A church plant that only imagines Sunday attendance may miss where younger adults actually build community."
     );
   }
 
@@ -736,7 +789,7 @@ function renderMissiologicalInsights(profile, churchAnalysis, townName) {
     addInsight(
       insights,
       "Pastoral presence among older adults matters",
-      `The older age profile means that loneliness, bereavement, care, weekday availability, and trusted pastoral presence may be central to faithful ministry. A mission strategy focused only on young families would read the town too narrowly.`
+      "The older age profile means that loneliness, bereavement, care, weekday availability, and trusted pastoral presence may be central to faithful ministry. A mission strategy focused only on young families would read the town too narrowly."
     );
   }
 
@@ -751,7 +804,7 @@ function renderMissiologicalInsights(profile, churchAnalysis, townName) {
   addInsight(
     insights,
     "Use the map as a prompt for fieldwork",
-    `The next step is not just more data. Walk the town. Notice schools, estates, cafés, marts, shops, community halls, sports clubs, direct provision or migrant housing where relevant, and the places where people already gather. Good missiology starts with attention.`,
+    "The next step is not just more data. Walk the town. Notice schools, estates, cafés, marts, shops, community halls, sports clubs, direct provision or migrant housing where relevant, and the places where people already gather. Good missiology starts with attention.",
     true
   );
 
@@ -788,8 +841,6 @@ function showTownNotFoundState(code) {
 }
 
 function loadTownProfile() {
-  initialisePreviewMap();
-
   if (!selectedCode) {
     showMissingCodeState();
     return;
@@ -813,14 +864,13 @@ function loadTownProfile() {
       }
 
       const lookup = buildSmallAreaLookup(smallAreaDemographicsRows);
-      const townBounds = L.geoJSON(selectedTownFeature).getBounds();
+      const townBounds = getFeatureBounds(selectedTownFeature);
 
       const matchingSmallAreas = smallAreasData.features.filter(feature => {
         return smallAreaLikelyOverlapsTown(feature, selectedTownFeature.geometry, townBounds);
       });
 
       renderProfileData(selectedTownFeature, matchingSmallAreas, lookup, churches);
-      renderTownPreview(selectedTownFeature, matchingSmallAreas, lookup);
 
       setNotice(
         "Town profile loaded from the Glúnta demographic map data. Church presence is based on the current Glúnta church points dataset.",
