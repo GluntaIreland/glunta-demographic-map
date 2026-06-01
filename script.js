@@ -424,6 +424,14 @@ let smallAreaDisplayLayer = L.layerGroup();
 let smallAreaDemographicsByCode = {};
 let smallAreaDemographicsLoaded = false;
 
+let dublinDetailActionEl = null;
+let dublinDetailBackButtonEl = null;
+let selectedTownLayerForSmallAreas = null;
+let selectedTownPropsForSmallAreas = null;
+let selectedTownSmallAreaSummary = null;
+let selectedDublinSmallAreaLayer = null;
+let selectedDublinSmallAreaFeature = null;
+
 function config(label, note, legendTitle, colorSet, type, grades) {
   return {
     label,
@@ -908,6 +916,186 @@ function buildSidebarSections() {
   ensureTownSearchSection();
 }
 
+
+function normaliseName(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function isDublinTown(props) {
+  const name = normaliseName(getAreaName(props));
+  return name === "dublin" || name.includes("dublin city") || name.includes("dublin urban") || name.includes("dublin city and suburbs");
+}
+
+function ensureDublinDetailAction() {
+  if (!dublinDetailActionEl) {
+    dublinDetailActionEl = document.createElement("div");
+    dublinDetailActionEl.className = "town-profile-action";
+    dublinDetailActionEl.style.display = "none";
+    dublinDetailActionEl.style.marginTop = "12px";
+
+    dublinDetailBackButtonEl = document.createElement("button");
+    dublinDetailBackButtonEl.type = "button";
+    dublinDetailBackButtonEl.className = "town-profile-button";
+    dublinDetailBackButtonEl.textContent = "Back to Dublin profile";
+    dublinDetailBackButtonEl.style.width = "100%";
+    dublinDetailBackButtonEl.style.fontFamily = "inherit";
+
+    const note = document.createElement("p");
+    note.className = "town-profile-note";
+    note.textContent = "Dublin Detail Mode lets you inspect individual Census Small Areas inside the Dublin urban boundary.";
+
+    dublinDetailActionEl.appendChild(dublinDetailBackButtonEl);
+    dublinDetailActionEl.appendChild(note);
+
+    dublinDetailBackButtonEl.addEventListener("click", restoreSelectedTownProfile);
+  }
+
+  if (townProfileActionEl && townProfileActionEl.parentNode && dublinDetailActionEl.parentNode !== townProfileActionEl.parentNode) {
+    townProfileActionEl.parentNode.insertBefore(dublinDetailActionEl, townProfileActionEl.nextSibling);
+  }
+}
+
+function hideDublinDetailAction() {
+  ensureDublinDetailAction();
+  dublinDetailActionEl.style.display = "none";
+}
+
+function showDublinDetailAction() {
+  ensureDublinDetailAction();
+  dublinDetailActionEl.style.display = "block";
+}
+
+function clearDublinSmallAreaSelection() {
+  if (selectedDublinSmallAreaLayer) {
+    selectedDublinSmallAreaLayer.setStyle(styleSmallArea);
+  }
+
+  selectedDublinSmallAreaLayer = null;
+  selectedDublinSmallAreaFeature = null;
+  hideDublinDetailAction();
+}
+
+function restoreSelectedTownProfile() {
+  if (!selectedTownLayerForSmallAreas || !selectedTownSmallAreaSummary) return;
+
+  clearDublinSmallAreaSelection();
+
+  if (selectedTownLayerForSmallAreas) {
+    selectedTownLayerForSmallAreas.bringToFront();
+  }
+
+  const summary = selectedTownSmallAreaSummary;
+  updateSidebar(
+    selectedTownPropsForSmallAreas,
+    summary.smallAreaCount,
+    summary.selectedTownValue,
+    summary.selectedTownPopulation,
+    summary.townProfile
+  );
+
+  openAreaPopup(
+    selectedTownLayerForSmallAreas,
+    summary.smallAreaCount,
+    summary.selectedTownValue,
+    summary.selectedTownPopulation
+  );
+}
+
+function getSmallAreaDisplayName(feature) {
+  const code = getSmallAreaCode(feature.properties || {});
+  return code ? `Small Area ${code}` : "Selected Small Area";
+}
+
+function updateSidebarForDublinSmallArea(feature) {
+  const props = feature.properties || {};
+  const code = getSmallAreaCode(props);
+  const config = getIndicatorConfig(currentIndicator);
+  const currentValue = props[currentIndicator];
+  const population = Number(props.population_2022);
+
+  selectedAreaEyebrowEl.textContent = "Dublin Detail Mode";
+  areaNameEl.textContent = "Small Area inside Dublin";
+  areaIntroEl.textContent = code
+    ? `Selected Census Small Area: ${code}. This is a statistical area, not a named neighbourhood.`
+    : "Selected Census Small Area inside Dublin. This is a statistical area, not a named neighbourhood.";
+
+  selectedIndicatorCardEl.style.display = "";
+  selectedIndicatorNameEl.textContent = config.label;
+  selectedIndicatorValueEl.textContent = formatIndicatorValue(currentValue, currentIndicator);
+  populationValueEl.textContent = Number.isNaN(population) ? "—" : formatNumber(population);
+
+  const parts = ["Parent urban area: Dublin"];
+  if (code) parts.push(`Small Area code: ${code}`);
+  contextValueEl.textContent = parts.join(" · ");
+  sourceNoteEl.textContent = "Source: CSO Census 2022 Small Area Population Statistics.";
+
+  updateTownProfileAction(selectedTownPropsForSmallAreas);
+  showDublinDetailAction();
+
+  sectionRowEls.forEach(row => {
+    setDataRow(row.valueEl, row.barEl, props[row.countKey], props[row.pctKey]);
+  });
+}
+
+function openDublinSmallAreaPopup(layer) {
+  const props = layer.feature.properties || {};
+  const code = getSmallAreaCode(props);
+  const config = getIndicatorConfig(currentIndicator);
+  const population = Number(props.population_2022);
+  const value = props[currentIndicator];
+
+  let popupHtml = `
+    <div class="area-popup">
+      <h2>Small Area inside Dublin</h2>
+  `;
+
+  if (code) {
+    popupHtml += `<p><strong>Small Area code:</strong> ${escapeHtml(code)}</p>`;
+  }
+
+  popupHtml += Number.isNaN(population)
+    ? `<p><strong>Population:</strong> —</p>`
+    : `<p><strong>Population:</strong> ${formatNumber(population)}</p>`;
+
+  popupHtml += `<p><strong>${escapeHtml(config.label)}:</strong> ${escapeHtml(formatIndicatorValue(value, currentIndicator))}</p>`;
+  popupHtml += `<p><strong>Note:</strong> Small Areas are statistical units and usually do not have public place names.</p>`;
+  popupHtml += `</div>`;
+
+  layer.bindPopup(popupHtml).openPopup();
+}
+
+function selectDublinSmallArea(layer) {
+  if (selectedDublinSmallAreaLayer && selectedDublinSmallAreaLayer !== layer) {
+    selectedDublinSmallAreaLayer.setStyle(styleSmallArea);
+  }
+
+  selectedDublinSmallAreaLayer = layer;
+  selectedDublinSmallAreaFeature = layer.feature;
+
+  layer.setStyle({
+    fillOpacity: 0.86,
+    color: "#111827",
+    weight: 2.4
+  });
+
+  layer.bringToFront();
+
+  if (selectedTownLayerForSmallAreas) {
+    selectedTownLayerForSmallAreas.bringToFront();
+  }
+
+  if (churchesLoaded && map.hasLayer(churchLayer)) {
+    churchLayer.bringToFront();
+  }
+
+  updateSidebarForDublinSmallArea(layer.feature);
+  openDublinSmallAreaPopup(layer);
+}
+
 function resetSidebar() {
   const geography = GEOGRAPHIES[currentGeography];
 
@@ -920,6 +1108,7 @@ function resetSidebar() {
   contextValueEl.textContent = "";
   sourceNoteEl.textContent = geography.sourceNote;
   updateTownProfileAction(null);
+  hideDublinDetailAction();
 
   if (geography.isTown) {
     selectedIndicatorCardEl.style.display = "";
@@ -1052,8 +1241,7 @@ function styleSmallArea(feature) {
     fillOpacity: 0.68,
     color: "#0f172a",
     weight: 0.55,
-    opacity: 0.75,
-    interactive: false
+    opacity: 0.75
   };
 }
 
@@ -1080,6 +1268,11 @@ function resetHighlight(e) {
 }
 
 function selectLayer(layer, options = {}) {
+  clearDublinSmallAreaSelection();
+  selectedTownLayerForSmallAreas = null;
+  selectedTownPropsForSmallAreas = null;
+  selectedTownSmallAreaSummary = null;
+
   const props = layer.feature.properties;
   const isSameLayerAlreadySelected = selectedLayer === layer;
 
@@ -1157,7 +1350,7 @@ function openAreaPopup(layer, smallAreaCount, selectedTownValue, selectedTownPop
         : `<p><strong>${escapeHtml(config.label)}:</strong> loading...</p>`;
     }
 
-    popupHtml += `<p><strong>Current view:</strong> Small Areas coloured by selected demographic measure</p>`;
+    popupHtml += `${isDublinTown(props) ? `<p><strong>Dublin Detail Mode:</strong> Click any shaded Small Area to inspect that part of Dublin.</p>` : `<p><strong>Current view:</strong> Small Areas coloured by selected demographic measure</p>`}`;
 
     const profileUrl = getTownProfileUrl(props);
     if (profileUrl) {
@@ -1218,6 +1411,15 @@ function updateLegend() {
           <span>Selected Built Up Area</span>
         </div>
       `;
+
+      if (selectedTownPropsForSmallAreas && isDublinTown(selectedTownPropsForSmallAreas)) {
+        div.innerHTML += `
+          <div class="legend-row">
+            <span class="legend-color" style="background:#0f766e; opacity:0.32; border:2px solid #111827;"></span>
+            <span>Clickable Dublin Small Areas</span>
+          </div>
+        `;
+      }
     }
 
     return div;
@@ -1267,8 +1469,12 @@ function resetMap() {
   }
 
   selectedLayer = null;
+  selectedTownLayerForSmallAreas = null;
+  selectedTownPropsForSmallAreas = null;
+  selectedTownSmallAreaSummary = null;
   map.closePopup();
   clearSmallAreas();
+  clearDublinSmallAreaSelection();
 
   if (townSearchInputEl) {
     townSearchInputEl.value = "";
@@ -1309,8 +1515,12 @@ function switchGeography(geographyKey) {
   }
 
   selectedLayer = null;
+  selectedTownLayerForSmallAreas = null;
+  selectedTownPropsForSmallAreas = null;
+  selectedTownSmallAreaSummary = null;
   map.closePopup();
   clearSmallAreas();
+  clearDublinSmallAreaSelection();
   clearTownSearchResults();
 
   if (activeLayer) {
@@ -1395,6 +1605,10 @@ function loadGeographyLayer(geographyKey, options = {}) {
 }
 
 function clearSmallAreas() {
+  if (map.getPane("smallAreaPane")) {
+    map.getPane("smallAreaPane").style.pointerEvents = "none";
+  }
+
   smallAreaDisplayLayer.clearLayers();
 
   if (map.hasLayer(smallAreaDisplayLayer)) {
@@ -1469,6 +1683,7 @@ function loadSmallAreaDemographics() {
 function showSmallAreasInsideTown(townLayer) {
   const townFeature = townLayer.feature;
   const townProps = townFeature.properties;
+  const dublinMode = isDublinTown(townProps);
 
   populationValueEl.textContent = "Loading...";
   selectedIndicatorValueEl.textContent = "Loading...";
@@ -1477,6 +1692,10 @@ function showSmallAreasInsideTown(townLayer) {
   Promise.all([loadSmallAreas(), loadSmallAreaDemographics()])
     .then(([data, demographicsLookup]) => {
       clearSmallAreas();
+      clearDublinSmallAreaSelection();
+
+      selectedTownLayerForSmallAreas = townLayer;
+      selectedTownPropsForSmallAreas = townProps;
 
       const selectedGeometry = townFeature.geometry;
       const selectedBounds = townLayer.getBounds();
@@ -1495,12 +1714,13 @@ function showSmallAreasInsideTown(townLayer) {
           return smallAreaLikelyOverlapsTown(feature, selectedGeometry, selectedBounds);
         })
         .map(feature => {
-          const code = getSmallAreaCode(feature.properties);
+          const clonedFeature = JSON.parse(JSON.stringify(feature));
+          const code = getSmallAreaCode(clonedFeature.properties);
           const demographics = demographicsLookup[code] || {};
 
           Object.keys(demographics).forEach(key => {
             if (key !== "SA_PUB2022") {
-              feature.properties[key] = demographics[key];
+              clonedFeature.properties[key] = demographics[key];
             }
           });
 
@@ -1537,7 +1757,7 @@ function showSmallAreasInsideTown(townLayer) {
             selectedTownWeight += population;
           }
 
-          return feature;
+          return clonedFeature;
         });
 
       Object.keys(weightedPctTotals).forEach(key => {
@@ -1551,6 +1771,17 @@ function showSmallAreasInsideTown(townLayer) {
             ? selectedTownWeightedValue / selectedTownWeight
             : null;
 
+      selectedTownSmallAreaSummary = {
+        smallAreaCount: matchingFeatures.length,
+        selectedTownValue,
+        selectedTownPopulation,
+        townProfile
+      };
+
+      if (map.getPane("smallAreaPane")) {
+        map.getPane("smallAreaPane").style.pointerEvents = dublinMode ? "auto" : "none";
+      }
+
       const layer = L.geoJSON(
         {
           type: "FeatureCollection",
@@ -1559,7 +1790,41 @@ function showSmallAreasInsideTown(townLayer) {
         {
           pane: "smallAreaPane",
           style: styleSmallArea,
-          interactive: false
+          interactive: dublinMode,
+          onEachFeature: function (feature, smallAreaLayer) {
+            if (!dublinMode) return;
+
+            smallAreaLayer.on({
+              mouseover: function (event) {
+                const target = event.target;
+                if (target !== selectedDublinSmallAreaLayer) {
+                  target.setStyle({
+                    fillOpacity: 0.82,
+                    color: "#111827",
+                    weight: 1.4
+                  });
+                }
+              },
+              mouseout: function (event) {
+                const target = event.target;
+                if (target !== selectedDublinSmallAreaLayer) {
+                  target.setStyle(styleSmallArea(target.feature));
+                }
+              },
+              click: function (event) {
+                if (event.originalEvent) {
+                  L.DomEvent.stopPropagation(event.originalEvent);
+                }
+                selectDublinSmallArea(event.target);
+              }
+            });
+
+            const code = getSmallAreaCode(feature.properties);
+            smallAreaLayer.bindTooltip(code ? `Small Area ${code}` : "Dublin Small Area", {
+              sticky: true,
+              direction: "top"
+            });
+          }
         }
       );
 
@@ -1575,10 +1840,15 @@ function showSmallAreasInsideTown(townLayer) {
       }
 
       updateSidebar(townProps, matchingFeatures.length, selectedTownValue, selectedTownPopulation, townProfile);
+
+      if (dublinMode) {
+        contextValueEl.textContent += " · Click a Small Area to inspect Dublin in more detail.";
+      }
+
       openAreaPopup(townLayer, matchingFeatures.length, selectedTownValue, selectedTownPopulation);
       updateLegend();
 
-      console.log("Displayed " + matchingFeatures.length + " Small Areas inside " + getAreaName(townProps) + " using " + currentIndicator + ".");
+      console.log("Displayed " + matchingFeatures.length + " Small Areas inside " + getAreaName(townProps) + " using " + currentIndicator + (dublinMode ? " with Dublin Detail Mode enabled." : "."));
     })
     .catch(error => {
       console.error(error);
