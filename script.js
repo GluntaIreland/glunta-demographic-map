@@ -2464,7 +2464,7 @@ function createUnreachedTownMarker(row, matchedFeature) {
   const icon = L.divIcon({
     className: "unreached-town-marker",
     html: "",
-    iconSize: [14, 14],
+    iconSize: [12, 12],
     iconAnchor: [7, 7]
   });
 
