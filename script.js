@@ -1,7 +1,7 @@
 // Glúnta Demographic Map
 // Unified County + LEA + Town view
 // Town view shows Small Areas inside a selected Built Up Area and colours them by selected Small Area demographic data.
-// Town view also includes a predictive town search and a left-panel demographic profile.
+// Town view also includes a predictive town search placed above Reference Layers and a left-panel demographic profile.
 
 if (typeof L === "undefined") {
   console.error("Leaflet did not load. Check your internet connection or CDN access.");
@@ -58,12 +58,7 @@ const GEOGRAPHIES = {
 };
 
 const GROUPS = [
-  {
-    label: "Population",
-    options: [
-      { value: "population_2022", label: "Total population" }
-    ]
-  },
+  { label: "Population", options: [{ value: "population_2022", label: "Total population" }] },
   {
     label: "Age structure",
     options: [
@@ -153,12 +148,7 @@ const GROUPS = [
 ];
 
 const TOWN_GROUPS = [
-  {
-    label: "Population",
-    options: [
-      { value: "population_2022", label: "Small Area population, 2022" }
-    ]
-  },
+  { label: "Population", options: [{ value: "population_2022", label: "Small Area population, 2022" }] },
   {
     label: "Age structure",
     options: [
@@ -364,22 +354,9 @@ const householdFamilySection = {
 };
 
 const sidebarSectionsByGeography = {
-  county: [
-    ...sharedProfileSections.slice(0, 6),
-    countyFamilySection,
-    sharedProfileSections[6]
-  ],
-  lea: [
-    ...sharedProfileSections.slice(0, 6),
-    householdFamilySection,
-    sharedProfileSections[6]
-  ],
-  town: [
-    ...sharedProfileSections.slice(0, 6),
-    countyFamilySection,
-    householdFamilySection,
-    sharedProfileSections[6]
-  ]
+  county: [...sharedProfileSections.slice(0, 6), countyFamilySection, sharedProfileSections[6]],
+  lea: [...sharedProfileSections.slice(0, 6), householdFamilySection, sharedProfileSections[6]],
+  town: [...sharedProfileSections.slice(0, 6), countyFamilySection, householdFamilySection, sharedProfileSections[6]]
 };
 
 const map = L.map("map", { zoomControl: true }).setView([53.4, -8.1], 7);
@@ -429,6 +406,8 @@ let sectionRowEls = [];
 let allAreaLayers = [];
 let loadedLayers = {};
 let fullMapBoundsByGeography = {};
+
+let townSearchSectionEl = null;
 let townSearchInputEl = null;
 let townSearchResultsEl = null;
 
@@ -454,14 +433,7 @@ function config(label, note, legendTitle, colorSet, type, grades) {
 }
 
 function pct(label, subject, legendTitle, colorSet, grades) {
-  return config(
-    label,
-    `The map is currently coloured by the percentage of ${subject}.`,
-    legendTitle,
-    colorSet,
-    "percent",
-    grades
-  );
+  return config(label, `The map is currently coloured by the percentage of ${subject}.`, legendTitle, colorSet, "percent", grades);
 }
 
 const percentGrades = [
@@ -512,12 +484,10 @@ const townFieldColorSets = {
   age_15_34_pct: "blue",
   age_35_64_pct: "blue",
   age_65_plus_pct: "blue",
-
   religion_catholic_pct: "purple",
   religion_other_pct: "purple",
   religion_none_pct: "purple",
   religion_not_stated_pct: "purple",
-
   born_ireland_pct: "orange",
   born_outside_ireland_pct: "orange",
   born_uk_pct: "orange",
@@ -527,7 +497,6 @@ const townFieldColorSets = {
   born_rest_world_pct: "orange",
   citizen_ireland_pct: "orange",
   non_irish_citizenship_pct: "orange",
-
   ethnicity_white_irish_pct: "green",
   ethnicity_white_irish_traveller_pct: "green",
   ethnicity_other_white_pct: "green",
@@ -535,13 +504,11 @@ const townFieldColorSets = {
   ethnicity_asian_or_asian_irish_pct: "green",
   ethnicity_other_pct: "green",
   ethnicity_not_stated_pct: "green",
-
   foreign_language_speakers_pct: "red",
   language_spanish_pct: "red",
   language_french_pct: "red",
   language_polish_pct: "red",
   language_other_incl_not_stated_pct: "red",
-
   families_with_children_pct: "cyan",
   families_without_children_pct: "cyan",
   families_all_children_under15_pct: "cyan",
@@ -557,7 +524,6 @@ const townFieldColorSets = {
   families_household_size_4_persons_pct: "cyan",
   families_household_size_5_persons_pct: "cyan",
   families_household_size_6_plus_persons_pct: "cyan",
-
   status_at_work_pct: "rose",
   status_student_pct: "rose",
   status_retired_pct: "rose",
@@ -572,7 +538,6 @@ function getTownFieldLabel(field) {
     const found = group.options.find(option => option.value === field);
     if (found) return found.label;
   }
-
   return field;
 }
 
@@ -687,16 +652,7 @@ function escapeHtml(value) {
 }
 
 function getAreaName(props) {
-  return (
-    props.area_name ||
-    props.lea_name ||
-    props.CSO_LEA ||
-    props.LEA_OFFICIAL ||
-    props.URBAN_AREA_NAME ||
-    props.ENGLISH ||
-    props.name ||
-    "Unknown area"
-  );
+  return props.area_name || props.lea_name || props.CSO_LEA || props.LEA_OFFICIAL || props.URBAN_AREA_NAME || props.ENGLISH || props.name || "Unknown area";
 }
 
 function getCountyName(props) {
@@ -722,6 +678,79 @@ function formatPercent(value) {
 function formatIndicatorValue(value, indicatorKey) {
   const config = getIndicatorConfig(indicatorKey);
   return config.type === "percent" ? formatPercent(value) : formatNumber(value);
+}
+
+function ensureTownSearchSection() {
+  if (!townSearchSectionEl) {
+    townSearchSectionEl = document.createElement("div");
+    townSearchSectionEl.className = "sidebar-section town-search-section";
+    townSearchSectionEl.style.padding = "24px 26px";
+    townSearchSectionEl.style.borderTop = "1px solid #d8e0e6";
+    townSearchSectionEl.style.borderBottom = "1px solid #d8e0e6";
+    townSearchSectionEl.style.background = "#ffffff";
+
+    const heading = document.createElement("p");
+    heading.className = "eyebrow";
+    heading.textContent = "Search town";
+    heading.style.marginBottom = "12px";
+    townSearchSectionEl.appendChild(heading);
+
+    townSearchInputEl = document.createElement("input");
+    townSearchInputEl.type = "search";
+    townSearchInputEl.className = "town-search-input";
+    townSearchInputEl.placeholder = "Start typing a town name...";
+    townSearchInputEl.autocomplete = "off";
+    townSearchInputEl.setAttribute("aria-label", "Search town");
+    townSearchInputEl.style.width = "100%";
+    townSearchInputEl.style.fontSize = "1rem";
+    townSearchInputEl.style.lineHeight = "1.4";
+    townSearchInputEl.style.padding = "13px 14px";
+    townSearchInputEl.style.border = "1px solid #cfd8df";
+    townSearchInputEl.style.borderRadius = "10px";
+    townSearchInputEl.style.color = "#17212b";
+    townSearchInputEl.style.boxSizing = "border-box";
+    townSearchSectionEl.appendChild(townSearchInputEl);
+
+    townSearchResultsEl = document.createElement("div");
+    townSearchResultsEl.className = "town-search-results";
+    townSearchResultsEl.style.marginTop = "10px";
+    townSearchResultsEl.style.display = "grid";
+    townSearchResultsEl.style.gap = "8px";
+    townSearchSectionEl.appendChild(townSearchResultsEl);
+
+    const note = document.createElement("p");
+    note.className = "source-note";
+    note.textContent = "Search results match town names from the Census 2022 Built Up Area boundary file.";
+    note.style.fontSize = "1rem";
+    note.style.lineHeight = "1.45";
+    note.style.marginTop = "12px";
+    townSearchSectionEl.appendChild(note);
+
+    townSearchInputEl.addEventListener("input", updateTownSearchResults);
+    townSearchInputEl.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") {
+        townSearchInputEl.value = "";
+        clearTownSearchResults();
+      }
+    });
+  }
+
+  const referenceSection =
+    churchOverlayToggleEl?.closest(".sidebar-section") ||
+    churchOverlayToggleEl?.closest("section") ||
+    churchOverlayToggleEl?.parentElement?.parentElement ||
+    null;
+
+  if (referenceSection && referenceSection.parentNode && townSearchSectionEl.parentNode !== referenceSection.parentNode) {
+    referenceSection.parentNode.insertBefore(townSearchSectionEl, referenceSection);
+  } else if (referenceSection && referenceSection.parentNode && townSearchSectionEl.nextSibling !== referenceSection) {
+    referenceSection.parentNode.insertBefore(townSearchSectionEl, referenceSection);
+  } else if (!townSearchSectionEl.parentNode) {
+    const resetSection = resetButtonEl?.closest(".sidebar-section") || resetButtonEl?.parentElement || dataSectionsEl;
+    resetSection.parentNode.insertBefore(townSearchSectionEl, resetSection.nextSibling);
+  }
+
+  townSearchSectionEl.style.display = currentGeography === "town" ? "block" : "none";
 }
 
 function populateIndicatorSelect() {
@@ -787,48 +816,6 @@ function populateIndicatorSelect() {
 function buildSidebarSections() {
   dataSectionsEl.innerHTML = "";
   sectionRowEls = [];
-  townSearchInputEl = null;
-  townSearchResultsEl = null;
-
-  if (currentGeography === "town") {
-    const searchSectionEl = document.createElement("div");
-    searchSectionEl.className = "sidebar-section town-search-section";
-
-    const heading = document.createElement("p");
-    heading.className = "eyebrow";
-    heading.textContent = "Search town";
-    searchSectionEl.appendChild(heading);
-
-    const input = document.createElement("input");
-    input.type = "search";
-    input.className = "town-search-input";
-    input.placeholder = "Start typing a town name...";
-    input.autocomplete = "off";
-    input.setAttribute("aria-label", "Search town");
-    searchSectionEl.appendChild(input);
-
-    const results = document.createElement("div");
-    results.className = "town-search-results";
-    searchSectionEl.appendChild(results);
-
-    const note = document.createElement("p");
-    note.className = "source-note";
-    note.textContent = "Search results match town names from the Census 2022 Built Up Area boundary file.";
-    searchSectionEl.appendChild(note);
-
-    dataSectionsEl.appendChild(searchSectionEl);
-
-    townSearchInputEl = input;
-    townSearchResultsEl = results;
-
-    townSearchInputEl.addEventListener("input", updateTownSearchResults);
-    townSearchInputEl.addEventListener("keydown", function (event) {
-      if (event.key === "Escape") {
-        townSearchInputEl.value = "";
-        clearTownSearchResults();
-      }
-    });
-  }
 
   const sections = sidebarSectionsByGeography[currentGeography] || [];
 
@@ -877,6 +864,8 @@ function buildSidebarSections() {
 
     dataSectionsEl.appendChild(sectionEl);
   });
+
+  ensureTownSearchSection();
 }
 
 function resetSidebar() {
@@ -933,9 +922,7 @@ function updateSidebar(props, smallAreaCount, selectedTownValue, selectedTownPop
     selectedIndicatorValueEl.textContent = formatIndicatorValue(props[currentIndicator], currentIndicator);
     populationValueEl.textContent = formatNumber(props.population_2022);
 
-    contextValueEl.textContent = geography.contextLabel && countyName
-      ? `${geography.contextLabel}: ${countyName}`
-      : "";
+    contextValueEl.textContent = geography.contextLabel && countyName ? `${geography.contextLabel}: ${countyName}` : "";
 
     sectionRowEls.forEach(row => {
       setDataRow(row.valueEl, row.barEl, props[row.countKey], props[row.pctKey]);
@@ -950,17 +937,14 @@ function updateSidebar(props, smallAreaCount, selectedTownValue, selectedTownPop
     selectedIndicatorCardEl.style.display = "";
     selectedIndicatorNameEl.textContent = config.label;
 
-    if (currentIndicator === "population_2022") {
-      selectedIndicatorValueEl.textContent =
-        typeof selectedTownValue === "number"
+    selectedIndicatorValueEl.textContent =
+      currentIndicator === "population_2022"
+        ? typeof selectedTownValue === "number"
           ? `Selected town total: ${formatNumber(selectedTownValue)}`
-          : "Loading...";
-    } else {
-      selectedIndicatorValueEl.textContent =
-        typeof selectedTownValue === "number"
+          : "Loading..."
+        : typeof selectedTownValue === "number"
           ? `Town average: ${formatPercent(selectedTownValue)}`
           : "Loading...";
-    }
 
     populationValueEl.textContent =
       typeof selectedTownPopulation === "number"
@@ -968,10 +952,8 @@ function updateSidebar(props, smallAreaCount, selectedTownValue, selectedTownPop
         : "Loading...";
 
     const parts = [];
-
     if (countyName) parts.push(`County: ${countyName}`);
     if (typeof smallAreaCount === "number") parts.push(`Small Areas shown: ${smallAreaCount}`);
-
     contextValueEl.textContent = parts.join(" · ");
 
     if (townProfile) {
@@ -1118,24 +1100,18 @@ function openAreaPopup(layer, smallAreaCount, selectedTownValue, selectedTownPop
   }
 
   if (currentGeography === "town") {
-    if (typeof smallAreaCount === "number") {
-      popupHtml += `<p><strong>Small Areas shown:</strong> ${formatNumber(smallAreaCount)}</p>`;
-    } else {
-      popupHtml += `<p><strong>Small Areas:</strong> loading...</p>`;
-    }
+    popupHtml += typeof smallAreaCount === "number"
+      ? `<p><strong>Small Areas shown:</strong> ${formatNumber(smallAreaCount)}</p>`
+      : `<p><strong>Small Areas:</strong> loading...</p>`;
 
-    if (typeof selectedTownPopulation === "number") {
-      popupHtml += `<p><strong>Population:</strong> ${formatNumber(selectedTownPopulation)}</p>`;
-    } else {
-      popupHtml += `<p><strong>Population:</strong> loading...</p>`;
-    }
+    popupHtml += typeof selectedTownPopulation === "number"
+      ? `<p><strong>Population:</strong> ${formatNumber(selectedTownPopulation)}</p>`
+      : `<p><strong>Population:</strong> loading...</p>`;
 
     if (currentIndicator !== "population_2022") {
-      if (typeof selectedTownValue === "number") {
-        popupHtml += `<p><strong>${escapeHtml(config.label)}:</strong> ${formatPercent(selectedTownValue)}</p>`;
-      } else {
-        popupHtml += `<p><strong>${escapeHtml(config.label)}:</strong> loading...</p>`;
-      }
+      popupHtml += typeof selectedTownValue === "number"
+        ? `<p><strong>${escapeHtml(config.label)}:</strong> ${formatPercent(selectedTownValue)}</p>`
+        : `<p><strong>${escapeHtml(config.label)}:</strong> loading...</p>`;
     }
 
     popupHtml += `<p><strong>Current view:</strong> Small Areas coloured by selected demographic measure</p>`;
@@ -1298,6 +1274,7 @@ function switchGeography(geographyKey) {
   populateIndicatorSelect();
   buildSidebarSections();
   resetSidebar();
+  ensureTownSearchSection();
 
   const existingLayer = loadedLayers[currentGeography];
 
@@ -1381,9 +1358,7 @@ function loadSmallAreas() {
     .then(data => {
       smallAreasData = data;
       smallAreasLoaded = true;
-
       console.log("Loaded " + data.features.length + " Small Areas.");
-
       return data;
     });
 }
@@ -1407,7 +1382,6 @@ function loadSmallAreaDemographics() {
 
       rows.forEach(row => {
         const code = String(row.SA_PUB2022 || "").trim();
-
         if (!code) return;
 
         const cleanRow = {};
@@ -1427,9 +1401,7 @@ function loadSmallAreaDemographics() {
 
       smallAreaDemographicsByCode = lookup;
       smallAreaDemographicsLoaded = true;
-
       console.log("Loaded demographic data for " + Object.keys(lookup).length + " Small Areas.");
-
       return lookup;
     });
 }
@@ -1454,21 +1426,16 @@ function showSmallAreasInsideTown(townLayer) {
       let selectedTownWeight = 0;
       let selectedTownPopulationValue = 0;
 
-      const townProfile = {
-        population_2022: 0
-      };
-
+      const townProfile = { population_2022: 0 };
       const weightedPctTotals = {};
       const weightedPctWeights = {};
 
       const matchingFeatures = data.features
         .filter(feature => {
           const centroid = getFeatureCentroid(feature);
-
           if (!centroid) return false;
 
           const latLng = L.latLng(centroid.lat, centroid.lng);
-
           if (!selectedBounds.contains(latLng)) return false;
 
           return pointInGeometry(centroid.lng, centroid.lat, selectedGeometry);
@@ -1520,16 +1487,15 @@ function showSmallAreasInsideTown(townLayer) {
         });
 
       Object.keys(weightedPctTotals).forEach(key => {
-        townProfile[key] = weightedPctWeights[key] > 0
-          ? weightedPctTotals[key] / weightedPctWeights[key]
-          : null;
+        townProfile[key] = weightedPctWeights[key] > 0 ? weightedPctTotals[key] / weightedPctWeights[key] : null;
       });
 
-      const selectedTownValue = currentIndicator === "population_2022"
-        ? selectedTownPopulationValue
-        : selectedTownWeight > 0
-          ? selectedTownWeightedValue / selectedTownWeight
-          : null;
+      const selectedTownValue =
+        currentIndicator === "population_2022"
+          ? selectedTownPopulationValue
+          : selectedTownWeight > 0
+            ? selectedTownWeightedValue / selectedTownWeight
+            : null;
 
       const layer = L.geoJSON(
         {
@@ -1554,15 +1520,7 @@ function showSmallAreasInsideTown(townLayer) {
       openAreaPopup(townLayer, matchingFeatures.length, selectedTownValue, selectedTownPopulation);
       updateLegend();
 
-      console.log(
-        "Displayed " +
-        matchingFeatures.length +
-        " Small Areas inside " +
-        getAreaName(townProps) +
-        " using " +
-        currentIndicator +
-        "."
-      );
+      console.log("Displayed " + matchingFeatures.length + " Small Areas inside " + getAreaName(townProps) + " using " + currentIndicator + ".");
     })
     .catch(error => {
       console.error(error);
@@ -1629,7 +1587,6 @@ function pointInPolygon(lng, lat, rings) {
   if (!rings || rings.length === 0) return false;
 
   const insideOuter = pointInRing(lng, lat, rings[0]);
-
   if (!insideOuter) return false;
 
   for (let i = 1; i < rings.length; i++) {
@@ -1677,7 +1634,6 @@ function updateTownSearchResults() {
   if (!townSearchInputEl || !townSearchResultsEl) return;
 
   const query = townSearchInputEl.value.trim().toLowerCase();
-
   clearTownSearchResults();
 
   if (query.length === 0) return;
@@ -1695,6 +1651,9 @@ function updateTownSearchResults() {
     const empty = document.createElement("div");
     empty.className = "town-search-empty";
     empty.textContent = "No matching towns found.";
+    empty.style.fontSize = "1rem";
+    empty.style.color = "#5f6b76";
+    empty.style.padding = "8px 2px";
     townSearchResultsEl.appendChild(empty);
     return;
   }
@@ -1703,9 +1662,21 @@ function updateTownSearchResults() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "town-search-result";
+    button.style.width = "100%";
+    button.style.textAlign = "left";
+    button.style.border = "1px solid #d8e0e6";
+    button.style.background = "#f8fbfc";
+    button.style.borderRadius = "10px";
+    button.style.padding = "11px 12px";
+    button.style.cursor = "pointer";
+    button.style.fontSize = "1rem";
+    button.style.color = "#17212b";
+    button.style.display = "grid";
+    button.style.gap = "3px";
+
     button.innerHTML = `
-      <span>${escapeHtml(item.name)}</span>
-      ${item.county ? `<small>${escapeHtml(item.county)}</small>` : ""}
+      <span style="font-weight:700;">${escapeHtml(item.name)}</span>
+      ${item.county ? `<small style="font-size:0.9rem;color:#5f6b76;">${escapeHtml(item.county)}</small>` : ""}
     `;
 
     button.addEventListener("click", function () {
@@ -1789,13 +1760,8 @@ function buildChurchPopup(row) {
   const website = String(row.website || "").trim();
 
   const placeParts = [county, lea].filter(Boolean);
-  const placeLine = placeParts.length > 0
-    ? `<p>${placeParts.join(" · ")}</p>`
-    : "";
-
-  const websiteLine = website
-    ? `<p><a href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">View website</a></p>`
-    : "";
+  const placeLine = placeParts.length > 0 ? `<p>${placeParts.join(" · ")}</p>` : "";
+  const websiteLine = website ? `<p><a href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">View website</a></p>` : "";
 
   return `
     <div class="church-popup">
@@ -1828,9 +1794,7 @@ function loadChurchOverlay() {
         const lat = Number(row.latitude);
         const lng = Number(row.longitude);
 
-        if (Number.isNaN(lat) || Number.isNaN(lng)) {
-          return;
-        }
+        if (Number.isNaN(lat) || Number.isNaN(lng)) return;
 
         const marker = L.circleMarker([lat, lng], {
           pane: "churchPane",
@@ -1848,7 +1812,6 @@ function loadChurchOverlay() {
 
       churchesLoaded = true;
       churchLayer.addTo(map);
-
       console.log("Loaded " + addedCount + " church overlay points.");
     })
     .catch(error => {
@@ -1913,4 +1876,5 @@ configureViewText();
 populateIndicatorSelect();
 buildSidebarSections();
 resetSidebar();
+ensureTownSearchSection();
 loadGeographyLayer("county");
