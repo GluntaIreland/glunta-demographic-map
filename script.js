@@ -984,12 +984,12 @@ function styleArea(feature) {
 
   if (geography.isTown) {
     return {
-      fillColor: "#ffffff",
+      fillColor: "transparent",
       weight: geography.weight,
       opacity: 0.95,
       color: "#0f4f49",
       dashArray: "3",
-      fillOpacity: 0.04
+      fillOpacity: 0
     };
   }
 
@@ -1023,7 +1023,7 @@ function highlightFeature(e) {
     layer.setStyle({
       weight: currentGeography === "town" ? 2.2 : 2.5,
       color: "#111",
-      fillOpacity: currentGeography === "town" ? 0.12 : HOVER_FILL_OPACITY
+      fillOpacity: currentGeography === "town" ? 0 : HOVER_FILL_OPACITY
     });
   }
 
@@ -1056,10 +1056,11 @@ function selectLayer(layer, options = {}) {
     clearSmallAreas();
 
     layer.setStyle({
-      weight: 2.4,
+      weight: 2.6,
       color: "#111827",
       dashArray: "",
-      fillOpacity: 0.08
+      fillColor: "transparent",
+      fillOpacity: 0
     });
   } else {
     clearSmallAreas();
@@ -1167,7 +1168,7 @@ function updateLegend() {
     if (currentGeography === "town") {
       div.innerHTML += `
         <div class="legend-row">
-          <span class="legend-color" style="background:#ffffff; opacity:0.25; border:2px solid #111827;"></span>
+          <span class="legend-color" style="background:transparent; border:2px solid #111827;"></span>
           <span>Selected Built Up Area</span>
         </div>
       `;
