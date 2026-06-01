@@ -1,6 +1,6 @@
 // Glúnta Demographic Map
 // Unified County + LEA + Town boundary view
-// Town view shows Small Area outlines inside a selected Town / Urban Area boundary
+// Town view shows Small Areas inside a selected Built Up Area and colours them by population
 
 if (typeof L === "undefined") {
   console.error("Leaflet did not load. Check your internet connection or CDN access.");
@@ -23,6 +23,7 @@ const GEOGRAPHIES = {
     sourceNote: "Source: CSO Census 2022, county / local authority SAPS tables.",
     contextLabel: "",
     hasDemographics: true,
+    isTown: false,
     weight: 1.1
   },
   lea: {
@@ -36,6 +37,7 @@ const GEOGRAPHIES = {
     sourceNote: "Source: CSO Census 2022, LEA-level SAPS tables.",
     contextLabel: "County",
     hasDemographics: true,
+    isTown: false,
     weight: 0.9
   },
   town: {
@@ -45,10 +47,11 @@ const GEOGRAPHIES = {
     selectedEyebrow: "Selected town / urban area",
     emptyName: "No town selected",
     emptyIntro: "Click a town / urban boundary to show its Census 2022 Built Up Area and the Small Areas inside it.",
-    selectedIntro: "This view shows the Census 2022 Built Up Area boundary and the Small Areas inside the selected town.",
-    sourceNote: "Source: Census 2022 Built Up Areas / Urban Areas boundary file and Small Area boundary file.",
+    selectedIntro: "This view shows the Census 2022 Built Up Area boundary and the Small Areas inside the selected town, coloured by population.",
+    sourceNote: "Source: Census 2022 Built Up Areas / Urban Areas boundary file, Small Area boundary file, and SAP2022T1T1ASA-derived population table.",
     contextLabel: "County",
     hasDemographics: false,
+    isTown: true,
     weight: 1.5
   }
 };
@@ -386,6 +389,15 @@ const percentGrades = [
   [-Infinity, "Under 5%"]
 ];
 
+const smallAreaPopulationGrades = [
+  [800, "800+"],
+  [600, "600 to 799"],
+  [400, "400 to 599"],
+  [250, "250 to 399"],
+  [100, "100 to 249"],
+  [-Infinity, "Under 100"]
+];
+
 const indicatorConfigs = {
   population_2022: {
     county: config("Total population", "The map is currently coloured by total population.", "Population, 2022", "blue", "number", [
@@ -405,7 +417,8 @@ const indicatorConfigs = {
       [25000, "25,001 to 35,000"],
       [15000, "15,001 to 25,000"],
       [-Infinity, "Up to 15,000"]
-    ])
+    ]),
+    town: config("Small Area population", "Selected town Small Areas are coloured by Census 2022 population.", "Small Area population, 2022", "blue", "number", smallAreaPopulationGrades)
   }
 };
 
@@ -560,6 +573,9 @@ let smallAreasData = null;
 let smallAreasLoaded = false;
 let smallAreaDisplayLayer = L.layerGroup();
 
+let smallAreaPopulationByCode = {};
+let smallAreaPopulationLoaded = false;
+
 function getIndicatorConfig(indicatorKey) {
   const entry = indicatorConfigs[indicatorKey];
   if (!entry) return indicatorConfigs.population_2022[currentGeography];
@@ -601,6 +617,10 @@ function getUrbanAreaCode(props) {
   return props.URBAN_AREA_CODE || props.urban_area_code || "";
 }
 
+function getSmallAreaCode(props) {
+  return String(props.SA_PUB2022 || props.SA_PUB2016 || props.SA_PUB2011 || "").trim();
+}
+
 function formatNumber(value) {
   const number = Number(value);
   if (Number.isNaN(number)) return "—";
@@ -621,13 +641,17 @@ function formatIndicatorValue(value, indicatorKey) {
 function populateIndicatorSelect() {
   indicatorSelectEl.innerHTML = "";
 
-  if (!GEOGRAPHIES[currentGeography].hasDemographics) {
-    indicatorSelectEl.disabled = true;
+  if (currentGeography === "town") {
+    indicatorSelectEl.disabled = false;
+
     const optionEl = document.createElement("option");
-    optionEl.value = "boundaries";
-    optionEl.textContent = "Boundary view only";
+    optionEl.value = "population_2022";
+    optionEl.textContent = "Small Area population, 2022";
     indicatorSelectEl.appendChild(optionEl);
-    indicatorNoteEl.textContent = "Town view shows Census 2022 Built Up Area boundaries. Click a town to show the Small Areas inside it.";
+
+    currentIndicator = "population_2022";
+    indicatorSelectEl.value = currentIndicator;
+    indicatorNoteEl.textContent = "Town view colours the Small Areas inside the selected town by Census 2022 population.";
     return;
   }
 
@@ -722,11 +746,15 @@ function resetSidebar() {
   areaIntroEl.textContent = geography.emptyIntro;
   selectedIndicatorNameEl.textContent = "—";
   selectedIndicatorValueEl.textContent = "—";
-  populationValueEl.textContent = geography.hasDemographics ? "—" : "Boundary view";
+  populationValueEl.textContent = geography.isTown ? "Select town" : "—";
   contextValueEl.textContent = "";
   sourceNoteEl.textContent = geography.sourceNote;
 
-  if (geography.hasDemographics) {
+  if (geography.isTown) {
+    selectedIndicatorCardEl.style.display = "";
+    selectedIndicatorNameEl.textContent = "Small Area population, 2022";
+    selectedIndicatorValueEl.textContent = "Select a town";
+  } else if (geography.hasDemographics) {
     selectedIndicatorCardEl.style.display = "";
   } else {
     selectedIndicatorCardEl.style.display = "none";
@@ -747,7 +775,7 @@ function setDataRow(valueEl, barEl, count, percent) {
     : Math.max(0, Math.min(100, safePercent)) + "%";
 }
 
-function updateSidebar(props, smallAreaCount) {
+function updateSidebar(props, smallAreaCount, selectedTownPopulation) {
   const geography = GEOGRAPHIES[currentGeography];
 
   selectedAreaEyebrowEl.textContent = geography.selectedEyebrow;
@@ -773,9 +801,18 @@ function updateSidebar(props, smallAreaCount) {
     sectionRowEls.forEach(row => {
       setDataRow(row.valueEl, row.barEl, props[row.countKey], props[row.pctKey]);
     });
-  } else {
-    selectedIndicatorCardEl.style.display = "none";
-    populationValueEl.textContent = "Boundary view";
+  } else if (geography.isTown) {
+    selectedIndicatorCardEl.style.display = "";
+    selectedIndicatorNameEl.textContent = "Small Area population, 2022";
+    selectedIndicatorValueEl.textContent =
+      typeof selectedTownPopulation === "number"
+        ? `Selected town total: ${formatNumber(selectedTownPopulation)}`
+        : "Loading...";
+
+    populationValueEl.textContent =
+      typeof selectedTownPopulation === "number"
+        ? formatNumber(selectedTownPopulation)
+        : "Loading...";
 
     const code = getUrbanAreaCode(props);
     const parts = [];
@@ -805,14 +842,14 @@ function getColorForValue(value, indicatorKey) {
 function styleArea(feature) {
   const geography = GEOGRAPHIES[currentGeography];
 
-  if (!geography.hasDemographics) {
+  if (geography.isTown) {
     return {
       fillColor: "#ffffff",
       weight: geography.weight,
       opacity: 0.95,
       color: "#0f4f49",
       dashArray: "3",
-      fillOpacity: 0.06
+      fillOpacity: 0.04
     };
   }
 
@@ -825,14 +862,16 @@ function styleArea(feature) {
   };
 }
 
-function styleSmallArea() {
+function styleSmallArea(feature) {
+  const population = Number(feature.properties.population_2022);
+
   return {
     pane: "smallAreaPane",
-    fillColor: "#ffffff",
-    fillOpacity: 0,
-    color: "#0f766e",
-    weight: 0.7,
-    opacity: 0.85,
+    fillColor: getColorForValue(population, "population_2022"),
+    fillOpacity: 0.68,
+    color: "#0f172a",
+    weight: 0.55,
+    opacity: 0.75,
     interactive: false
   };
 }
@@ -901,7 +940,7 @@ function selectLayer(layer) {
   openAreaPopup(layer);
 }
 
-function openAreaPopup(layer, smallAreaCount) {
+function openAreaPopup(layer, smallAreaCount, selectedTownPopulation) {
   const props = layer.feature.properties;
   const areaName = getAreaName(props);
   const countyName = getCountyName(props);
@@ -927,7 +966,13 @@ function openAreaPopup(layer, smallAreaCount) {
       popupHtml += `<p><strong>Small Areas:</strong> loading...</p>`;
     }
 
-    popupHtml += `<p><strong>Current view:</strong> town boundary with internal Small Area outlines</p>`;
+    if (typeof selectedTownPopulation === "number") {
+      popupHtml += `<p><strong>Population in shown Small Areas:</strong> ${formatNumber(selectedTownPopulation)}</p>`;
+    } else {
+      popupHtml += `<p><strong>Population:</strong> loading...</p>`;
+    }
+
+    popupHtml += `<p><strong>Current view:</strong> Small Areas coloured by population</p>`;
   } else {
     const indicatorConfig = getIndicatorConfig(currentIndicator);
     const currentValue = formatIndicatorValue(props[currentIndicator], currentIndicator);
@@ -958,22 +1003,32 @@ function updateLegend() {
     legend = null;
   }
 
-  if (!GEOGRAPHIES[currentGeography].hasDemographics) {
+  if (currentGeography === "town") {
     legend = L.control({ position: "bottomright" });
 
     legend.onAdd = function () {
       const div = L.DomUtil.create("div", "legend");
-      div.innerHTML = `
-        <div class="legend-title">Town view</div>
+      const config = indicatorConfigs.population_2022.town;
+      const colors = colorSets[config.colorSet] || colorSets.blue;
+
+      div.innerHTML = `<div class="legend-title">${escapeHtml(config.legendTitle)}</div>`;
+
+      config.grades.forEach((item, index) => {
+        div.innerHTML += `
+          <div class="legend-row">
+            <span class="legend-color" style="background:${colors[index]}; opacity:0.68;"></span>
+            <span>${escapeHtml(item.label)}</span>
+          </div>
+        `;
+      });
+
+      div.innerHTML += `
         <div class="legend-row">
           <span class="legend-color" style="background:#ffffff; opacity:0.25; border:2px solid #111827;"></span>
           <span>Selected Built Up Area</span>
         </div>
-        <div class="legend-row">
-          <span class="legend-color" style="background:#ffffff; opacity:0.2; border:1px solid #0f766e;"></span>
-          <span>Small Areas inside selected town</span>
-        </div>
       `;
+
       return div;
     };
 
@@ -1007,6 +1062,15 @@ function updateLegend() {
 
 function updateMapIndicator(indicatorKey) {
   currentIndicator = indicatorKey;
+
+  if (currentGeography === "town") {
+    updateLegend();
+    if (selectedLayer) {
+      showSmallAreasInsideTown(selectedLayer);
+    }
+    return;
+  }
+
   const config = getIndicatorConfig(currentIndicator);
 
   indicatorNoteEl.textContent = config.note;
@@ -1170,31 +1234,82 @@ function loadSmallAreas() {
     });
 }
 
+function loadSmallAreaPopulation() {
+  if (smallAreaPopulationLoaded) {
+    return Promise.resolve(smallAreaPopulationByCode);
+  }
+
+  return fetch("small-area-population-2022.csv")
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Could not load small-area-population-2022.csv. HTTP status: " + response.status);
+      }
+
+      return response.text();
+    })
+    .then(csvText => {
+      const rows = parseCsv(csvText);
+      const lookup = {};
+
+      rows.forEach(row => {
+        const code = String(row.SA_PUB2022 || "").trim();
+        const population = Number(row.population_2022);
+
+        if (code && !Number.isNaN(population)) {
+          lookup[code] = population;
+        }
+      });
+
+      smallAreaPopulationByCode = lookup;
+      smallAreaPopulationLoaded = true;
+
+      console.log("Loaded population data for " + Object.keys(lookup).length + " Small Areas.");
+
+      return lookup;
+    });
+}
+
 function showSmallAreasInsideTown(townLayer) {
   const townFeature = townLayer.feature;
   const townProps = townFeature.properties;
 
   populationValueEl.textContent = "Loading...";
-  contextValueEl.textContent = "Loading Small Areas inside selected town...";
+  selectedIndicatorValueEl.textContent = "Loading...";
+  contextValueEl.textContent = "Loading Small Areas and population data inside selected town...";
 
-  loadSmallAreas()
-    .then(data => {
+  Promise.all([loadSmallAreas(), loadSmallAreaPopulation()])
+    .then(([data, populationLookup]) => {
       clearSmallAreas();
 
       const selectedGeometry = townFeature.geometry;
       const selectedBounds = townLayer.getBounds();
 
-      const matchingFeatures = data.features.filter(feature => {
-        const centroid = getFeatureCentroid(feature);
+      let selectedTownPopulation = 0;
 
-        if (!centroid) return false;
+      const matchingFeatures = data.features
+        .filter(feature => {
+          const centroid = getFeatureCentroid(feature);
 
-        const latLng = L.latLng(centroid.lat, centroid.lng);
+          if (!centroid) return false;
 
-        if (!selectedBounds.contains(latLng)) return false;
+          const latLng = L.latLng(centroid.lat, centroid.lng);
 
-        return pointInGeometry(centroid.lng, centroid.lat, selectedGeometry);
-      });
+          if (!selectedBounds.contains(latLng)) return false;
+
+          return pointInGeometry(centroid.lng, centroid.lat, selectedGeometry);
+        })
+        .map(feature => {
+          const code = getSmallAreaCode(feature.properties);
+          const population = Number(populationLookup[code]);
+
+          feature.properties.population_2022 = Number.isNaN(population) ? null : population;
+
+          if (!Number.isNaN(population)) {
+            selectedTownPopulation += population;
+          }
+
+          return feature;
+        });
 
       const layer = L.geoJSON(
         {
@@ -1215,22 +1330,26 @@ function showSmallAreasInsideTown(townLayer) {
         selectedLayer.bringToFront();
       }
 
-      updateSidebar(townProps, matchingFeatures.length);
-      openAreaPopup(townLayer, matchingFeatures.length);
+      updateSidebar(townProps, matchingFeatures.length, selectedTownPopulation);
+      openAreaPopup(townLayer, matchingFeatures.length, selectedTownPopulation);
+      updateLegend();
 
       console.log(
         "Displayed " +
         matchingFeatures.length +
         " Small Areas inside " +
         getAreaName(townProps) +
+        " with total population " +
+        selectedTownPopulation +
         "."
       );
     })
     .catch(error => {
       console.error(error);
       populationValueEl.textContent = "Boundary view";
-      contextValueEl.textContent = "Small Areas could not be loaded.";
-      alert("The Small Area boundary file could not be loaded. Check that small-areas-2022.geojson is in the root of this GitHub Pages site.");
+      selectedIndicatorValueEl.textContent = "Population data could not be loaded.";
+      contextValueEl.textContent = "Small Area population data could not be loaded.";
+      alert("The Small Area boundary or population file could not be loaded. Check that small-areas-2022.geojson and small-area-population-2022.csv are both in the root of this GitHub Pages site.");
     });
 }
 
@@ -1481,7 +1600,6 @@ townViewButtonEl.addEventListener("click", function () {
 });
 
 indicatorSelectEl.addEventListener("change", function (event) {
-  if (!GEOGRAPHIES[currentGeography].hasDemographics) return;
   updateMapIndicator(event.target.value);
 });
 
