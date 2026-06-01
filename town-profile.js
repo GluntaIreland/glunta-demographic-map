@@ -1,8 +1,13 @@
 // Town Mission Profile
-// Static SVG map-card version with local geographic context.
+// Interactive mini-map version.
 // Loads selected town, aggregates Small Area demographics,
 // lists churches inside / near the town, generates rule-based missiological insights,
-// and renders a contextual static map-card with nearby town labels.
+// and renders a contained contextual Leaflet map in the profile hero.
+
+if (typeof L === "undefined") {
+  console.error("Leaflet did not load.");
+  throw new Error("Leaflet did not load.");
+}
 
 const params = new URLSearchParams(window.location.search);
 const selectedCode = params.get("code");
@@ -35,12 +40,8 @@ const religionNotStatedEl = document.getElementById("religionNotStated");
 const churchesInsideListEl = document.getElementById("churchesInsideList");
 const nearbyChurchesListEl = document.getElementById("nearbyChurchesList");
 const missionInsightsEl = document.getElementById("missionInsights");
-const townStaticMapEl = document.getElementById("townStaticMap");
 
-const SVG_WIDTH = 900;
-const SVG_HEIGHT = 620;
-const SVG_PADDING = 58;
-const CONTEXT_RADIUS_KM = 18;
+let miniMap = null;
 
 function escapeHtml(value) {
   return String(value || "")
@@ -265,18 +266,6 @@ function getFeatureBounds(feature) {
   return { minLng, minLat, maxLng, maxLat };
 }
 
-function expandBounds(bounds, factor) {
-  const lngSpan = bounds.maxLng - bounds.minLng;
-  const latSpan = bounds.maxLat - bounds.minLat;
-
-  return {
-    minLng: bounds.minLng - lngSpan * factor,
-    minLat: bounds.minLat - latSpan * factor,
-    maxLng: bounds.maxLng + lngSpan * factor,
-    maxLat: bounds.maxLat + latSpan * factor
-  };
-}
-
 function boundsIntersect(a, b) {
   if (!a || !b) return false;
 
@@ -456,111 +445,6 @@ function haversineKm(lat1, lng1, lat2, lng2) {
   return radius * c;
 }
 
-function getCombinedBounds(features) {
-  let combined = null;
-
-  features.forEach(feature => {
-    const bounds = getFeatureBounds(feature);
-    if (!bounds) return;
-
-    if (!combined) {
-      combined = { ...bounds };
-    } else {
-      combined.minLng = Math.min(combined.minLng, bounds.minLng);
-      combined.minLat = Math.min(combined.minLat, bounds.minLat);
-      combined.maxLng = Math.max(combined.maxLng, bounds.maxLng);
-      combined.maxLat = Math.max(combined.maxLat, bounds.maxLat);
-    }
-  });
-
-  return combined;
-}
-
-function createProjection(bounds) {
-  const lngSpan = Math.max(bounds.maxLng - bounds.minLng, 0.000001);
-  const latSpan = Math.max(bounds.maxLat - bounds.minLat, 0.000001);
-
-  const scaleX = (SVG_WIDTH - SVG_PADDING * 2) / lngSpan;
-  const scaleY = (SVG_HEIGHT - SVG_PADDING * 2) / latSpan;
-  const scale = Math.min(scaleX, scaleY);
-
-  const usedWidth = lngSpan * scale;
-  const usedHeight = latSpan * scale;
-
-  const offsetX = (SVG_WIDTH - usedWidth) / 2;
-  const offsetY = (SVG_HEIGHT - usedHeight) / 2;
-
-  return function project(coord) {
-    const lng = Number(coord[0]);
-    const lat = Number(coord[1]);
-
-    const x = offsetX + (lng - bounds.minLng) * scale;
-    const y = offsetY + (bounds.maxLat - lat) * scale;
-
-    return [x, y];
-  };
-}
-
-function ringToPath(ring, project) {
-  if (!ring || ring.length === 0) return "";
-
-  return ring
-    .map((coord, index) => {
-      const [x, y] = project(coord);
-      return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
-    })
-    .join(" ") + " Z";
-}
-
-function geometryToPath(geometry, project) {
-  if (!geometry) return "";
-
-  if (geometry.type === "Polygon") {
-    return geometry.coordinates.map(ring => ringToPath(ring, project)).join(" ");
-  }
-
-  if (geometry.type === "MultiPolygon") {
-    return geometry.coordinates
-      .map(polygon => polygon.map(ring => ringToPath(ring, project)).join(" "))
-      .join(" ");
-  }
-
-  return "";
-}
-
-function getNearbyTownContext(allTownFeatures, selectedTownFeature) {
-  const selectedCentroid = getFeatureCentroid(selectedTownFeature);
-  const selectedCodeValue = getUrbanAreaCode(selectedTownFeature.properties || "");
-
-  if (!selectedCentroid) return [];
-
-  return allTownFeatures
-    .filter(feature => feature !== selectedTownFeature)
-    .map(feature => {
-      const centroid = getFeatureCentroid(feature);
-      if (!centroid) return null;
-
-      const distanceKm = haversineKm(
-        selectedCentroid.lat,
-        selectedCentroid.lng,
-        centroid.lat,
-        centroid.lng
-      );
-
-      return {
-        feature,
-        centroid,
-        distanceKm,
-        name: getAreaName(feature.properties || {}),
-        code: getUrbanAreaCode(feature.properties || {})
-      };
-    })
-    .filter(item => item && item.code !== selectedCodeValue)
-    .filter(item => item.distanceKm <= CONTEXT_RADIUS_KM)
-    .sort((a, b) => a.distanceKm - b.distanceKm)
-    .slice(0, 10);
-}
-
 function getChurchName(row) {
   return row.name || row["Church Name"] || row.church_name || "Unnamed church";
 }
@@ -630,185 +514,107 @@ function analyseChurches(churchRows, townFeature) {
   return { inside, nearby };
 }
 
-function renderStaticTownMap(townFeature, matchingSmallAreas, lookup, churchesInside, allTownFeatures) {
-  const nearbyTowns = getNearbyTownContext(allTownFeatures, townFeature);
-
-  const contextFeatures = nearbyTowns.map(item => item.feature);
-  const boundsSourceFeatures = [
-    ...contextFeatures,
-    ...(matchingSmallAreas.length > 0 ? matchingSmallAreas : [townFeature]),
-    townFeature
-  ];
-
-  let bounds = getCombinedBounds(boundsSourceFeatures);
-
-  if (!bounds) {
-    townStaticMapEl.innerHTML = `<div class="map-loading">Map preview unavailable.</div>`;
-    return;
+function initialiseMiniMap() {
+  if (miniMap) {
+    miniMap.remove();
   }
 
-  bounds = expandBounds(bounds, 0.08);
+  miniMap = L.map("townMiniMap", {
+    zoomControl: true,
+    attributionControl: true,
+    scrollWheelZoom: true,
+    dragging: true,
+    doubleClickZoom: true,
+    boxZoom: false,
+    keyboard: true
+  });
 
-  const project = createProjection(bounds);
-
-  const contextTownPaths = nearbyTowns.map(item => {
-    const path = geometryToPath(item.feature.geometry, project);
-
-    return `
-      <path
-        d="${path}"
-        fill="#c8ddd8"
-        fill-opacity="0.52"
-        stroke="#6f8f89"
-        stroke-width="1.5"
-        stroke-dasharray="5 5"
-        vector-effect="non-scaling-stroke"
-      ></path>
-    `;
-  }).join("");
-
-  const smallAreaPaths = matchingSmallAreas.map(feature => {
-    const code = getSmallAreaCode(feature.properties);
-    const data = lookup[code] || {};
-    const fill = getColorForPopulation(data.population_2022);
-    const path = geometryToPath(feature.geometry, project);
-
-    return `
-      <path
-        d="${path}"
-        fill="${fill}"
-        fill-opacity="0.78"
-        stroke="rgba(15, 23, 42, 0.58)"
-        stroke-width="1.1"
-        vector-effect="non-scaling-stroke"
-      ></path>
-    `;
-  }).join("");
-
-  const townPath = geometryToPath(townFeature.geometry, project);
-  const townCentroid = getFeatureCentroid(townFeature);
-  const townName = getAreaName(townFeature.properties || {});
-
-  const nearbyTownLabels = nearbyTowns.map(item => {
-    const [x, y] = project([item.centroid.lng, item.centroid.lat]);
-
-    return `
-      <g>
-        <rect
-          x="${(x - 54).toFixed(2)}"
-          y="${(y - 15).toFixed(2)}"
-          width="108"
-          height="26"
-          rx="13"
-          fill="#ffffff"
-          fill-opacity="0.74"
-        ></rect>
-        <text
-          x="${x.toFixed(2)}"
-          y="${(y + 4).toFixed(2)}"
-          text-anchor="middle"
-          fill="#50635f"
-          font-size="14"
-          font-weight="800"
-        >${escapeHtml(item.name)}</text>
-      </g>
-    `;
-  }).join("");
-
-  const selectedTownLabel = townCentroid
-    ? (() => {
-        const [x, y] = project([townCentroid.lng, townCentroid.lat]);
-
-        return `
-          <g>
-            <rect
-              x="${(x - 74).toFixed(2)}"
-              y="${(y - 22).toFixed(2)}"
-              width="148"
-              height="36"
-              rx="18"
-              fill="#0f4f49"
-              fill-opacity="0.94"
-            ></rect>
-            <text
-              x="${x.toFixed(2)}"
-              y="${(y + 3).toFixed(2)}"
-              text-anchor="middle"
-              fill="#ffffff"
-              font-size="18"
-              font-weight="900"
-            >${escapeHtml(townName)}</text>
-          </g>
-        `;
-      })()
-    : "";
-
-  const churchPoints = churchesInside.map(church => {
-    const [x, y] = project([church.lng, church.lat]);
-
-    return `
-      <circle
-        cx="${x.toFixed(2)}"
-        cy="${y.toFixed(2)}"
-        r="7"
-        fill="#ffffff"
-        stroke="#111827"
-        stroke-width="2.3"
-        vector-effect="non-scaling-stroke"
-      ></circle>
-    `;
-  }).join("");
-
-  townStaticMapEl.innerHTML = `
-    <svg viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}" role="img" aria-label="Static town boundary map with local context">
-      <defs>
-        <pattern id="gridPattern" width="28" height="28" patternUnits="userSpaceOnUse">
-          <path d="M 28 0 L 0 0 0 28" fill="none" stroke="rgba(15,79,73,0.08)" stroke-width="1"></path>
-        </pattern>
-      </defs>
-
-      <rect x="0" y="0" width="${SVG_WIDTH}" height="${SVG_HEIGHT}" rx="28" fill="#eaf4f1"></rect>
-      <rect x="0" y="0" width="${SVG_WIDTH}" height="${SVG_HEIGHT}" rx="28" fill="url(#gridPattern)"></rect>
-
-      <g aria-label="Nearby town boundaries">
-        ${contextTownPaths}
-      </g>
-
-      <g aria-label="Selected town small areas">
-        ${smallAreaPaths}
-      </g>
-
-      <path
-        d="${townPath}"
-        fill="none"
-        stroke="#111827"
-        stroke-width="3.4"
-        stroke-linejoin="round"
-        stroke-linecap="round"
-        vector-effect="non-scaling-stroke"
-      ></path>
-
-      <g aria-label="Nearby town labels">
-        ${nearbyTownLabels}
-      </g>
-
-      <g aria-label="Selected town label">
-        ${selectedTownLabel}
-      </g>
-
-      <g aria-label="Church points inside selected town">
-        ${churchPoints}
-      </g>
-
-      <text x="${SVG_WIDTH - 98}" y="58" fill="rgba(15,79,73,0.72)" font-size="18" font-weight="900">N ↑</text>
-      <text x="58" y="${SVG_HEIGHT - 48}" fill="rgba(15,79,73,0.78)" font-size="16" font-weight="800">
-        Selected town with nearby urban areas for context
-      </text>
-    </svg>
-  `;
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(miniMap);
 }
 
-function renderProfileData(townFeature, matchingSmallAreas, lookup, churches, allTownFeatures) {
+function renderMiniMap(townFeature, matchingSmallAreas, lookup, churchAnalysis) {
+  initialiseMiniMap();
+
+  const smallAreasLayer = L.geoJSON(
+    {
+      type: "FeatureCollection",
+      features: matchingSmallAreas.map(feature => {
+        const clone = JSON.parse(JSON.stringify(feature));
+        const code = getSmallAreaCode(clone.properties);
+        const data = lookup[code] || {};
+        clone.properties.population_2022 = data.population_2022;
+        return clone;
+      })
+    },
+    {
+      style: feature => ({
+        fillColor: getColorForPopulation(feature.properties.population_2022),
+        fillOpacity: 0.48,
+        color: "#0f172a",
+        weight: 0.55,
+        opacity: 0.65
+      }),
+      interactive: false
+    }
+  ).addTo(miniMap);
+
+  const townLayer = L.geoJSON(townFeature, {
+    style: {
+      color: "#111827",
+      weight: 3,
+      opacity: 0.95,
+      fillColor: "transparent",
+      fillOpacity: 0
+    }
+  }).addTo(miniMap);
+
+  churchAnalysis.inside.forEach(church => {
+    const marker = L.circleMarker([church.lat, church.lng], {
+      radius: 5.5,
+      color: "#111827",
+      weight: 2,
+      fillColor: "#ffffff",
+      fillOpacity: 1
+    });
+
+    marker.bindPopup(`<strong>${escapeHtml(getChurchName(church))}</strong><br>Listed inside this town`);
+    marker.addTo(miniMap);
+  });
+
+  churchAnalysis.nearby.slice(0, 5).forEach(church => {
+    const marker = L.circleMarker([church.lat, church.lng], {
+      radius: 4,
+      color: "#0f4f49",
+      weight: 1.8,
+      fillColor: "#ffffff",
+      fillOpacity: 0.45
+    });
+
+    marker.bindPopup(`<strong>${escapeHtml(getChurchName(church))}</strong><br>${church.distanceKm.toFixed(1)} km from town centre`);
+    marker.addTo(miniMap);
+  });
+
+  const bounds = townLayer.getBounds();
+
+  setTimeout(() => {
+    miniMap.invalidateSize(true);
+
+    if (bounds.isValid()) {
+      miniMap.fitBounds(bounds, {
+        padding: [90, 90],
+        maxZoom: 12,
+        animate: false
+      });
+    }
+
+    townLayer.bringToFront();
+  }, 250);
+}
+
+function renderProfileData(townFeature, matchingSmallAreas, lookup, churches) {
   const props = townFeature.properties || {};
   const townName = getAreaName(props);
   const countyName = getCountyName(props);
@@ -856,7 +662,7 @@ function renderProfileData(townFeature, matchingSmallAreas, lookup, churches, al
   );
 
   renderMissiologicalInsights(profile, churchAnalysis, townName);
-  renderStaticTownMap(townFeature, matchingSmallAreas, lookup, churchAnalysis.inside, allTownFeatures);
+  renderMiniMap(townFeature, matchingSmallAreas, lookup, churchAnalysis);
 }
 
 function addInsight(insights, title, text, priority = false) {
@@ -1043,13 +849,7 @@ function loadTownProfile() {
         return smallAreaLikelyOverlapsTown(feature, selectedTownFeature.geometry, townBounds);
       });
 
-      renderProfileData(
-        selectedTownFeature,
-        matchingSmallAreas,
-        lookup,
-        churches,
-        townData.features
-      );
+      renderProfileData(selectedTownFeature, matchingSmallAreas, lookup, churches);
 
       setNotice(
         "Town profile loaded from the Glúnta demographic map data. Church presence is based on the current Glúnta church points dataset.",
