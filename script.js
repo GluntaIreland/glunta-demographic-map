@@ -366,6 +366,10 @@ map.createPane("smallAreaPane");
 map.getPane("smallAreaPane").style.zIndex = 690;
 map.getPane("smallAreaPane").style.pointerEvents = "none";
 
+map.createPane("dublinSelectedSmallAreaPane");
+map.getPane("dublinSelectedSmallAreaPane").style.zIndex = 692;
+map.getPane("dublinSelectedSmallAreaPane").style.pointerEvents = "none";
+
 map.createPane("churchPane");
 map.getPane("churchPane").style.zIndex = 695;
 
@@ -431,6 +435,7 @@ let selectedTownPropsForSmallAreas = null;
 let selectedTownSmallAreaSummary = null;
 let selectedDublinSmallAreaLayer = null;
 let selectedDublinSmallAreaFeature = null;
+let dublinSelectedSmallAreaOutlineLayer = L.layerGroup();
 
 function config(label, note, legendTitle, colorSet, type, grades) {
   return {
@@ -987,6 +992,34 @@ function showDublinDetailAction() {
   dublinDetailActionEl.style.display = "block";
 }
 
+function clearDublinSelectedSmallAreaOutline() {
+  if (dublinSelectedSmallAreaOutlineLayer && typeof dublinSelectedSmallAreaOutlineLayer.clearLayers === "function") {
+    dublinSelectedSmallAreaOutlineLayer.clearLayers();
+  }
+
+  if (dublinSelectedSmallAreaOutlineLayer && map.hasLayer(dublinSelectedSmallAreaOutlineLayer)) {
+    map.removeLayer(dublinSelectedSmallAreaOutlineLayer);
+  }
+}
+
+function drawDublinSelectedSmallAreaOutline(feature) {
+  clearDublinSelectedSmallAreaOutline();
+
+  dublinSelectedSmallAreaOutlineLayer = L.geoJSON(feature, {
+    pane: "dublinSelectedSmallAreaPane",
+    interactive: false,
+    style: {
+      fillColor: "#0f766e",
+      fillOpacity: 0.16,
+      color: "#111827",
+      weight: 3.2,
+      opacity: 1
+    }
+  });
+
+  dublinSelectedSmallAreaOutlineLayer.addTo(map);
+}
+
 function resetDublinSmallAreaLayerStyle(layer) {
   if (!layer || typeof layer.setStyle !== "function") return;
   layer.setStyle(styleSmallArea(layer.feature));
@@ -1001,6 +1034,7 @@ function resetAllDublinSmallAreaStyles() {
 }
 
 function clearDublinSmallAreaSelection() {
+  clearDublinSelectedSmallAreaOutline();
   resetDublinSmallAreaLayerStyle(selectedDublinSmallAreaLayer);
 
   selectedDublinSmallAreaLayer = null;
@@ -1099,33 +1133,21 @@ function openDublinSmallAreaPopup(layer) {
 }
 
 function selectDublinSmallArea(layer) {
-  // Reset every Dublin Small Area first. This avoids old outlines being left behind
-  // and prevents a stale selected path from interfering with later clicks.
-  resetAllDublinSmallAreaStyles();
-
+  // Keep the clickable Small Area layer stable. Do not bring the clicked polygon
+  // to the front or mutate its interactivity. Instead, draw a separate
+  // non-interactive outline layer above it. This prevents the first selected
+  // polygon from blocking later clicks on neighbouring Small Areas.
   selectedDublinSmallAreaLayer = layer;
   selectedDublinSmallAreaFeature = layer.feature;
 
-  layer.setStyle({
-    fillOpacity: 0.88,
-    color: "#111827",
-    weight: 2.8
-  });
+  drawDublinSelectedSmallAreaOutline(layer.feature);
 
-  if (smallAreaDisplayLayer && typeof smallAreaDisplayLayer.bringToFront === "function") {
-    smallAreaDisplayLayer.bringToFront();
-  }
-
-  layer.bringToFront();
+  updateSidebarForDublinSmallArea(layer.feature);
 
   if (churchesLoaded && map.hasLayer(churchLayer)) {
     churchLayer.bringToFront();
   }
 
-  updateSidebarForDublinSmallArea(layer.feature);
-
-  // Do not open a Leaflet popup for Dublin Small Areas. The sidebar is the main detail view,
-  // and popups can make repeated click handling feel sticky on dense city geometry.
   map.closePopup();
 }
 
@@ -1639,6 +1661,8 @@ function loadGeographyLayer(geographyKey, options = {}) {
 }
 
 function clearSmallAreas() {
+  clearDublinSelectedSmallAreaOutline();
+
   if (map.getPane("smallAreaPane")) {
     map.getPane("smallAreaPane").style.pointerEvents = "none";
   }
