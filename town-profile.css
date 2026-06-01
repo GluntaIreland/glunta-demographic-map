@@ -122,55 +122,71 @@ h1 {
 
 .town-map-preview-wrap {
   position: relative;
-  height: clamp(380px, 42vw, 520px);
-  min-height: 380px;
+  min-height: 430px;
   overflow: hidden;
-  background: #dfe9e7;
-  isolation: isolate;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.72), transparent 14rem),
+    linear-gradient(135deg, #dbeae7 0%, #cfe2df 100%);
 }
 
-.town-map-preview {
+.town-static-map {
   position: absolute;
   inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+}
+
+.town-static-map svg {
   width: 100%;
   height: 100%;
-  overflow: hidden;
-  background: #dfe9e7;
+  display: block;
 }
 
-/* Important Leaflet fix: stop responsive image rules breaking map tiles */
-.town-map-preview img,
-.town-map-preview .leaflet-tile {
-  max-width: none !important;
-  max-height: none !important;
+.map-loading {
+  color: var(--green-dark);
+  font-weight: 800;
 }
 
-.town-map-preview .leaflet-container {
-  width: 100% !important;
-  height: 100% !important;
+.map-card-background {
+  fill: #eaf4f1;
 }
 
-.town-map-preview .leaflet-pane,
-.town-map-preview .leaflet-map-pane,
-.town-map-preview .leaflet-tile-pane,
-.town-map-preview .leaflet-overlay-pane {
-  width: auto !important;
-  height: auto !important;
+.map-small-area {
+  stroke: rgba(15, 23, 42, 0.58);
+  stroke-width: 1.1;
+  vector-effect: non-scaling-stroke;
 }
 
-.town-map-preview .leaflet-control-attribution {
-  font-size: 0.65rem;
+.map-town-outline {
+  fill: none;
+  stroke: #111827;
+  stroke-width: 3.2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
 }
 
-.town-map-preview .leaflet-control-container {
-  z-index: 450;
+.map-church-point {
+  fill: #ffffff;
+  stroke: #111827;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-north-label,
+.map-caption-label {
+  fill: rgba(15, 79, 73, 0.72);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .map-preview-label {
   position: absolute;
   left: 18px;
   bottom: 18px;
-  z-index: 500;
+  z-index: 5;
   border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: 999px;
   padding: 8px 12px;
@@ -410,7 +426,7 @@ h1 {
   }
 
   .town-map-preview-wrap {
-    height: 360px;
+    min-height: 360px;
   }
 }
 
@@ -432,7 +448,6 @@ h1 {
   }
 
   .town-map-preview-wrap {
-    height: 280px;
     min-height: 280px;
   }
 }
