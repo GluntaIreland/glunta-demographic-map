@@ -5,13 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Town Mission Profile | Glúnta</title>
 
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIINfQ0K6QdRrgX7VUyC6JxyYwF1jLDWDrM="
-    crossorigin=""
-  />
-
   <link rel="stylesheet" href="town-profile.css" />
 </head>
 
@@ -35,7 +28,13 @@
 
     <section class="town-summary-card">
       <div class="town-map-preview-wrap">
-        <div id="townMiniMap" class="town-mini-map" aria-label="Selected town contextual map"></div>
+        <iframe
+          id="townMapFrame"
+          class="town-map-frame"
+          title="Town context map"
+          src="town-profile-map.html"
+          loading="eager"
+        ></iframe>
 
         <div class="map-preview-label">
           <span>Interactive town context map</span>
@@ -227,12 +226,6 @@
       </p>
     </section>
   </main>
-
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""
-  ></script>
 
   <script src="town-profile.js"></script>
 </body>
