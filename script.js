@@ -964,6 +964,24 @@ function hideDublinDetailAction() {
   dublinDetailActionEl.style.display = "none";
 }
 
+function setLayerPointerEvents(layer, value) {
+  if (!layer || typeof layer.getElement !== "function") return;
+
+  const element = layer.getElement();
+  if (!element) return;
+
+  if (value) {
+    element.style.pointerEvents = value;
+  } else {
+    element.style.pointerEvents = "";
+  }
+}
+
+function restoreSelectedBoundaryPointerEvents() {
+  setLayerPointerEvents(selectedLayer, "");
+  setLayerPointerEvents(selectedTownLayerForSmallAreas, "");
+}
+
 function showDublinDetailAction() {
   ensureDublinDetailAction();
   dublinDetailActionEl.style.display = "block";
@@ -986,6 +1004,7 @@ function restoreSelectedTownProfile() {
 
   if (selectedTownLayerForSmallAreas) {
     selectedTownLayerForSmallAreas.bringToFront();
+    setLayerPointerEvents(selectedTownLayerForSmallAreas, "none");
   }
 
   const summary = selectedTownSmallAreaSummary;
@@ -1268,6 +1287,7 @@ function resetHighlight(e) {
 }
 
 function selectLayer(layer, options = {}) {
+  restoreSelectedBoundaryPointerEvents();
   clearDublinSmallAreaSelection();
   selectedTownLayerForSmallAreas = null;
   selectedTownPropsForSmallAreas = null;
@@ -1697,6 +1717,14 @@ function showSmallAreasInsideTown(townLayer) {
       selectedTownLayerForSmallAreas = townLayer;
       selectedTownPropsForSmallAreas = townProps;
 
+      /*
+        Dublin Detail Mode needs the Small Area polygons to receive the click.
+        The selected town boundary is an invisible-filled polygon, so even with fillOpacity: 0
+        it can still catch clicks across the whole city. Disable pointer events on the
+        selected Dublin boundary while its Small Areas are being inspected.
+      */
+      setLayerPointerEvents(townLayer, dublinMode ? "none" : "");
+
       const selectedGeometry = townFeature.geometry;
       const selectedBounds = townLayer.getBounds();
 
@@ -1831,7 +1859,7 @@ function showSmallAreasInsideTown(townLayer) {
       smallAreaDisplayLayer = layer;
       smallAreaDisplayLayer.addTo(map);
 
-      if (selectedLayer) {
+      if (selectedLayer && !dublinMode) {
         selectedLayer.bringToFront();
       }
 
