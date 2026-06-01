@@ -1,6 +1,6 @@
 // Town Mission Profile
-// Loads selected town, renders a map-generated preview, aggregates Small Area demographics,
-// and lists churches inside / near the selected town.
+// Loads selected town, renders a contained map preview, aggregates Small Area demographics,
+// lists churches inside / near the town, and generates rule-based missiological insights.
 
 if (typeof L === "undefined") {
   console.error("Leaflet did not load.");
@@ -126,7 +126,9 @@ function setNotice(message, state) {
 }
 
 function initialisePreviewMap() {
-  previewMap = L.map("townMapPreview", {
+  const mapEl = document.getElementById("townMapPreview");
+
+  previewMap = L.map(mapEl, {
     zoomControl: false,
     attributionControl: true,
     dragging: false,
@@ -199,10 +201,12 @@ function loadJson(url) {
 }
 
 function loadCsv(url) {
-  return fetch(url).then(response => {
-    if (!response.ok) throw new Error(`Could not load ${url}. HTTP status: ${response.status}`);
-    return response.text();
-  }).then(parseCsv);
+  return fetch(url)
+    .then(response => {
+      if (!response.ok) throw new Error(`Could not load ${url}. HTTP status: ${response.status}`);
+      return response.text();
+    })
+    .then(parseCsv);
 }
 
 function collectCoordinates(geometry, output) {
@@ -428,24 +432,18 @@ function aggregateSmallAreas(matchingFeatures, lookup) {
 }
 
 function renderTownPreview(townFeature, matchingSmallAreas, lookup) {
-  const townLayer = L.geoJSON(townFeature, {
-    style: {
-      color: "#111827",
-      weight: 3,
-      opacity: 0.95,
-      fillColor: "transparent",
-      fillOpacity: 0
-    }
-  }).addTo(previewMap);
+  const boundsLayer = L.geoJSON(townFeature);
+  const bounds = boundsLayer.getBounds();
 
-  L.geoJSON(
+  const smallAreaLayer = L.geoJSON(
     {
       type: "FeatureCollection",
       features: matchingSmallAreas.map(feature => {
-        const code = getSmallAreaCode(feature.properties);
+        const clone = JSON.parse(JSON.stringify(feature));
+        const code = getSmallAreaCode(clone.properties);
         const data = lookup[code] || {};
-        feature.properties.population_2022 = data.population_2022;
-        return feature;
+        clone.properties.population_2022 = data.population_2022;
+        return clone;
       })
     },
     {
@@ -457,29 +455,47 @@ function renderTownPreview(townFeature, matchingSmallAreas, lookup) {
         opacity: 0.75
       })
     }
-  ).addTo(previewMap);
+  );
 
-  townLayer.bringToFront();
+  const townLayer = L.geoJSON(townFeature, {
+    style: {
+      color: "#111827",
+      weight: 3,
+      opacity: 0.95,
+      fillColor: "transparent",
+      fillOpacity: 0
+    }
+  });
 
-  const bounds = townLayer.getBounds();
+  function drawWhenReady() {
+    previewMap.invalidateSize(true);
 
-  if (bounds.isValid()) {
-    previewMap.fitBounds(bounds, {
-      padding: [24, 24],
-      animate: false
-    });
-  }
-
-  setTimeout(() => {
-    previewMap.invalidateSize();
+    smallAreaLayer.addTo(previewMap);
+    townLayer.addTo(previewMap);
+    townLayer.bringToFront();
 
     if (bounds.isValid()) {
       previewMap.fitBounds(bounds, {
-        padding: [24, 24],
+        padding: [28, 28],
         animate: false
       });
     }
-  }, 300);
+
+    setTimeout(() => {
+      previewMap.invalidateSize(true);
+
+      if (bounds.isValid()) {
+        previewMap.fitBounds(bounds, {
+          padding: [28, 28],
+          animate: false
+        });
+      }
+    }, 350);
+  }
+
+  requestAnimationFrame(() => {
+    setTimeout(drawWhenReady, 200);
+  });
 }
 
 function haversineKm(lat1, lng1, lat2, lng2) {
@@ -614,60 +630,134 @@ function renderProfileData(townFeature, matchingSmallAreas, lookup, churches) {
     true
   );
 
-  renderInsights(profile, churchAnalysis);
+  renderMissiologicalInsights(profile, churchAnalysis, townName);
 }
 
-function renderInsights(profile, churchAnalysis) {
+function addInsight(insights, title, text, priority = false) {
+  insights.push({ title, text, priority });
+}
+
+function renderMissiologicalInsights(profile, churchAnalysis, townName) {
   const insights = [];
 
-  insights.push({
-    title: "Begin with local listening",
-    text: "This profile is intended to support prayer, partnership, and research. It should not be read as a mechanical church planting recommendation."
-  });
+  const population = Number(profile.population_2022);
+  const children = Number(profile.age_0_14_pct);
+  const youngAdults = Number(profile.age_15_34_pct);
+  const olderAdults = Number(profile.age_65_plus_pct);
+  const bornOutside = Number(profile.born_outside_ireland_pct);
+  const nonIrishCitizenship = Number(profile.non_irish_citizenship_pct);
+  const foreignLanguage = Number(profile.foreign_language_speakers_pct);
+  const noReligion = Number(profile.religion_none_pct);
+  const otherReligion = Number(profile.religion_other_pct);
+
+  addInsight(
+    insights,
+    "Start with the question of presence",
+    `The first question for ${townName} is not simply whether a church could be planted, but what kind of faithful gospel presence is already here, where it is visible, and where it is absent. The data should begin conversations, not end them.`,
+    true
+  );
 
   if (churchAnalysis.inside.length > 0) {
-    insights.push({
-      title: "Start with existing witness",
-      text: "There is at least one listed church inside this urban boundary. Any new work should begin by asking what God is already doing locally and how existing witness might be strengthened rather than bypassed."
-    });
+    addInsight(
+      insights,
+      "Begin with existing witness",
+      `There is at least one listed church inside this urban boundary. Any new work should begin with listening, honouring existing ministry, and asking whether partnership, strengthening, or multiplication is wiser than starting something disconnected.`,
+      true
+    );
   } else {
-    insights.push({
-      title: "Research the actual local witness",
-      text: "No listed church appears inside this urban boundary in the current dataset. That does not prove there is no Christian witness, but it does suggest the town deserves closer local research."
-    });
+    addInsight(
+      insights,
+      "Verify the gospel presence on the ground",
+      `No listed church appears inside this urban boundary in the current dataset. That should not be treated as proof that there is no Christian witness, but it does make ${townName} a place for careful local research, prayer, and conversation with nearby churches.`,
+      true
+    );
   }
 
-  if (Number(profile.born_outside_ireland_pct) >= 15 || Number(profile.non_irish_citizenship_pct) >= 10) {
-    insights.push({
-      title: "Pay attention to migration and hospitality",
-      text: "The demographic profile suggests that intercultural ministry may matter here. A planter should ask which communities are present, where people gather, and whether language, work patterns, or housing shape access to local relationships."
-    });
+  if (!Number.isNaN(population) && population >= 5000 && churchAnalysis.inside.length === 0) {
+    addInsight(
+      insights,
+      "Population without listed church presence",
+      `The town has a meaningful urban population but no listed church inside the boundary. That combination should raise the priority of local research, especially around meeting places, community rhythms, and whether believers are already travelling elsewhere for fellowship.`,
+      true
+    );
   }
 
-  if (Number(profile.religion_none_pct) >= 20) {
-    insights.push({
-      title: "Evangelism may need to begin further back",
-      text: "A higher non-religious profile suggests that patient trust-building, Bible discovery, apologetics, and embodied community may be more important than invitation-only programming."
-    });
+  if (!Number.isNaN(bornOutside) && bornOutside >= 15 || !Number.isNaN(nonIrishCitizenship) && nonIrishCitizenship >= 10) {
+    addInsight(
+      insights,
+      "Think interculturally from the beginning",
+      `The migration profile suggests that ministry here should not assume one settled Irish cultural pathway. A planter or partner church should ask which communities are present, what languages are spoken at home, where newcomers build trust, and whether hospitality could become a central missionary practice.`,
+      true
+    );
   }
 
-  if (Number(profile.age_0_14_pct) >= 20) {
-    insights.push({
-      title: "Consider family and school-gate rhythms",
-      text: "A significant children’s population may point toward family ministry, parent-and-toddler relationships, youth work, and practical support for households."
-    });
+  if (!Number.isNaN(foreignLanguage) && foreignLanguage >= 10) {
+    addInsight(
+      insights,
+      "Language may shape access",
+      `A noticeable foreign-language speaking population means that communication, friendship, translation, and multilingual relationships may matter. This does not necessarily mean launching language-specific services, but it does mean asking who is being unintentionally excluded by ordinary church habits.`
+    );
   }
 
-  if (Number(profile.age_65_plus_pct) >= 20) {
-    insights.push({
-      title: "Do not miss older adults",
-      text: "An older age profile may mean that pastoral presence, loneliness, bereavement, care networks, and weekday ministry rhythms are especially important."
-    });
+  if (!Number.isNaN(noReligion) && noReligion >= 20) {
+    addInsight(
+      insights,
+      "Evangelism may need to begin further back",
+      `A higher non-religious profile suggests that mission may need to begin with patient trust-building, Bible discovery, apologetics, table fellowship, and visible community life rather than assuming people already share Christian categories.`,
+      true
+    );
   }
+
+  if (!Number.isNaN(otherReligion) && otherReligion >= 8) {
+    addInsight(
+      insights,
+      "Religious plurality needs neighbourly clarity",
+      `The presence of other religious affiliation calls for a posture that is both hospitable and clear. Local mission should be prepared for interfaith friendships, careful listening, and gracious explanation of the gospel without reducing people to census categories.`
+    );
+  }
+
+  if (!Number.isNaN(children) && children >= 20) {
+    addInsight(
+      insights,
+      "Family rhythms may be a key doorway",
+      `A significant children’s population points toward the importance of schools, sports clubs, parent-and-toddler relationships, youth work, and practical support for households. In a town like this, mission may move through ordinary family networks long before it moves through formal events.`
+    );
+  }
+
+  if (!Number.isNaN(youngAdults) && youngAdults >= 25) {
+    addInsight(
+      insights,
+      "Do not ignore younger adult networks",
+      `The younger adult profile suggests paying attention to work, commuting, rental housing, cafés, gyms, sports, and informal friendship networks. A church plant that only imagines Sunday attendance may miss where younger adults actually build community.`
+    );
+  }
+
+  if (!Number.isNaN(olderAdults) && olderAdults >= 20) {
+    addInsight(
+      insights,
+      "Pastoral presence among older adults matters",
+      `The older age profile means that loneliness, bereavement, care, weekday availability, and trusted pastoral presence may be central to faithful ministry. A mission strategy focused only on young families would read the town too narrowly.`
+    );
+  }
+
+  if (churchAnalysis.nearby.length >= 3 && churchAnalysis.inside.length === 0) {
+    addInsight(
+      insights,
+      "Nearby churches may be partners, not competitors",
+      `There are several listed churches within 15 km. Before asking whether ${townName} needs a separate new church, it would be wise to ask whether nearby congregations already have relationships here, whether a Bible study or outreach could be supported, and what collaboration might look like.`
+    );
+  }
+
+  addInsight(
+    insights,
+    "Use the map as a prompt for fieldwork",
+    `The next step is not just more data. Walk the town. Notice schools, estates, cafés, marts, shops, community halls, sports clubs, direct provision or migrant housing where relevant, and the places where people already gather. Good missiology starts with attention.`,
+    true
+  );
 
   missionInsightsEl.innerHTML = insights
     .map(insight => `
-      <article class="insight-card">
+      <article class="insight-card ${insight.priority ? "is-priority" : ""}">
         <h3>${escapeHtml(insight.title)}</h3>
         <p>${escapeHtml(insight.text)}</p>
       </article>
@@ -729,8 +819,8 @@ function loadTownProfile() {
         return smallAreaLikelyOverlapsTown(feature, selectedTownFeature.geometry, townBounds);
       });
 
-      renderTownPreview(selectedTownFeature, matchingSmallAreas, lookup);
       renderProfileData(selectedTownFeature, matchingSmallAreas, lookup, churches);
+      renderTownPreview(selectedTownFeature, matchingSmallAreas, lookup);
 
       setNotice(
         "Town profile loaded from the Glúnta demographic map data. Church presence is based on the current Glúnta church points dataset.",
