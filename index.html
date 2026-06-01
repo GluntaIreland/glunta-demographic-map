@@ -304,6 +304,16 @@
       font-weight: 700;
     }
 
+
+    /* Keep Leaflet popups visually above all marker panes, including unreached-town squares. */
+    .leaflet-popup-pane {
+      z-index: 1200 !important;
+    }
+
+    .leaflet-popup {
+      z-index: 1201 !important;
+    }
+
     .metric-card {
       margin-top: 12px;
       padding: 14px;
