@@ -1,6 +1,6 @@
 // Glúnta Demographic Map
 // Unified County + LEA + Town boundary view
-// Town view shows Small Areas inside a selected Built Up Area and colours them by population
+// Town view shows Small Areas inside a selected Built Up Area and colours them by selected Small Area demographic data
 
 if (typeof L === "undefined") {
   console.error("Leaflet did not load. Check your internet connection or CDN access.");
@@ -42,13 +42,13 @@ const GEOGRAPHIES = {
   },
   town: {
     label: "Town",
-    subtitle: "Census 2022 Built Up Area / Urban Area boundaries.",
+    subtitle: "Census 2022 Built Up Area / Urban Area boundaries with Small Area demographics.",
     dataUrl: "urban-areas-boundaries.geojson",
     selectedEyebrow: "Selected town / urban area",
     emptyName: "No town selected",
     emptyIntro: "Click a town / urban boundary to show its Census 2022 Built Up Area and the Small Areas inside it.",
-    selectedIntro: "This view shows the Census 2022 Built Up Area boundary and the Small Areas inside the selected town, coloured by population.",
-    sourceNote: "Source: Census 2022 Built Up Areas / Urban Areas boundary file, Small Area boundary file, and SAP2022T1T1ASA-derived population table.",
+    selectedIntro: "This view shows the Census 2022 Built Up Area boundary and the Small Areas inside the selected town, coloured by the selected demographic measure.",
+    sourceNote: "Source: Census 2022 Built Up Areas / Urban Areas boundary file, Small Area boundary file, and processed Census 2022 Small Area demographic tables.",
     contextLabel: "County",
     hasDemographics: false,
     isTown: true,
@@ -120,21 +120,113 @@ const GROUPS = [
   {
     label: "Families / household structure",
     options: [
-      { value: "families_with_children_pct", label: "Families with children %", geographies: ["county"] },
-      { value: "families_without_children_pct", label: "Families without children %", geographies: ["county"] },
-      { value: "families_all_children_under15_pct", label: "Families: all children under 15 %", geographies: ["county"] },
-      { value: "families_all_children_15_plus_pct", label: "Families: all children 15+ %", geographies: ["county"] },
-      { value: "families_children_under_and_over15_pct", label: "Families: children under and over 15 %", geographies: ["county"] },
-      { value: "families_1_child_pct", label: "Families with 1 child %", geographies: ["county"] },
-      { value: "families_2_children_pct", label: "Families with 2 children %", geographies: ["county"] },
-      { value: "families_3_children_pct", label: "Families with 3 children %", geographies: ["county"] },
-      { value: "families_4_children_pct", label: "Families with 4 children %", geographies: ["county"] },
-      { value: "families_5_plus_children_pct", label: "Families with 5+ children %", geographies: ["county"] },
-      { value: "families_household_size_2_persons_pct", label: "2-person households %", geographies: ["lea"] },
-      { value: "families_household_size_3_persons_pct", label: "3-person households %", geographies: ["lea"] },
-      { value: "families_household_size_4_persons_pct", label: "4-person households %", geographies: ["lea"] },
-      { value: "families_household_size_5_persons_pct", label: "5-person households %", geographies: ["lea"] },
-      { value: "families_household_size_6_plus_persons_pct", label: "6+ person households %", geographies: ["lea"] }
+      { value: "families_with_children_pct", label: "Families with children %", geographies: ["county", "town"] },
+      { value: "families_without_children_pct", label: "Families without children %", geographies: ["county", "town"] },
+      { value: "families_all_children_under15_pct", label: "Families: all children under 15 %", geographies: ["county", "town"] },
+      { value: "families_all_children_15_plus_pct", label: "Families: all children 15+ %", geographies: ["county", "town"] },
+      { value: "families_children_under_and_over15_pct", label: "Families: children under and over 15 %", geographies: ["county", "town"] },
+      { value: "families_1_child_pct", label: "Families with 1 child %", geographies: ["county", "town"] },
+      { value: "families_2_children_pct", label: "Families with 2 children %", geographies: ["county", "town"] },
+      { value: "families_3_children_pct", label: "Families with 3 children %", geographies: ["county", "town"] },
+      { value: "families_4_children_pct", label: "Families with 4 children %", geographies: ["county", "town"] },
+      { value: "families_5_plus_children_pct", label: "Families with 5+ children %", geographies: ["county", "town"] },
+      { value: "families_household_size_2_persons_pct", label: "2-person households %", geographies: ["lea", "town"] },
+      { value: "families_household_size_3_persons_pct", label: "3-person households %", geographies: ["lea", "town"] },
+      { value: "families_household_size_4_persons_pct", label: "4-person households %", geographies: ["lea", "town"] },
+      { value: "families_household_size_5_persons_pct", label: "5-person households %", geographies: ["lea", "town"] },
+      { value: "families_household_size_6_plus_persons_pct", label: "6+ person households %", geographies: ["lea", "town"] }
+    ]
+  },
+  {
+    label: "Principal economic status",
+    options: [
+      { value: "status_at_work_pct", label: "At work %" },
+      { value: "status_student_pct", label: "Student %" },
+      { value: "status_retired_pct", label: "Retired %" },
+      { value: "status_home_family_pct", label: "Looking after home/family %" },
+      { value: "status_unable_to_work_pct", label: "Unable to work due to sickness/disability %" },
+      { value: "status_unemployed_pct", label: "Unemployed %" },
+      { value: "status_other_pct", label: "Other status %" }
+    ]
+  }
+];
+
+const TOWN_GROUPS = [
+  {
+    label: "Population",
+    options: [
+      { value: "population_2022", label: "Small Area population, 2022" }
+    ]
+  },
+  {
+    label: "Age structure",
+    options: [
+      { value: "age_0_14_pct", label: "Children, 0 to 14 %" },
+      { value: "age_15_34_pct", label: "Young adults, 15 to 34 %" },
+      { value: "age_35_64_pct", label: "Adults, 35 to 64 %" },
+      { value: "age_65_plus_pct", label: "Older adults, 65+ %" }
+    ]
+  },
+  {
+    label: "Religion",
+    options: [
+      { value: "religion_catholic_pct", label: "Catholic %" },
+      { value: "religion_other_pct", label: "Other religion %" },
+      { value: "religion_none_pct", label: "No religion %" },
+      { value: "religion_not_stated_pct", label: "Religion not stated %" }
+    ]
+  },
+  {
+    label: "Birthplace and citizenship",
+    options: [
+      { value: "born_ireland_pct", label: "Born in Ireland %" },
+      { value: "born_outside_ireland_pct", label: "Born outside Ireland %" },
+      { value: "born_uk_pct", label: "Born in UK %" },
+      { value: "born_poland_pct", label: "Born in Poland %" },
+      { value: "born_india_pct", label: "Born in India %" },
+      { value: "born_other_eu_pct", label: "Born in Other EU %" },
+      { value: "born_rest_world_pct", label: "Born in Rest of World %" },
+      { value: "citizen_ireland_pct", label: "Irish citizenship %" },
+      { value: "non_irish_citizenship_pct", label: "Non-Irish citizenship %" }
+    ]
+  },
+  {
+    label: "Ethnicity / cultural background",
+    options: [
+      { value: "ethnicity_white_irish_pct", label: "White Irish %" },
+      { value: "ethnicity_white_irish_traveller_pct", label: "White Irish Traveller %" },
+      { value: "ethnicity_other_white_pct", label: "Other White %" },
+      { value: "ethnicity_black_or_black_irish_pct", label: "Black or Black Irish %" },
+      { value: "ethnicity_asian_or_asian_irish_pct", label: "Asian or Asian Irish %" },
+      { value: "ethnicity_other_pct", label: "Other ethnic background %" },
+      { value: "ethnicity_not_stated_pct", label: "Ethnicity not stated %" }
+    ]
+  },
+  {
+    label: "Language",
+    options: [
+      { value: "foreign_language_speakers_pct", label: "Foreign-language speakers %" },
+      { value: "language_spanish_pct", label: "Spanish speakers %" },
+      { value: "language_french_pct", label: "French speakers %" },
+      { value: "language_polish_pct", label: "Polish speakers %" },
+      { value: "language_other_incl_not_stated_pct", label: "Other / not stated language %" }
+    ]
+  },
+  {
+    label: "Families / household structure",
+    options: [
+      { value: "families_with_children_pct", label: "Families with children %" },
+      { value: "families_without_children_pct", label: "Families without children %" },
+      { value: "families_1_child_pct", label: "Families with 1 child %" },
+      { value: "families_2_children_pct", label: "Families with 2 children %" },
+      { value: "families_3_children_pct", label: "Families with 3 children %" },
+      { value: "families_4_children_pct", label: "Families with 4 children %" },
+      { value: "families_5_plus_children_pct", label: "Families with 5+ children %" },
+      { value: "families_household_size_2_persons_pct", label: "2-person households %" },
+      { value: "families_household_size_3_persons_pct", label: "3-person households %" },
+      { value: "families_household_size_4_persons_pct", label: "4-person households %" },
+      { value: "families_household_size_5_persons_pct", label: "5-person households %" },
+      { value: "families_household_size_6_plus_persons_pct", label: "6+ person households %" }
     ]
   },
   {
@@ -358,6 +450,64 @@ const sidebarSectionsByGeography = {
   town: []
 };
 
+const map = L.map("map", { zoomControl: true }).setView([53.4, -8.1], 7);
+
+map.createPane("smallAreaPane");
+map.getPane("smallAreaPane").style.zIndex = 690;
+map.getPane("smallAreaPane").style.pointerEvents = "none";
+
+map.createPane("churchPane");
+map.getPane("churchPane").style.zIndex = 720;
+
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 19,
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+}).addTo(map);
+
+const mapSubtitleEl = document.getElementById("mapSubtitle");
+const countyViewButtonEl = document.getElementById("countyViewButton");
+const leaViewButtonEl = document.getElementById("leaViewButton");
+const townViewButtonEl = document.getElementById("townViewButton");
+const aboutButtonEl = document.getElementById("aboutButton");
+const aboutPanelEl = document.getElementById("aboutPanel");
+const aboutCloseButtonEl = document.getElementById("aboutCloseButton");
+
+const indicatorSelectEl = document.getElementById("indicatorSelect");
+const indicatorNoteEl = document.getElementById("indicatorNote");
+const resetButtonEl = document.getElementById("resetButton");
+const churchOverlayToggleEl = document.getElementById("churchOverlayToggle");
+
+const selectedAreaEyebrowEl = document.getElementById("selectedAreaEyebrow");
+const areaNameEl = document.getElementById("areaName");
+const areaIntroEl = document.getElementById("areaIntro");
+const selectedIndicatorCardEl = document.getElementById("selectedIndicatorCard");
+const selectedIndicatorNameEl = document.getElementById("selectedIndicatorName");
+const selectedIndicatorValueEl = document.getElementById("selectedIndicatorValue");
+const populationValueEl = document.getElementById("populationValue");
+const contextValueEl = document.getElementById("contextValue");
+const sourceNoteEl = document.getElementById("sourceNote");
+const dataSectionsEl = document.getElementById("dataSections");
+
+let currentGeography = "county";
+let currentIndicator = "population_2022";
+let activeLayer = null;
+let selectedLayer = null;
+let legend = null;
+let sectionRowEls = [];
+let allAreaLayers = [];
+let loadedLayers = {};
+let fullMapBoundsByGeography = {};
+
+let churchLayer = L.layerGroup();
+let churchesLoaded = false;
+
+let smallAreasData = null;
+let smallAreasLoaded = false;
+let smallAreaDisplayLayer = L.layerGroup();
+
+let smallAreaDemographicsByCode = {};
+let smallAreaDemographicsLoaded = false;
+
 function config(label, note, legendTitle, colorSet, type, grades) {
   return {
     label,
@@ -422,6 +572,83 @@ const indicatorConfigs = {
   }
 };
 
+const townFieldColorSets = {
+  population_2022: "blue",
+  age_0_14_pct: "blue",
+  age_15_34_pct: "blue",
+  age_35_64_pct: "blue",
+  age_65_plus_pct: "blue",
+
+  religion_catholic_pct: "purple",
+  religion_other_pct: "purple",
+  religion_none_pct: "purple",
+  religion_not_stated_pct: "purple",
+
+  born_ireland_pct: "orange",
+  born_outside_ireland_pct: "orange",
+  born_uk_pct: "orange",
+  born_poland_pct: "orange",
+  born_india_pct: "orange",
+  born_other_eu_pct: "orange",
+  born_rest_world_pct: "orange",
+  citizen_ireland_pct: "orange",
+  non_irish_citizenship_pct: "orange",
+
+  ethnicity_white_irish_pct: "green",
+  ethnicity_white_irish_traveller_pct: "green",
+  ethnicity_other_white_pct: "green",
+  ethnicity_black_or_black_irish_pct: "green",
+  ethnicity_asian_or_asian_irish_pct: "green",
+  ethnicity_other_pct: "green",
+  ethnicity_not_stated_pct: "green",
+
+  foreign_language_speakers_pct: "red",
+  language_spanish_pct: "red",
+  language_french_pct: "red",
+  language_polish_pct: "red",
+  language_other_incl_not_stated_pct: "red",
+
+  families_with_children_pct: "cyan",
+  families_without_children_pct: "cyan",
+  families_all_children_under15_pct: "cyan",
+  families_all_children_15_plus_pct: "cyan",
+  families_children_under_and_over15_pct: "cyan",
+  families_1_child_pct: "cyan",
+  families_2_children_pct: "cyan",
+  families_3_children_pct: "cyan",
+  families_4_children_pct: "cyan",
+  families_5_plus_children_pct: "cyan",
+  families_household_size_2_persons_pct: "cyan",
+  families_household_size_3_persons_pct: "cyan",
+  families_household_size_4_persons_pct: "cyan",
+  families_household_size_5_persons_pct: "cyan",
+  families_household_size_6_plus_persons_pct: "cyan",
+
+  status_at_work_pct: "rose",
+  status_student_pct: "rose",
+  status_retired_pct: "rose",
+  status_home_family_pct: "rose",
+  status_unable_to_work_pct: "rose",
+  status_unemployed_pct: "rose",
+  status_other_pct: "rose"
+};
+
+function getTownFieldLabel(field) {
+  for (const group of TOWN_GROUPS) {
+    const found = group.options.find(option => option.value === field);
+    if (found) return found.label;
+  }
+
+  return field;
+}
+
+Object.keys(townFieldColorSets).forEach(key => {
+  if (!indicatorConfigs[key]) indicatorConfigs[key] = {};
+  indicatorConfigs[key].town = key === "population_2022"
+    ? indicatorConfigs.population_2022.town
+    : pct(getTownFieldLabel(key), getTownFieldLabel(key).replace(" %", "").toLowerCase(), getTownFieldLabel(key), townFieldColorSets[key], percentGrades);
+});
+
 [
   "age_0_14_pct",
   "age_15_34_pct",
@@ -461,10 +688,9 @@ const indicatorConfigs = {
   "status_other_pct"
 ].forEach(key => {
   const label = GROUPS.flatMap(group => group.options).find(option => option.value === key)?.label || key;
-  indicatorConfigs[key] = {
-    county: pct(label, label.replace(" %", "").toLowerCase(), label.replace(" %", ""), "blue", percentGrades),
-    lea: pct(label, label.replace(" %", "").toLowerCase(), label.replace(" %", ""), "blue", percentGrades)
-  };
+  if (!indicatorConfigs[key]) indicatorConfigs[key] = {};
+  indicatorConfigs[key].county = pct(label, label.replace(" %", "").toLowerCase(), label.replace(" %", ""), townFieldColorSets[key] || "blue", percentGrades);
+  indicatorConfigs[key].lea = pct(label, label.replace(" %", "").toLowerCase(), label.replace(" %", ""), townFieldColorSets[key] || "blue", percentGrades);
 });
 
 [
@@ -480,9 +706,8 @@ const indicatorConfigs = {
   "families_5_plus_children_pct"
 ].forEach(key => {
   const label = GROUPS.flatMap(group => group.options).find(option => option.value === key)?.label || key;
-  indicatorConfigs[key] = {
-    county: pct(label, label.replace(" %", "").toLowerCase(), label.replace(" %", ""), "cyan", percentGrades)
-  };
+  if (!indicatorConfigs[key]) indicatorConfigs[key] = {};
+  indicatorConfigs[key].county = pct(label, label.replace(" %", "").toLowerCase(), label.replace(" %", ""), "cyan", percentGrades);
 });
 
 [
@@ -493,9 +718,8 @@ const indicatorConfigs = {
   "families_household_size_6_plus_persons_pct"
 ].forEach(key => {
   const label = GROUPS.flatMap(group => group.options).find(option => option.value === key)?.label || key;
-  indicatorConfigs[key] = {
-    lea: pct(label, label.replace(" %", "").toLowerCase(), label.replace(" %", ""), "cyan", percentGrades)
-  };
+  if (!indicatorConfigs[key]) indicatorConfigs[key] = {};
+  indicatorConfigs[key].lea = pct(label, label.replace(" %", "").toLowerCase(), label.replace(" %", ""), "cyan", percentGrades);
 });
 
 const colorSets = {
@@ -508,72 +732,10 @@ const colorSets = {
   rose: ["#4c0519", "#881337", "#be123c", "#e11d48", "#fb7185", "#fecdd3", "#ffe4e6", "#fff1f2"]
 };
 
-const map = L.map("map", { zoomControl: true }).setView([53.4, -8.1], 7);
-
-map.createPane("labelsPane");
-map.getPane("labelsPane").style.zIndex = 650;
-map.getPane("labelsPane").style.pointerEvents = "none";
-
-map.createPane("smallAreaPane");
-map.getPane("smallAreaPane").style.zIndex = 690;
-map.getPane("smallAreaPane").style.pointerEvents = "none";
-
-map.createPane("churchPane");
-map.getPane("churchPane").style.zIndex = 720;
-
-L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  maxZoom: 19,
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-}).addTo(map);
-
-const mapSubtitleEl = document.getElementById("mapSubtitle");
-const countyViewButtonEl = document.getElementById("countyViewButton");
-const leaViewButtonEl = document.getElementById("leaViewButton");
-const townViewButtonEl = document.getElementById("townViewButton");
-const aboutButtonEl = document.getElementById("aboutButton");
-const aboutPanelEl = document.getElementById("aboutPanel");
-const aboutCloseButtonEl = document.getElementById("aboutCloseButton");
-
-const indicatorSelectEl = document.getElementById("indicatorSelect");
-const indicatorNoteEl = document.getElementById("indicatorNote");
-const resetButtonEl = document.getElementById("resetButton");
-const churchOverlayToggleEl = document.getElementById("churchOverlayToggle");
-
-const selectedAreaEyebrowEl = document.getElementById("selectedAreaEyebrow");
-const areaNameEl = document.getElementById("areaName");
-const areaIntroEl = document.getElementById("areaIntro");
-const selectedIndicatorCardEl = document.getElementById("selectedIndicatorCard");
-const selectedIndicatorNameEl = document.getElementById("selectedIndicatorName");
-const selectedIndicatorValueEl = document.getElementById("selectedIndicatorValue");
-const populationValueEl = document.getElementById("populationValue");
-const contextValueEl = document.getElementById("contextValue");
-const sourceNoteEl = document.getElementById("sourceNote");
-const dataSectionsEl = document.getElementById("dataSections");
-
-let currentGeography = "county";
-let currentIndicator = "population_2022";
-let activeLayer = null;
-let selectedLayer = null;
-let legend = null;
-let sectionRowEls = [];
-let allAreaLayers = [];
-let loadedLayers = {};
-let fullMapBoundsByGeography = {};
-
-let churchLayer = L.layerGroup();
-let churchesLoaded = false;
-
-let smallAreasData = null;
-let smallAreasLoaded = false;
-let smallAreaDisplayLayer = L.layerGroup();
-
-let smallAreaPopulationByCode = {};
-let smallAreaPopulationLoaded = false;
-
 function getIndicatorConfig(indicatorKey) {
   const entry = indicatorConfigs[indicatorKey];
   if (!entry) return indicatorConfigs.population_2022[currentGeography];
-  return entry[currentGeography] || entry.county || entry.lea || indicatorConfigs.population_2022[currentGeography];
+  return entry[currentGeography] || entry.county || entry.lea || entry.town || indicatorConfigs.population_2022[currentGeography];
 }
 
 function isIndicatorAvailableForGeography(indicatorKey, geography) {
@@ -638,14 +800,26 @@ function populateIndicatorSelect() {
   if (currentGeography === "town") {
     indicatorSelectEl.disabled = false;
 
-    const optionEl = document.createElement("option");
-    optionEl.value = "population_2022";
-    optionEl.textContent = "Small Area population, 2022";
-    indicatorSelectEl.appendChild(optionEl);
+    TOWN_GROUPS.forEach(group => {
+      const optgroup = document.createElement("optgroup");
+      optgroup.label = group.label;
 
-    currentIndicator = "population_2022";
+      group.options.forEach(option => {
+        const optionEl = document.createElement("option");
+        optionEl.value = option.value;
+        optionEl.textContent = option.label;
+        optgroup.appendChild(optionEl);
+      });
+
+      indicatorSelectEl.appendChild(optgroup);
+    });
+
+    if (!isIndicatorAvailableForGeography(currentIndicator, "town")) {
+      currentIndicator = "population_2022";
+    }
+
     indicatorSelectEl.value = currentIndicator;
-    indicatorNoteEl.textContent = "Town view colours the Small Areas inside the selected town by Census 2022 population.";
+    indicatorNoteEl.textContent = getIndicatorConfig(currentIndicator).note;
     return;
   }
 
@@ -677,6 +851,7 @@ function populateIndicatorSelect() {
   }
 
   indicatorSelectEl.value = currentIndicator;
+  indicatorNoteEl.textContent = getIndicatorConfig(currentIndicator).note;
 }
 
 function buildSidebarSections() {
@@ -746,7 +921,7 @@ function resetSidebar() {
 
   if (geography.isTown) {
     selectedIndicatorCardEl.style.display = "";
-    selectedIndicatorNameEl.textContent = "Small Area population, 2022";
+    selectedIndicatorNameEl.textContent = getIndicatorConfig(currentIndicator).label;
     selectedIndicatorValueEl.textContent = "Select a town";
   } else if (geography.hasDemographics) {
     selectedIndicatorCardEl.style.display = "";
@@ -769,7 +944,7 @@ function setDataRow(valueEl, barEl, count, percent) {
     : Math.max(0, Math.min(100, safePercent)) + "%";
 }
 
-function updateSidebar(props, smallAreaCount, selectedTownPopulation) {
+function updateSidebar(props, smallAreaCount, selectedTownValue, selectedTownPopulation) {
   const geography = GEOGRAPHIES[currentGeography];
 
   selectedAreaEyebrowEl.textContent = geography.selectedEyebrow;
@@ -796,12 +971,22 @@ function updateSidebar(props, smallAreaCount, selectedTownPopulation) {
       setDataRow(row.valueEl, row.barEl, props[row.countKey], props[row.pctKey]);
     });
   } else if (geography.isTown) {
+    const config = getIndicatorConfig(currentIndicator);
+
     selectedIndicatorCardEl.style.display = "";
-    selectedIndicatorNameEl.textContent = "Small Area population, 2022";
-    selectedIndicatorValueEl.textContent =
-      typeof selectedTownPopulation === "number"
-        ? `Selected town total: ${formatNumber(selectedTownPopulation)}`
-        : "Loading...";
+    selectedIndicatorNameEl.textContent = config.label;
+
+    if (currentIndicator === "population_2022") {
+      selectedIndicatorValueEl.textContent =
+        typeof selectedTownValue === "number"
+          ? `Selected town total: ${formatNumber(selectedTownValue)}`
+          : "Loading...";
+    } else {
+      selectedIndicatorValueEl.textContent =
+        typeof selectedTownValue === "number"
+          ? `Town average: ${formatPercent(selectedTownValue)}`
+          : "Loading...";
+    }
 
     populationValueEl.textContent =
       typeof selectedTownPopulation === "number"
@@ -857,11 +1042,11 @@ function styleArea(feature) {
 }
 
 function styleSmallArea(feature) {
-  const population = Number(feature.properties.population_2022);
+  const value = Number(feature.properties[currentIndicator]);
 
   return {
     pane: "smallAreaPane",
-    fillColor: getColorForValue(population, "population_2022"),
+    fillColor: getColorForValue(value, currentIndicator),
     fillOpacity: 0.68,
     color: "#0f172a",
     weight: 0.55,
@@ -897,8 +1082,6 @@ function selectLayer(layer) {
   const isSameLayerAlreadySelected = selectedLayer === layer;
 
   if (isSameLayerAlreadySelected && currentGeography === "town") {
-    updateSidebar(props);
-    openAreaPopup(layer);
     return;
   }
 
@@ -941,11 +1124,12 @@ function selectLayer(layer) {
   openAreaPopup(layer);
 }
 
-function openAreaPopup(layer, smallAreaCount, selectedTownPopulation) {
+function openAreaPopup(layer, smallAreaCount, selectedTownValue, selectedTownPopulation) {
   const props = layer.feature.properties;
   const areaName = getAreaName(props);
   const countyName = getCountyName(props);
   const code = getUrbanAreaCode(props);
+  const config = getIndicatorConfig(currentIndicator);
 
   let popupHtml = `
     <div class="area-popup">
@@ -973,12 +1157,22 @@ function openAreaPopup(layer, smallAreaCount, selectedTownPopulation) {
       popupHtml += `<p><strong>Population:</strong> loading...</p>`;
     }
 
-    popupHtml += `<p><strong>Current view:</strong> Small Areas coloured by population</p>`;
+    if (typeof selectedTownValue === "number") {
+      const label = escapeHtml(config.label);
+      const value = currentIndicator === "population_2022"
+        ? formatNumber(selectedTownValue)
+        : formatPercent(selectedTownValue);
+
+      popupHtml += `<p><strong>${label}:</strong> ${value}</p>`;
+    } else {
+      popupHtml += `<p><strong>${escapeHtml(config.label)}:</strong> loading...</p>`;
+    }
+
+    popupHtml += `<p><strong>Current view:</strong> Small Areas coloured by selected demographic measure</p>`;
   } else {
-    const indicatorConfig = getIndicatorConfig(currentIndicator);
     const currentValue = formatIndicatorValue(props[currentIndicator], currentIndicator);
     popupHtml += `<p><strong>Population, 2022:</strong> ${formatNumber(props.population_2022)}</p>`;
-    popupHtml += `<p><strong>${escapeHtml(indicatorConfig.label)}:</strong> ${escapeHtml(currentValue)}</p>`;
+    popupHtml += `<p><strong>${escapeHtml(config.label)}:</strong> ${escapeHtml(currentValue)}</p>`;
   }
 
   popupHtml += `</div>`;
@@ -1004,56 +1198,33 @@ function updateLegend() {
     legend = null;
   }
 
-  if (currentGeography === "town") {
-    legend = L.control({ position: "bottomright" });
-
-    legend.onAdd = function () {
-      const div = L.DomUtil.create("div", "legend");
-      const config = indicatorConfigs.population_2022.town;
-      const colors = colorSets[config.colorSet] || colorSets.blue;
-
-      div.innerHTML = `<div class="legend-title">${escapeHtml(config.legendTitle)}</div>`;
-
-      config.grades.forEach((item, index) => {
-        div.innerHTML += `
-          <div class="legend-row">
-            <span class="legend-color" style="background:${colors[index]}; opacity:0.68;"></span>
-            <span>${escapeHtml(item.label)}</span>
-          </div>
-        `;
-      });
-
-      div.innerHTML += `
-        <div class="legend-row">
-          <span class="legend-color" style="background:#ffffff; opacity:0.25; border:2px solid #111827;"></span>
-          <span>Selected Built Up Area</span>
-        </div>
-      `;
-
-      return div;
-    };
-
-    legend.addTo(map);
-    return;
-  }
-
   legend = L.control({ position: "bottomright" });
 
   legend.onAdd = function () {
     const div = L.DomUtil.create("div", "legend");
     const config = getIndicatorConfig(currentIndicator);
     const colors = colorSets[config.colorSet] || colorSets.blue;
+    const opacity = currentGeography === "town" ? 0.68 : DEFAULT_FILL_OPACITY;
 
     div.innerHTML = `<div class="legend-title">${escapeHtml(config.legendTitle)}</div>`;
 
     config.grades.forEach((item, index) => {
       div.innerHTML += `
         <div class="legend-row">
-          <span class="legend-color" style="background:${colors[index]}; opacity:${DEFAULT_FILL_OPACITY};"></span>
+          <span class="legend-color" style="background:${colors[index]}; opacity:${opacity};"></span>
           <span>${escapeHtml(item.label)}</span>
         </div>
       `;
     });
+
+    if (currentGeography === "town") {
+      div.innerHTML += `
+        <div class="legend-row">
+          <span class="legend-color" style="background:#ffffff; opacity:0.25; border:2px solid #111827;"></span>
+          <span>Selected Built Up Area</span>
+        </div>
+      `;
+    }
 
     return div;
   };
@@ -1063,18 +1234,21 @@ function updateLegend() {
 
 function updateMapIndicator(indicatorKey) {
   currentIndicator = indicatorKey;
-
-  if (currentGeography === "town") {
-    updateLegend();
-    if (selectedLayer) {
-      showSmallAreasInsideTown(selectedLayer);
-    }
-    return;
-  }
-
   const config = getIndicatorConfig(currentIndicator);
 
   indicatorNoteEl.textContent = config.note;
+
+  if (currentGeography === "town") {
+    updateLegend();
+
+    if (selectedLayer) {
+      showSmallAreasInsideTown(selectedLayer);
+    } else {
+      resetSidebar();
+    }
+
+    return;
+  }
 
   if (activeLayer) {
     activeLayer.setStyle(styleArea);
@@ -1235,15 +1409,15 @@ function loadSmallAreas() {
     });
 }
 
-function loadSmallAreaPopulation() {
-  if (smallAreaPopulationLoaded) {
-    return Promise.resolve(smallAreaPopulationByCode);
+function loadSmallAreaDemographics() {
+  if (smallAreaDemographicsLoaded) {
+    return Promise.resolve(smallAreaDemographicsByCode);
   }
 
-  return fetch("small-area-population-2022.csv")
+  return fetch("small-area-demographics-2022.csv")
     .then(response => {
       if (!response.ok) {
-        throw new Error("Could not load small-area-population-2022.csv. HTTP status: " + response.status);
+        throw new Error("Could not load small-area-demographics-2022.csv. HTTP status: " + response.status);
       }
 
       return response.text();
@@ -1254,17 +1428,28 @@ function loadSmallAreaPopulation() {
 
       rows.forEach(row => {
         const code = String(row.SA_PUB2022 || "").trim();
-        const population = Number(row.population_2022);
 
-        if (code && !Number.isNaN(population)) {
-          lookup[code] = population;
-        }
+        if (!code) return;
+
+        const cleanRow = {};
+
+        Object.keys(row).forEach(key => {
+          if (key === "SA_PUB2022") {
+            cleanRow[key] = row[key];
+            return;
+          }
+
+          const value = Number(row[key]);
+          cleanRow[key] = Number.isNaN(value) ? null : value;
+        });
+
+        lookup[code] = cleanRow;
       });
 
-      smallAreaPopulationByCode = lookup;
-      smallAreaPopulationLoaded = true;
+      smallAreaDemographicsByCode = lookup;
+      smallAreaDemographicsLoaded = true;
 
-      console.log("Loaded population data for " + Object.keys(lookup).length + " Small Areas.");
+      console.log("Loaded demographic data for " + Object.keys(lookup).length + " Small Areas.");
 
       return lookup;
     });
@@ -1276,16 +1461,19 @@ function showSmallAreasInsideTown(townLayer) {
 
   populationValueEl.textContent = "Loading...";
   selectedIndicatorValueEl.textContent = "Loading...";
-  contextValueEl.textContent = "Loading Small Areas and population data inside selected town...";
+  contextValueEl.textContent = "Loading Small Areas and demographic data inside selected town...";
 
-  Promise.all([loadSmallAreas(), loadSmallAreaPopulation()])
-    .then(([data, populationLookup]) => {
+  Promise.all([loadSmallAreas(), loadSmallAreaDemographics()])
+    .then(([data, demographicsLookup]) => {
       clearSmallAreas();
 
       const selectedGeometry = townFeature.geometry;
       const selectedBounds = townLayer.getBounds();
 
       let selectedTownPopulation = 0;
+      let selectedTownWeightedValue = 0;
+      let selectedTownWeight = 0;
+      let selectedTownPopulationValue = 0;
 
       const matchingFeatures = data.features
         .filter(feature => {
@@ -1301,16 +1489,38 @@ function showSmallAreasInsideTown(townLayer) {
         })
         .map(feature => {
           const code = getSmallAreaCode(feature.properties);
-          const population = Number(populationLookup[code]);
+          const demographics = demographicsLookup[code] || {};
 
-          feature.properties.population_2022 = Number.isNaN(population) ? null : population;
+          Object.keys(demographics).forEach(key => {
+            if (key !== "SA_PUB2022") {
+              feature.properties[key] = demographics[key];
+            }
+          });
+
+          const population = Number(demographics.population_2022);
+          const currentValue = Number(demographics[currentIndicator]);
 
           if (!Number.isNaN(population)) {
             selectedTownPopulation += population;
           }
 
+          if (currentIndicator === "population_2022") {
+            if (!Number.isNaN(currentValue)) {
+              selectedTownPopulationValue += currentValue;
+            }
+          } else if (!Number.isNaN(currentValue) && !Number.isNaN(population) && population > 0) {
+            selectedTownWeightedValue += currentValue * population;
+            selectedTownWeight += population;
+          }
+
           return feature;
         });
+
+      const selectedTownValue = currentIndicator === "population_2022"
+        ? selectedTownPopulationValue
+        : selectedTownWeight > 0
+          ? selectedTownWeightedValue / selectedTownWeight
+          : null;
 
       const layer = L.geoJSON(
         {
@@ -1331,8 +1541,8 @@ function showSmallAreasInsideTown(townLayer) {
         selectedLayer.bringToFront();
       }
 
-      updateSidebar(townProps, matchingFeatures.length, selectedTownPopulation);
-      openAreaPopup(townLayer, matchingFeatures.length, selectedTownPopulation);
+      updateSidebar(townProps, matchingFeatures.length, selectedTownValue, selectedTownPopulation);
+      openAreaPopup(townLayer, matchingFeatures.length, selectedTownValue, selectedTownPopulation);
       updateLegend();
 
       console.log(
@@ -1340,17 +1550,17 @@ function showSmallAreasInsideTown(townLayer) {
         matchingFeatures.length +
         " Small Areas inside " +
         getAreaName(townProps) +
-        " with total population " +
-        selectedTownPopulation +
+        " using " +
+        currentIndicator +
         "."
       );
     })
     .catch(error => {
       console.error(error);
-      populationValueEl.textContent = "Boundary view";
-      selectedIndicatorValueEl.textContent = "Population data could not be loaded.";
-      contextValueEl.textContent = "Small Area population data could not be loaded.";
-      alert("The Small Area boundary or population file could not be loaded. Check that small-areas-2022.geojson and small-area-population-2022.csv are both in the root of this GitHub Pages site.");
+      populationValueEl.textContent = "Data unavailable";
+      selectedIndicatorValueEl.textContent = "Demographic data could not be loaded.";
+      contextValueEl.textContent = "Small Area demographic data could not be loaded.";
+      alert("The Small Area boundary or demographic file could not be loaded. Check that small-areas-2022.geojson and small-area-demographics-2022.csv are both in the root of this GitHub Pages site.");
     });
 }
 
