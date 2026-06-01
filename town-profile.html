@@ -5,13 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Town Mission Profile | Glúnta</title>
 
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIINfQ0K6QdRrgX7VUyC6JxyYwF1jLDWDrM="
-    crossorigin=""
-  />
-
   <link rel="stylesheet" href="town-profile.css" />
 </head>
 
@@ -35,7 +28,12 @@
 
     <section class="town-summary-card">
       <div class="town-map-preview-wrap">
-        <div id="townMapPreview" class="town-map-preview" aria-label="Selected town map preview"></div>
+        <div id="townStaticMap" class="town-static-map" aria-label="Selected town static map preview">
+          <div class="map-loading">
+            Building town map preview...
+          </div>
+        </div>
+
         <div class="map-preview-label">
           <span>Map-generated town view</span>
         </div>
@@ -83,7 +81,7 @@
       <article class="metric-card">
         <p class="metric-label">Nearby churches</p>
         <p id="nearbyChurchesValue" class="metric-value">—</p>
-        <p class="metric-note">Churches within a future configurable radius.</p>
+        <p class="metric-note">Churches within 15 km of the town centre.</p>
       </article>
     </section>
 
@@ -226,12 +224,6 @@
       </p>
     </section>
   </main>
-
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""
-  ></script>
 
   <script src="town-profile.js"></script>
 </body>
