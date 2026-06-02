@@ -979,9 +979,25 @@ function normaliseName(value) {
     .trim();
 }
 
+function getDetailModeTownName(props) {
+  const displayName = getAreaName(props);
+  const name = normaliseName(displayName);
+
+  if (name === "dublin" || name.includes("dublin city") || name.includes("dublin urban") || name.includes("dublin city and suburbs")) {
+    return "Dublin";
+  }
+
+  if (name === "cork" || name.includes("cork city") || name.includes("cork urban") || name.includes("cork city and suburbs")) {
+    return "Cork";
+  }
+
+  return "";
+}
+
 function isDublinTown(props) {
-  const name = normaliseName(getAreaName(props));
-  return name === "dublin" || name.includes("dublin city") || name.includes("dublin urban") || name.includes("dublin city and suburbs");
+  // Kept as a compatibility wrapper for the existing Detail Mode code.
+  // It now means “large city detail mode” rather than Dublin only.
+  return Boolean(getDetailModeTownName(props));
 }
 
 function ensureDublinDetailAction() {
@@ -994,13 +1010,13 @@ function ensureDublinDetailAction() {
     dublinDetailBackButtonEl = document.createElement("button");
     dublinDetailBackButtonEl.type = "button";
     dublinDetailBackButtonEl.className = "town-profile-button";
-    dublinDetailBackButtonEl.textContent = "Back to Dublin profile";
+    dublinDetailBackButtonEl.textContent = "Back to city profile";
     dublinDetailBackButtonEl.style.width = "100%";
     dublinDetailBackButtonEl.style.fontFamily = "inherit";
 
     const note = document.createElement("p");
     note.className = "town-profile-note";
-    note.textContent = "Dublin Detail Mode lets you inspect individual Census Small Areas inside the Dublin urban boundary.";
+    note.textContent = "City Detail Mode lets you inspect individual Census Small Areas inside larger urban boundaries such as Dublin and Cork.";
 
     dublinDetailActionEl.appendChild(dublinDetailBackButtonEl);
     dublinDetailActionEl.appendChild(note);
@@ -1130,18 +1146,20 @@ function updateSidebarForDublinSmallArea(feature) {
   const currentValue = props[currentIndicator];
   const population = Number(props.population_2022);
 
-  selectedAreaEyebrowEl.textContent = "Dublin Detail Mode";
-  areaNameEl.textContent = "Small Area inside Dublin";
+  const parentTownName = getDetailModeTownName(selectedTownPropsForSmallAreas || {}) || "selected city";
+
+  selectedAreaEyebrowEl.textContent = `${parentTownName} Detail Mode`;
+  areaNameEl.textContent = `Small Area inside ${parentTownName}`;
   areaIntroEl.textContent = code
     ? `Selected Census Small Area: ${code}. This is a statistical area, not a named neighbourhood.`
-    : "Selected Census Small Area inside Dublin. This is a statistical area, not a named neighbourhood.";
+    : `Selected Census Small Area inside ${parentTownName}. This is a statistical area, not a named neighbourhood.`;
 
   selectedIndicatorCardEl.style.display = "";
   selectedIndicatorNameEl.textContent = config.label;
   selectedIndicatorValueEl.textContent = formatIndicatorValue(currentValue, currentIndicator);
   populationValueEl.textContent = Number.isNaN(population) ? "—" : formatNumber(population);
 
-  const parts = ["Parent urban area: Dublin"];
+  const parts = [`Parent urban area: ${parentTownName}`];
   if (code) parts.push(`Small Area code: ${code}`);
   contextValueEl.textContent = parts.join(" · ");
   sourceNoteEl.textContent = "Source: CSO Census 2022 Small Area Population Statistics.";
@@ -1163,7 +1181,7 @@ function openDublinSmallAreaPopup(layer) {
 
   let popupHtml = `
     <div class="area-popup">
-      <h2>Small Area inside Dublin</h2>
+      <h2>Small Area inside selected city</h2>
   `;
 
   if (code) {
@@ -1457,7 +1475,8 @@ function openAreaPopup(layer, smallAreaCount, selectedTownValue, selectedTownPop
         : `<p><strong>${escapeHtml(config.label)}:</strong> loading...</p>`;
     }
 
-    popupHtml += `${isDublinTown(props) ? `<p><strong>Dublin Detail Mode:</strong> Click any shaded Small Area to inspect that part of Dublin.</p>` : `<p><strong>Current view:</strong> Small Areas coloured by selected demographic measure</p>`}`;
+    const detailModeTownName = getDetailModeTownName(props);
+    popupHtml += `${detailModeTownName ? `<p><strong>${escapeHtml(detailModeTownName)} Detail Mode:</strong> Click any shaded Small Area to inspect that part of ${escapeHtml(detailModeTownName)}.</p>` : `<p><strong>Current view:</strong> Small Areas coloured by selected demographic measure</p>`}`;
 
     const profileUrl = getTownProfileUrl(props);
     if (profileUrl) {
@@ -1530,7 +1549,7 @@ function updateLegend() {
         div.innerHTML += `
           <div class="legend-row">
             <span class="legend-color" style="background:#0f766e; opacity:0.32; border:2px solid #111827;"></span>
-            <span>Clickable Dublin Small Areas</span>
+            <span>Clickable city Small Areas</span>
           </div>
         `;
       }
@@ -1800,6 +1819,7 @@ function showSmallAreasInsideTown(townLayer) {
   const townFeature = townLayer.feature;
   const townProps = townFeature.properties;
   const dublinMode = isDublinTown(townProps);
+  const detailModeTownName = getDetailModeTownName(townProps);
 
   populationValueEl.textContent = "Loading...";
   selectedIndicatorValueEl.textContent = "Loading...";
@@ -1814,10 +1834,10 @@ function showSmallAreasInsideTown(townLayer) {
       selectedTownPropsForSmallAreas = townProps;
 
       /*
-        Dublin Detail Mode needs the Small Area polygons to receive the click.
+        City Detail Mode needs the Small Area polygons to receive the click.
         The selected town boundary is an invisible-filled polygon, so even with fillOpacity: 0
         it can still catch clicks across the whole city. Disable pointer events on the
-        selected Dublin boundary while its Small Areas are being inspected.
+        selected city boundary while its Small Areas are being inspected.
       */
       setLayerPointerEvents(townLayer, dublinMode ? "none" : "");
 
@@ -1944,7 +1964,7 @@ function showSmallAreasInsideTown(townLayer) {
             });
 
             const code = getSmallAreaCode(feature.properties);
-            smallAreaLayer.bindTooltip(code ? `Small Area ${code}` : "Dublin Small Area", {
+            smallAreaLayer.bindTooltip(code ? `Small Area ${code}` : `${detailModeTownName || "City"} Small Area`, {
               sticky: true,
               direction: "top"
             });
@@ -1966,7 +1986,7 @@ function showSmallAreasInsideTown(townLayer) {
       updateSidebar(townProps, matchingFeatures.length, selectedTownValue, selectedTownPopulation, townProfile);
 
       if (dublinMode) {
-        contextValueEl.textContent += " · Click a Small Area to inspect Dublin in more detail.";
+        contextValueEl.textContent += ` · Click a Small Area to inspect ${detailModeTownName || "this city"} in more detail.`;
       }
 
       if (dublinMode) {
@@ -1977,7 +1997,7 @@ function showSmallAreasInsideTown(townLayer) {
 
       updateLegend();
 
-      console.log("Displayed " + matchingFeatures.length + " Small Areas inside " + getAreaName(townProps) + " using " + currentIndicator + (dublinMode ? " with Dublin Detail Mode enabled." : "."));
+      console.log("Displayed " + matchingFeatures.length + " Small Areas inside " + getAreaName(townProps) + " using " + currentIndicator + (dublinMode ? " with City Detail Mode enabled." : "."));
     })
     .catch(error => {
       console.error(error);
