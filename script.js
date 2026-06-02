@@ -984,25 +984,40 @@ function getDetailModeTownName(props) {
   const code = getUrbanAreaCode(props);
   const allValues = normaliseName(Object.values(props || {}).join(" "));
 
-  if (
-    code === "17364" ||
-    name === "cork" ||
-    name.includes("cork city") ||
-    name.includes("cork urban") ||
-    name.includes("cork city and suburbs") ||
-    allValues.includes("cork city and suburbs")
-  ) {
-    return "Cork";
-  }
+  const detailModeTowns = [
+    {
+      label: "Dublin",
+      codes: [],
+      matches: ["dublin", "dublin city", "dublin urban", "dublin city and suburbs"]
+    },
+    {
+      label: "Cork",
+      codes: ["17364"],
+      matches: ["cork", "cork city", "cork urban", "cork city and suburbs"]
+    },
+    {
+      label: "Galway",
+      codes: ["26305"],
+      matches: ["galway", "galway city", "galway urban", "galway city and suburbs"]
+    },
+    {
+      label: "Limerick",
+      codes: ["20497"],
+      matches: ["limerick", "limerick city", "limerick urban", "limerick city and suburbs"]
+    },
+    {
+      label: "Waterford",
+      codes: ["24643"],
+      matches: ["waterford", "waterford city", "waterford urban", "waterford city and suburbs"]
+    }
+  ];
 
-  if (
-    name === "dublin" ||
-    name.includes("dublin city") ||
-    name.includes("dublin urban") ||
-    name.includes("dublin city and suburbs") ||
-    allValues.includes("dublin city and suburbs")
-  ) {
-    return "Dublin";
+  for (const town of detailModeTowns) {
+    if (town.codes.includes(code)) return town.label;
+
+    if (town.matches.some(match => name === match || name.includes(match) || allValues.includes(match))) {
+      return town.label;
+    }
   }
 
   return "";
@@ -1029,7 +1044,7 @@ function ensureDublinDetailAction() {
 
     const note = document.createElement("p");
     note.className = "town-profile-note";
-    note.textContent = "City Detail Mode lets you inspect individual Census Small Areas inside larger urban boundaries such as Dublin and Cork.";
+    note.textContent = "City Detail Mode lets you inspect individual Census Small Areas inside larger urban boundaries such as Dublin, Cork, Galway, Limerick, and Waterford.";
 
     dublinDetailActionEl.appendChild(dublinDetailBackButtonEl);
     dublinDetailActionEl.appendChild(note);
