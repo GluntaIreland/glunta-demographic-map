@@ -37,6 +37,7 @@ const religionNotStatedEl = document.getElementById("religionNotStated");
 const churchesInsideListEl = document.getElementById("churchesInsideList");
 const nearbyChurchesListEl = document.getElementById("nearbyChurchesList");
 const missionInsightsEl = document.getElementById("missionInsights");
+const fullDemographicProfileEl = document.getElementById("fullDemographicProfile");
 
 function escapeHtml(value) {
   return String(value || "")
@@ -358,13 +359,13 @@ function buildSmallAreaLookup(rows) {
   const lookup = {};
 
   rows.forEach(row => {
-    const code = String(row.SA_PUB2022 || "").trim();
+    const code = String(row.SA_PUB2022 || row.sa_code || "").trim();
     if (!code) return;
 
     const clean = {};
 
     Object.keys(row).forEach(key => {
-      if (key === "SA_PUB2022") {
+      if (key === "SA_PUB2022" || key === "sa_code") {
         clean[key] = row[key];
         return;
       }
@@ -390,7 +391,7 @@ function aggregateSmallAreas(matchingFeatures, lookup) {
     const population = Number(data.population_2022);
 
     Object.keys(data).forEach(key => {
-      if (key === "SA_PUB2022") return;
+      if (key === "SA_PUB2022" || key === "sa_code") return;
 
       const value = Number(data[key]);
       if (Number.isNaN(value)) return;
@@ -497,12 +498,177 @@ function analyseChurches(churchRows, townFeature) {
   return { inside, nearby };
 }
 
-function renderProfileData(townFeature, matchingSmallAreas, lookup, churches) {
+
+function getMetric(profile, keys) {
+  for (const key of keys) {
+    const value = profile[key];
+    if (value !== null && value !== undefined && value !== "" && !Number.isNaN(Number(value))) {
+      return Number(value);
+    }
+  }
+
+  return null;
+}
+
+function hasMetric(profile, keys) {
+  return getMetric(profile, keys) !== null;
+}
+
+function formatCountAndPercent(profile, countKeys, pctKeys) {
+  const count = getMetric(profile, countKeys);
+  const pct = getMetric(profile, pctKeys);
+
+  if (count === null && pct === null) return "—";
+  if (count !== null && pct !== null) return `${formatNumber(count)} (${formatPercent(pct)})`;
+  if (count !== null) return formatNumber(count);
+  return formatPercent(pct);
+}
+
+function renderProfileSection(title, rows, note) {
+  const visibleRows = rows.filter(row => {
+    return hasMetric(row.profile, row.countKeys || []) || hasMetric(row.profile, row.pctKeys || []);
+  });
+
+  if (visibleRows.length === 0) return "";
+
+  const rowsHtml = visibleRows.map(row => `
+    <div class="data-row">
+      <span>${escapeHtml(row.label)}</span>
+      <strong>${escapeHtml(formatCountAndPercent(row.profile, row.countKeys || [], row.pctKeys || []))}</strong>
+    </div>
+  `).join("");
+
+  return `
+    <article class="panel">
+      <div class="panel-header">
+        <p class="eyebrow">Census 2022</p>
+        <h2>${escapeHtml(title)}</h2>
+      </div>
+      <div class="data-list">
+        ${rowsHtml}
+      </div>
+      ${note ? `<p class="source-note">${escapeHtml(note)}</p>` : ""}
+    </article>
+  `;
+}
+
+function renderFullDemographicProfile(profile) {
+  if (!fullDemographicProfileEl) return;
+
+  const sections = [
+    {
+      title: "Population and age",
+      note: "Aggregated from the Small Areas inside this town boundary.",
+      rows: [
+        { label: "Total population", profile, countKeys: ["population_2022"] },
+        { label: "Male", profile, countKeys: ["male_population_count"], pctKeys: ["male_population_pct"] },
+        { label: "Female", profile, countKeys: ["female_population_count"], pctKeys: ["female_population_pct"] },
+        { label: "Children, 0 to 14", profile, countKeys: ["age_0_14_count", "age_0_14"], pctKeys: ["age_0_14_pct"] },
+        { label: "Young adults, 15 to 34", profile, countKeys: ["age_15_34_count", "age_15_34"], pctKeys: ["age_15_34_pct"] },
+        { label: "Adults, 35 to 64", profile, countKeys: ["age_35_64_count", "age_35_64"], pctKeys: ["age_35_64_pct"] },
+        { label: "Older adults, 65+", profile, countKeys: ["age_65_plus_count", "age_65_plus"], pctKeys: ["age_65_plus_pct"] }
+      ]
+    },
+    {
+      title: "Marital status",
+      note: "Marital status is useful for reading household shape, loneliness, settledness, and pastoral care needs.",
+      rows: [
+        { label: "Single", profile, countKeys: ["marital_single_count"], pctKeys: ["marital_single_pct"] },
+        { label: "Married", profile, countKeys: ["marital_married_count"], pctKeys: ["marital_married_pct"] },
+        { label: "Separated", profile, countKeys: ["marital_separated_count"], pctKeys: ["marital_separated_pct"] },
+        { label: "Divorced", profile, countKeys: ["marital_divorced_count"], pctKeys: ["marital_divorced_pct"] },
+        { label: "Widowed", profile, countKeys: ["marital_widowed_count"], pctKeys: ["marital_widowed_pct"] }
+      ]
+    },
+    {
+      title: "Culture, religion, and language",
+      note: "These figures should prompt local listening rather than assumptions about identity or belief.",
+      rows: [
+        { label: "Born in Ireland", profile, countKeys: ["born_ireland_count", "birthplace_ireland_count"], pctKeys: ["born_ireland_pct", "birthplace_ireland_pct"] },
+        { label: "Born outside Ireland", profile, countKeys: ["born_outside_ireland_count"], pctKeys: ["born_outside_ireland_pct"] },
+        { label: "Catholic", profile, countKeys: ["religion_catholic_count"], pctKeys: ["religion_catholic_pct"] },
+        { label: "Other religion", profile, countKeys: ["religion_other_religion_count", "religion_other_count"], pctKeys: ["religion_other_religion_pct", "religion_other_pct"] },
+        { label: "No religion", profile, countKeys: ["religion_no_religion_count", "religion_none"], pctKeys: ["religion_no_religion_pct", "religion_none_pct"] },
+        { label: "Foreign-language speakers", profile, countKeys: ["foreign_language_speakers_count", "foreign_language_speakers"], pctKeys: ["foreign_language_speakers_pct"] },
+        { label: "Can speak Irish", profile, countKeys: ["irish_yes_count"], pctKeys: ["irish_yes_pct"] },
+        { label: "English not well / not at all", profile, countKeys: ["english_not_well_count", "english_not_at_all_count"], pctKeys: ["english_not_well_pct", "english_not_at_all_pct"] }
+      ]
+    },
+    {
+      title: "Families and households",
+      note: "Household structure can shape ministry rhythms, hospitality, children’s work, and pastoral care.",
+      rows: [
+        { label: "Families with children", profile, countKeys: ["families_with_children_count"], pctKeys: ["families_with_children_pct"] },
+        { label: "Families without children", profile, countKeys: ["families_without_children_count"], pctKeys: ["families_without_children_pct"] },
+        { label: "2-person households", profile, countKeys: ["household_2_persons_count"], pctKeys: ["household_2_persons_pct"] },
+        { label: "3-person households", profile, countKeys: ["household_3_persons_count"], pctKeys: ["household_3_persons_pct"] },
+        { label: "4-person households", profile, countKeys: ["household_4_persons_count"], pctKeys: ["household_4_persons_pct"] },
+        { label: "5+ person households", profile, countKeys: ["household_5_persons_count", "household_6_plus_persons_count"], pctKeys: ["household_5_persons_pct", "household_6_plus_persons_pct"] }
+      ]
+    },
+    {
+      title: "Housing",
+      note: "Housing tenure can hint at stability, transience, affordability pressures, and community rootedness.",
+      rows: [
+        { label: "Owner occupied", profile, countKeys: ["housing_owner_occupied_count"], pctKeys: ["housing_owner_occupied_pct"] },
+        { label: "Owned with mortgage / loan", profile, countKeys: ["housing_owned_with_mortgage_or_loan_count"], pctKeys: ["housing_owned_with_mortgage_or_loan_pct"] },
+        { label: "Owned outright", profile, countKeys: ["housing_owned_outright_count"], pctKeys: ["housing_owned_outright_pct"] },
+        { label: "Rented", profile, countKeys: ["housing_rented_count"], pctKeys: ["housing_rented_pct"] },
+        { label: "Private rented", profile, countKeys: ["housing_rented_from_private_landlord_count"], pctKeys: ["housing_rented_from_private_landlord_pct"] },
+        { label: "Rented from local authority", profile, countKeys: ["housing_rented_from_local_authority_count"], pctKeys: ["housing_rented_from_local_authority_pct"] }
+      ]
+    },
+    {
+      title: "Education and work",
+      note: "These figures help describe daily rhythms, pressures, and possible community connection points.",
+      rows: [
+        { label: "At work", profile, countKeys: ["status_at_work_count"], pctKeys: ["status_at_work_pct"] },
+        { label: "Student", profile, countKeys: ["status_student_count"], pctKeys: ["status_student_pct"] },
+        { label: "Unemployed", profile, countKeys: ["status_unemployed_count"], pctKeys: ["status_unemployed_pct"] },
+        { label: "Retired", profile, countKeys: ["status_retired_count"], pctKeys: ["status_retired_pct"] },
+        { label: "Unable to work due to sickness/disability", profile, countKeys: ["status_unable_work_disability_count"], pctKeys: ["status_unable_work_disability_pct"] },
+        { label: "Third level or higher", profile, countKeys: ["education_third_level_or_higher_count"], pctKeys: ["education_third_level_or_higher_pct"] }
+      ]
+    },
+    {
+      title: "Occupation and industry",
+      note: "Work patterns can shape availability, social networks, and the kind of local presence churches may need.",
+      rows: [
+        { label: "Professional occupations", profile, countKeys: ["occupation_professional_occupations_count"], pctKeys: ["occupation_professional_occupations_pct"] },
+        { label: "Managers / directors / senior officials", profile, countKeys: ["occupation_managers_directors_senior_officials_count"], pctKeys: ["occupation_managers_directors_senior_officials_pct"] },
+        { label: "Skilled trades", profile, countKeys: ["occupation_skilled_trades_occupations_count"], pctKeys: ["occupation_skilled_trades_occupations_pct"] },
+        { label: "Elementary occupations", profile, countKeys: ["occupation_elementary_occupations_count"], pctKeys: ["occupation_elementary_occupations_pct"] },
+        { label: "Agriculture, forestry, fishing", profile, countKeys: ["industry_agriculture_forestry_fishing_count"], pctKeys: ["industry_agriculture_forestry_fishing_pct"] },
+        { label: "Construction", profile, countKeys: ["industry_construction_count"], pctKeys: ["industry_construction_pct"] },
+        { label: "Professional services", profile, countKeys: ["industry_professional_services_count"], pctKeys: ["industry_professional_services_pct"] }
+      ]
+    }
+  ];
+
+  const html = sections
+    .map(section => renderProfileSection(section.title, section.rows, section.note))
+    .filter(Boolean)
+    .join("");
+
+  fullDemographicProfileEl.innerHTML = html || `
+    <article class="panel">
+      <div class="panel-header">
+        <p class="eyebrow">No data</p>
+        <h2>Full profile unavailable</h2>
+      </div>
+      <p class="source-note">No matching rows were found in small-area-town-profile-2022.csv for the Small Areas inside this town.</p>
+    </article>
+  `;
+}
+
+function renderProfileData(townFeature, matchingSmallAreas, summaryLookup, fullLookup, churches) {
   const props = townFeature.properties || {};
   const townName = getAreaName(props);
   const countyName = getCountyName(props);
   const urbanCode = getUrbanAreaCode(props) || selectedCode || "—";
-  const profile = aggregateSmallAreas(matchingSmallAreas, lookup);
+  const summaryProfile = aggregateSmallAreas(matchingSmallAreas, summaryLookup);
+  const fullProfile = aggregateSmallAreas(matchingSmallAreas, fullLookup);
+  const profile = { ...summaryProfile, ...fullProfile };
   const churchAnalysis = analyseChurches(churches, townFeature);
 
   townNameEl.textContent = townName;
@@ -510,23 +676,23 @@ function renderProfileData(townFeature, matchingSmallAreas, lookup, churches) {
   urbanAreaCodeEl.textContent = "Urban Area Code: " + urbanCode;
   document.title = `${townName} Town Mission Profile | Glúnta`;
 
-  populationValueEl.textContent = formatNumber(profile.population_2022);
+  populationValueEl.textContent = formatNumber(getMetric(profile, ["population_2022"]));
   smallAreasValueEl.textContent = formatNumber(matchingSmallAreas.length);
 
-  ageChildrenEl.textContent = formatPercent(profile.age_0_14_pct);
-  ageYoungAdultsEl.textContent = formatPercent(profile.age_15_34_pct);
-  ageAdultsEl.textContent = formatPercent(profile.age_35_64_pct);
-  ageOlderAdultsEl.textContent = formatPercent(profile.age_65_plus_pct);
+  ageChildrenEl.textContent = formatPercent(getMetric(profile, ["age_0_14_pct"]));
+  ageYoungAdultsEl.textContent = formatPercent(getMetric(profile, ["age_15_34_pct"]));
+  ageAdultsEl.textContent = formatPercent(getMetric(profile, ["age_35_64_pct"]));
+  ageOlderAdultsEl.textContent = formatPercent(getMetric(profile, ["age_65_plus_pct"]));
 
-  bornOutsideIrelandEl.textContent = formatPercent(profile.born_outside_ireland_pct);
-  nonIrishCitizenshipEl.textContent = formatPercent(profile.non_irish_citizenship_pct);
-  foreignLanguageSpeakersEl.textContent = formatPercent(profile.foreign_language_speakers_pct);
-  otherWhiteBackgroundEl.textContent = formatPercent(profile.ethnicity_other_white_pct);
+  bornOutsideIrelandEl.textContent = formatPercent(getMetric(profile, ["born_outside_ireland_pct"]));
+  nonIrishCitizenshipEl.textContent = formatPercent(getMetric(profile, ["non_irish_citizenship_pct"]));
+  foreignLanguageSpeakersEl.textContent = formatPercent(getMetric(profile, ["foreign_language_speakers_pct"]));
+  otherWhiteBackgroundEl.textContent = formatPercent(getMetric(profile, ["ethnicity_other_white_pct"]));
 
-  religionCatholicEl.textContent = formatPercent(profile.religion_catholic_pct);
-  religionOtherEl.textContent = formatPercent(profile.religion_other_pct);
-  religionNoneEl.textContent = formatPercent(profile.religion_none_pct);
-  religionNotStatedEl.textContent = formatPercent(profile.religion_not_stated_pct);
+  religionCatholicEl.textContent = formatPercent(getMetric(profile, ["religion_catholic_pct"]));
+  religionOtherEl.textContent = formatPercent(getMetric(profile, ["religion_other_religion_pct", "religion_other_pct"]));
+  religionNoneEl.textContent = formatPercent(getMetric(profile, ["religion_no_religion_pct", "religion_none_pct"]));
+  religionNotStatedEl.textContent = formatPercent(getMetric(profile, ["religion_not_stated_pct"]));
 
   churchesValueEl.textContent = formatNumber(churchAnalysis.inside.length);
   nearbyChurchesValueEl.textContent = formatNumber(churchAnalysis.nearby.length);
@@ -544,6 +710,7 @@ function renderProfileData(townFeature, matchingSmallAreas, lookup, churches) {
     true
   );
 
+  renderFullDemographicProfile(profile);
   renderMissiologicalInsights(profile, churchAnalysis, townName);
 }
 
@@ -718,10 +885,14 @@ function loadTownProfile() {
   Promise.all([
     loadJson("urban-areas-boundaries.geojson"),
     loadJson("small-areas-2022.geojson"),
-    loadCsv("small-area-demographics-2022.csv"),
+    loadCsv("small-area-demographics-2022.csv").catch(error => {
+      console.warn("Summary demographic file could not be loaded. Continuing with full town profile file only.", error);
+      return [];
+    }),
+    loadCsv("small-area-town-profile-2022.csv"),
     loadCsv("churches-points.csv")
   ])
-    .then(([townData, smallAreasData, smallAreaDemographicsRows, churches]) => {
+    .then(([townData, smallAreasData, smallAreaDemographicsRows, fullProfileRows, churches]) => {
       const selectedTownFeature = findTownFeature(townData, selectedCode);
 
       if (!selectedTownFeature) {
@@ -730,14 +901,15 @@ function loadTownProfile() {
         return;
       }
 
-      const lookup = buildSmallAreaLookup(smallAreaDemographicsRows);
+      const summaryLookup = buildSmallAreaLookup(smallAreaDemographicsRows);
+      const fullLookup = buildSmallAreaLookup(fullProfileRows);
       const townBounds = getFeatureBounds(selectedTownFeature);
 
       const matchingSmallAreas = smallAreasData.features.filter(feature => {
         return smallAreaLikelyOverlapsTown(feature, selectedTownFeature.geometry, townBounds);
       });
 
-      renderProfileData(selectedTownFeature, matchingSmallAreas, lookup, churches);
+      renderProfileData(selectedTownFeature, matchingSmallAreas, summaryLookup, fullLookup, churches);
 
       setNotice(
         "Town profile loaded from the Glúnta demographic map data. Church presence is based on the current Glúnta church points dataset.",
@@ -750,7 +922,7 @@ function loadTownProfile() {
       townNameEl.textContent = "Data could not be loaded";
 
       setNotice(
-        "One or more profile files could not be loaded. Check that urban-areas-boundaries.geojson, small-areas-2022.geojson, small-area-demographics-2022.csv, and churches-points.csv are in the root of this GitHub Pages site.",
+        "One or more profile files could not be loaded. Check that urban-areas-boundaries.geojson, small-areas-2022.geojson, small-area-town-profile-2022.csv, and churches-points.csv are in the root of this GitHub Pages site.",
         "error"
       );
     });
