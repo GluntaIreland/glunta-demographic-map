@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LEA Mission Profile | Glúnta</title>
+
+  <link rel="stylesheet" href="town-profile.css" />
+</head>
+
+<body>
+  <main class="profile-page">
+    <header class="profile-hero">
+      <div class="profile-hero-text">
+        <p class="eyebrow">Glúnta Research</p>
+        <h1>LEA Mission Profile</h1>
+        <p class="hero-subtitle">
+          A mission-focused demographic profile for understanding Local Electoral Areas, existing church presence,
+          and possible areas for prayer, partnership, and local research.
+        </p>
+      </div>
+
+      <div class="hero-actions">
+        <a class="secondary-button" href="index.html">Back to map</a>
+        <button class="primary-button" type="button" onclick="window.print()">Save as PDF</button>
+      </div>
+    </header>
+
+    <section class="town-summary-card">
+      <div class="town-map-preview-wrap">
+        <iframe
+          id="townMapFrame"
+          class="town-map-frame"
+          title="LEA context map"
+          src="lea-profile-map.html"
+          loading="eager"
+        ></iframe>
+
+        <div class="map-preview-label">
+          <span>Interactive LEA context map</span>
+        </div>
+      </div>
+
+      <div class="town-summary-content">
+        <p class="eyebrow">Selected LEA</p>
+        <h2 id="leaName">Loading LEA...</h2>
+
+        <div class="summary-meta">
+          <span id="countyName">County: —</span>
+          <span id="urbanAreaCode">LEA Code: —</span>
+        </div>
+
+        <p id="townDescription" class="town-description">
+          This page uses the selected LEA boundary, Small Area demographic data, and listed church
+          locations to create a focused mission profile.
+        </p>
+
+        <div id="loadingNotice" class="loading-notice">
+          Loading LEA boundary from the Glúnta demographic map data...
+        </div>
+      </div>
+    </section>
+
+    <section class="metric-grid" aria-label="Summary metrics">
+      <article class="metric-card">
+        <p class="metric-label">Population</p>
+        <p id="populationValue" class="metric-value">—</p>
+        <p class="metric-note">Census 2022 LEA total from included Small Areas.</p>
+      </article>
+
+      <article class="metric-card">
+        <p class="metric-label">Small Areas</p>
+        <p id="smallAreasValue" class="metric-value">—</p>
+        <p class="metric-note">Small Areas included within the LEA boundary.</p>
+      </article>
+
+      <article class="metric-card">
+        <p class="metric-label">Churches listed</p>
+        <p id="churchesValue" class="metric-value">—</p>
+        <p class="metric-note">Church points listed in the Glúnta dataset.</p>
+      </article>
+
+      <article class="metric-card">
+        <p class="metric-label">Nearby churches</p>
+        <p id="nearbyChurchesValue" class="metric-value">—</p>
+        <p class="metric-note">Churches within 15 km of the town centre.</p>
+      </article>
+    </section>
+
+    <section class="content-grid">
+      <article class="panel">
+        <div class="panel-header">
+          <p class="eyebrow">Demographic shape</p>
+          <h2>Population and age</h2>
+        </div>
+
+        <div class="data-list">
+          <div class="data-row">
+            <span>Children, 0 to 14</span>
+            <strong id="ageChildren">—</strong>
+          </div>
+          <div class="data-row">
+            <span>Young adults, 15 to 34</span>
+            <strong id="ageYoungAdults">—</strong>
+          </div>
+          <div class="data-row">
+            <span>Adults, 35 to 64</span>
+            <strong id="ageAdults">—</strong>
+          </div>
+          <div class="data-row">
+            <span>Older adults, 65+</span>
+            <strong id="ageOlderAdults">—</strong>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <p class="eyebrow">Cultural profile</p>
+          <h2>Migration, language, and background</h2>
+        </div>
+
+        <div class="data-list">
+          <div class="data-row">
+            <span>Born outside Ireland</span>
+            <strong id="bornOutsideIreland">—</strong>
+          </div>
+          <div class="data-row">
+            <span>Non-Irish citizenship</span>
+            <strong id="nonIrishCitizenship">—</strong>
+          </div>
+          <div class="data-row">
+            <span>Foreign-language speakers</span>
+            <strong id="foreignLanguageSpeakers">—</strong>
+          </div>
+          <div class="data-row">
+            <span>Other White background</span>
+            <strong id="otherWhiteBackground">—</strong>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <p class="eyebrow">Religious profile</p>
+          <h2>Religious affiliation</h2>
+        </div>
+
+        <div class="data-list">
+          <div class="data-row">
+            <span>Catholic</span>
+            <strong id="religionCatholic">—</strong>
+          </div>
+          <div class="data-row">
+            <span>Other religion</span>
+            <strong id="religionOther">—</strong>
+          </div>
+          <div class="data-row">
+            <span>No religion</span>
+            <strong id="religionNone">—</strong>
+          </div>
+          <div class="data-row">
+            <span>Religion not stated</span>
+            <strong id="religionNotStated">—</strong>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <p class="eyebrow">Church presence</p>
+          <h2>Listed churches</h2>
+        </div>
+
+        <div class="church-list-block">
+          <h3>Inside this LEA</h3>
+          <ul id="churchesInsideList" class="church-list">
+            <li>Church list will appear here.</li>
+          </ul>
+        </div>
+
+        <div class="church-list-block">
+          <h3>Nearby</h3>
+          <ul id="nearbyChurchesList" class="church-list">
+            <li>Nearby churches will appear here.</li>
+          </ul>
+        </div>
+      </article>
+    </section>
+
+
+    <section class="wide-panel">
+      <div class="panel-header">
+        <p class="eyebrow">Full demographic profile</p>
+        <h2>Town profile statistics</h2>
+      </div>
+
+      <div id="fullDemographicProfile" class="content-grid">
+        <article class="panel">
+          <div class="panel-header">
+            <p class="eyebrow">Loading</p>
+            <h2>Demographic data</h2>
+          </div>
+          <p class="source-note">
+            Full Census 2022 Small Area profile data will appear here once the town is loaded.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wide-panel">
+      <div class="panel-header">
+        <p class="eyebrow">Mission reading</p>
+        <h2>Missiological observations</h2>
+      </div>
+
+      <div id="missionInsights" class="insight-list">
+        <article class="insight-card">
+          <h3>Begin with local listening</h3>
+          <p>
+            This profile is intended to support prayer, partnership, and research. It should not be read
+            as a mechanical church planting recommendation.
+          </p>
+        </article>
+
+        <article class="insight-card">
+          <h3>Read the data alongside people</h3>
+          <p>
+            Demographic data can show patterns, but it cannot tell the full story of relationships,
+            history, local trust, existing witness, or spiritual openness.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wide-panel muted-panel">
+      <div class="panel-header">
+        <p class="eyebrow">Data note</p>
+        <h2>Sources and method</h2>
+      </div>
+
+      <p>
+        This profile draws from Census 2022 Local Electoral Area boundaries, Small Area boundaries,
+        processed Small Area demographic tables, and the Glúnta church points dataset. Figures should be
+        treated as planning and research aids, not as final local knowledge.
+      </p>
+    </section>
+  </main>
+
+  <script src="lea-profile.js"></script>
+</body>
+</html>

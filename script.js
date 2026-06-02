@@ -401,6 +401,8 @@ const areaIntroEl = document.getElementById("areaIntro");
 const selectedIndicatorCardEl = document.getElementById("selectedIndicatorCard");
 const townProfileActionEl = document.getElementById("townProfileAction");
 const townProfileLinkEl = document.getElementById("townProfileLink");
+const leaProfileActionEl = document.getElementById("leaProfileAction");
+const leaProfileLinkEl = document.getElementById("leaProfileLink");
 const selectedIndicatorNameEl = document.getElementById("selectedIndicatorName");
 const selectedIndicatorValueEl = document.getElementById("selectedIndicatorValue");
 const populationValueEl = document.getElementById("populationValue");
@@ -705,6 +707,28 @@ function getTownProfileUrl(props) {
   return `town-profile.html?code=${encodeURIComponent(code)}`;
 }
 
+function getLeaCode(props) {
+  return String(
+    props.LEA_ID ||
+    props.lea_id ||
+    props.LEA_GUID ||
+    props.lea_guid ||
+    props.CSO_LEA ||
+    props.lea_name ||
+    props.area_name ||
+    props.code ||
+    props.CODE ||
+    ""
+  ).trim();
+}
+
+function getLeaProfileUrl(props) {
+  const code = getLeaCode(props);
+  if (!code) return "";
+
+  return `lea-profile.html?code=${encodeURIComponent(code)}`;
+}
+
 function updateTownProfileAction(props) {
   if (!townProfileActionEl || !townProfileLinkEl) return;
 
@@ -719,6 +743,22 @@ function updateTownProfileAction(props) {
 
   townProfileLinkEl.href = url;
   townProfileActionEl.style.display = "block";
+}
+
+function updateLeaProfileAction(props) {
+  if (!leaProfileActionEl || !leaProfileLinkEl) return;
+
+  const shouldShow = currentGeography === "lea" && props;
+  const url = shouldShow ? getLeaProfileUrl(props) : "";
+
+  if (!url) {
+    leaProfileActionEl.style.display = "none";
+    leaProfileLinkEl.removeAttribute("href");
+    return;
+  }
+
+  leaProfileLinkEl.href = url;
+  leaProfileActionEl.style.display = "block";
 }
 
 function getSmallAreaCode(props) {
@@ -1172,6 +1212,7 @@ function resetSidebar() {
   contextValueEl.textContent = "";
   sourceNoteEl.textContent = geography.sourceNote;
   updateTownProfileAction(null);
+  updateLeaProfileAction(null);
   hideDublinDetailAction();
 
   if (geography.isTown) {
@@ -1208,6 +1249,7 @@ function updateSidebar(props, smallAreaCount, selectedTownValue, selectedTownPop
 
   const countyName = getCountyName(props);
   updateTownProfileAction(geography.isTown ? props : null);
+  updateLeaProfileAction(currentGeography === "lea" ? props : null);
 
   if (geography.hasDemographics) {
     const indicatorConfig = getIndicatorConfig(currentIndicator);
@@ -1425,6 +1467,13 @@ function openAreaPopup(layer, smallAreaCount, selectedTownValue, selectedTownPop
     const currentValue = formatIndicatorValue(props[currentIndicator], currentIndicator);
     popupHtml += `<p><strong>Population, 2022:</strong> ${formatNumber(props.population_2022)}</p>`;
     popupHtml += `<p><strong>${escapeHtml(config.label)}:</strong> ${escapeHtml(currentValue)}</p>`;
+
+    if (currentGeography === "lea") {
+      const leaProfileUrl = getLeaProfileUrl(props);
+      if (leaProfileUrl) {
+        popupHtml += `<p><a href="${escapeHtml(leaProfileUrl)}" target="_blank" rel="noopener noreferrer"><strong>Open LEA Mission Profile</strong></a></p>`;
+      }
+    }
   }
 
   popupHtml += `</div>`;

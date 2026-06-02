@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LEA Profile Map</title>
+
+  <style>
+    html,
+    body,
+    #map {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #dfe9e7;
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
+
+    /* Minimal Leaflet layout CSS.
+       This is included directly so the map does not depend on external Leaflet CSS loading correctly. */
+    .leaflet-container {
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      background: #dfe9e7;
+      outline: 0;
+      font: 12px/1.5 "Helvetica Neue", Arial, Helvetica, sans-serif;
+    }
+
+    .leaflet-pane,
+    .leaflet-tile,
+    .leaflet-marker-icon,
+    .leaflet-marker-shadow,
+    .leaflet-tile-container,
+    .leaflet-pane > svg,
+    .leaflet-pane > canvas,
+    .leaflet-zoom-box,
+    .leaflet-image-layer,
+    .leaflet-layer {
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+
+    .leaflet-container {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .leaflet-container img {
+      max-width: none !important;
+      max-height: none !important;
+    }
+
+    .leaflet-tile {
+      width: 256px !important;
+      height: 256px !important;
+      max-width: none !important;
+      max-height: none !important;
+      min-width: 256px !important;
+      min-height: 256px !important;
+      object-fit: fill !important;
+      border: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    .leaflet-tile-container {
+      width: 256px;
+      height: 256px;
+    }
+
+    .leaflet-pane {
+      z-index: 400;
+    }
+
+    .leaflet-tile-pane {
+      z-index: 200;
+    }
+
+    .leaflet-overlay-pane {
+      z-index: 400;
+    }
+
+    .leaflet-shadow-pane {
+      z-index: 500;
+    }
+
+    .leaflet-marker-pane {
+      z-index: 600;
+    }
+
+    .leaflet-tooltip-pane {
+      z-index: 650;
+    }
+
+    .leaflet-popup-pane {
+      z-index: 700;
+    }
+
+    .leaflet-map-pane canvas {
+      z-index: 100;
+    }
+
+    .leaflet-map-pane svg {
+      z-index: 200;
+    }
+
+    .leaflet-vml-shape {
+      width: 1px;
+      height: 1px;
+    }
+
+    .lvml {
+      behavior: url(#default#VML);
+      display: inline-block;
+      position: absolute;
+    }
+
+    .leaflet-control {
+      position: relative;
+      z-index: 800;
+      pointer-events: visiblePainted;
+      pointer-events: auto;
+    }
+
+    .leaflet-top,
+    .leaflet-bottom {
+      position: absolute;
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    .leaflet-top {
+      top: 0;
+    }
+
+    .leaflet-right {
+      right: 0;
+    }
+
+    .leaflet-bottom {
+      bottom: 0;
+    }
+
+    .leaflet-left {
+      left: 0;
+    }
+
+    .leaflet-control {
+      float: left;
+      clear: both;
+    }
+
+    .leaflet-right .leaflet-control {
+      float: right;
+    }
+
+    .leaflet-top .leaflet-control {
+      margin-top: 10px;
+    }
+
+    .leaflet-bottom .leaflet-control {
+      margin-bottom: 10px;
+    }
+
+    .leaflet-left .leaflet-control {
+      margin-left: 10px;
+    }
+
+    .leaflet-right .leaflet-control {
+      margin-right: 10px;
+    }
+
+    .leaflet-control-zoom a {
+      display: block;
+      width: 26px;
+      height: 26px;
+      line-height: 26px;
+      text-align: center;
+      text-decoration: none;
+      color: #000;
+      background: #fff;
+      border-bottom: 1px solid #ccc;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .leaflet-control-zoom {
+      border: 2px solid rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .leaflet-control-zoom a:last-child {
+      border-bottom: 0;
+    }
+
+    .leaflet-control-attribution {
+      padding: 0 5px;
+      color: #333;
+      background: rgba(255, 255, 255, 0.8);
+      font-size: 10px;
+      line-height: 1.4;
+    }
+
+    .leaflet-control-attribution a {
+      color: #0078a8;
+      text-decoration: none;
+    }
+
+    .leaflet-popup {
+      position: absolute;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .leaflet-popup-content-wrapper {
+      padding: 1px;
+      text-align: left;
+      border-radius: 14px;
+      background: white;
+      box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
+    }
+
+    .leaflet-popup-content {
+      margin: 10px 12px;
+      font-size: 13px;
+      line-height: 1.35;
+      min-width: 1px;
+    }
+
+    .leaflet-popup-tip-container {
+      width: 40px;
+      height: 20px;
+      position: absolute;
+      left: 50%;
+      margin-left: -20px;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .leaflet-popup-tip {
+      width: 17px;
+      height: 17px;
+      padding: 1px;
+      margin: -10px auto 0;
+      transform: rotate(45deg);
+      background: white;
+      box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
+    }
+
+    .leaflet-popup-close-button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      border: none;
+      text-align: center;
+      width: 24px;
+      height: 24px;
+      font: 16px/24px Tahoma, Verdana, sans-serif;
+      color: #757575;
+      text-decoration: none;
+      background: transparent;
+    }
+
+    .leaflet-interactive {
+      cursor: pointer;
+    }
+
+    .leaflet-grab {
+      cursor: grab;
+    }
+
+    .leaflet-dragging .leaflet-grab {
+      cursor: move;
+      cursor: grabbing;
+    }
+
+    .map-status {
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      z-index: 1200;
+      max-width: calc(100% - 28px);
+      border-radius: 999px;
+      padding: 8px 12px;
+      color: #0f4f49;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 10px 24px rgba(16, 24, 40, 0.12);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .map-status.is-hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+  <div id="mapStatus" class="map-status">Loading LEA map...</div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const selectedCode = params.get("code");
+    const mapStatusEl = document.getElementById("mapStatus");
+
+    let map;
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function setStatus(message, hide = false) {
+      mapStatusEl.textContent = message;
+      mapStatusEl.classList.toggle("is-hidden", hide);
+    }
+
+    function parseCsvLine(line) {
+      const result = [];
+      let current = "";
+      let inQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        const next = line[i + 1];
+
+        if (char === '"' && inQuotes && next === '"') {
+          current += '"';
+          i++;
+        } else if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === "," && !inQuotes) {
+          result.push(current);
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+
+      result.push(current);
+      return result;
+    }
+
+    function parseCsv(text) {
+      const lines = text
+        .replace(/\r/g, "")
+        .split("\n")
+        .filter(line => line.trim().length > 0);
+
+      if (lines.length < 2) return [];
+
+      const headers = parseCsvLine(lines[0]).map(header => header.trim());
+
+      return lines.slice(1).map(line => {
+        const values = parseCsvLine(line);
+        const row = {};
+
+        headers.forEach((header, index) => {
+          row[header] = values[index] ? values[index].trim() : "";
+        });
+
+        return row;
+      });
+    }
+
+    function loadJson(url) {
+      return fetch(url).then(response => {
+        if (!response.ok) {
+          throw new Error(`Could not load ${url}. HTTP status: ${response.status}`);
+        }
+
+        return response.json();
+      });
+    }
+
+    function loadCsv(url) {
+      return fetch(url)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Could not load ${url}. HTTP status: ${response.status}`);
+          }
+
+          return response.text();
+        })
+        .then(parseCsv);
+    }
+
+    function getAreaName(props) {
+      return (
+        props.area_name ||
+        props.town_name ||
+        props.TOWN_NAME ||
+        props.URBAN_AREA_NAME ||
+        props.ENGLISH ||
+        props.name ||
+        props.NAME ||
+        "Unknown town"
+      );
+    }
+
+    function getLeaCode(props) {
+      return String(
+        props.LEA_ID ||
+        props.lea_id ||
+        props.LEA_GUID ||
+        props.lea_guid ||
+        props.CSO_LEA ||
+        props.lea_name ||
+        props.area_name ||
+        props.code ||
+        props.CODE ||
+        ""
+      ).trim();
+    }
+
+    function getSmallAreaCode(props) {
+      return String(props.SA_PUB2022 || props.SA_PUB2016 || props.SA_PUB2011 || "").trim();
+    }
+
+    function propertyContainsSelectedCode(props, code) {
+      if (!code) return false;
+      const target = String(code).trim();
+
+      return Object.values(props).some(value => String(value || "").trim() === target);
+    }
+
+    function findLeaFeature(data, code) {
+      if (!code) return null;
+
+      return data.features.find(feature => {
+        const props = feature.properties || {};
+        const directCode = getLeaCode(props);
+
+        if (directCode && directCode === String(code).trim()) return true;
+
+        return propertyContainsSelectedCode(props, code);
+      });
+    }
+
+    function collectCoordinates(geometry, output) {
+      if (!geometry) return;
+
+      if (geometry.type === "Polygon") {
+        geometry.coordinates.forEach(ring => {
+          ring.forEach(coord => output.push(coord));
+        });
+      }
+
+      if (geometry.type === "MultiPolygon") {
+        geometry.coordinates.forEach(polygon => {
+          polygon.forEach(ring => {
+            ring.forEach(coord => output.push(coord));
+          });
+        });
+      }
+    }
+
+    function getFeatureCentroid(feature) {
+      const coords = [];
+      collectCoordinates(feature.geometry, coords);
+
+      if (coords.length === 0) return null;
+
+      let lngTotal = 0;
+      let latTotal = 0;
+      let validCount = 0;
+
+      coords.forEach(coord => {
+        const lng = Number(coord[0]);
+        const lat = Number(coord[1]);
+
+        if (Number.isNaN(lng) || Number.isNaN(lat)) return;
+
+        lngTotal += lng;
+        latTotal += lat;
+        validCount++;
+      });
+
+      if (validCount === 0) return null;
+
+      return {
+        lng: lngTotal / validCount,
+        lat: latTotal / validCount
+      };
+    }
+
+    function getFeatureBounds(feature) {
+      const coords = [];
+      collectCoordinates(feature.geometry, coords);
+
+      if (coords.length === 0) return null;
+
+      let minLng = Infinity;
+      let minLat = Infinity;
+      let maxLng = -Infinity;
+      let maxLat = -Infinity;
+
+      coords.forEach(coord => {
+        const lng = Number(coord[0]);
+        const lat = Number(coord[1]);
+
+        if (Number.isNaN(lng) || Number.isNaN(lat)) return;
+
+        minLng = Math.min(minLng, lng);
+        minLat = Math.min(minLat, lat);
+        maxLng = Math.max(maxLng, lng);
+        maxLat = Math.max(maxLat, lat);
+      });
+
+      if (!Number.isFinite(minLng)) return null;
+
+      return { minLng, minLat, maxLng, maxLat };
+    }
+
+    function boundsIntersect(a, b) {
+      if (!a || !b) return false;
+
+      return !(
+        b.minLng > a.maxLng ||
+        b.maxLng < a.minLng ||
+        b.minLat > a.maxLat ||
+        b.maxLat < a.minLat
+      );
+    }
+
+    function pointInRing(lng, lat, ring) {
+      let inside = false;
+
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const xi = Number(ring[i][0]);
+        const yi = Number(ring[i][1]);
+        const xj = Number(ring[j][0]);
+        const yj = Number(ring[j][1]);
+
+        const intersect =
+          yi > lat !== yj > lat &&
+          lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
+
+        if (intersect) inside = !inside;
+      }
+
+      return inside;
+    }
+
+    function pointInPolygon(lng, lat, rings) {
+      if (!rings || rings.length === 0) return false;
+
+      const insideOuter = pointInRing(lng, lat, rings[0]);
+      if (!insideOuter) return false;
+
+      for (let i = 1; i < rings.length; i++) {
+        if (pointInRing(lng, lat, rings[i])) return false;
+      }
+
+      return true;
+    }
+
+    function pointInGeometry(lng, lat, geometry) {
+      if (!geometry) return false;
+
+      if (geometry.type === "Polygon") {
+        return pointInPolygon(lng, lat, geometry.coordinates);
+      }
+
+      if (geometry.type === "MultiPolygon") {
+        return geometry.coordinates.some(polygon => pointInPolygon(lng, lat, polygon));
+      }
+
+      return false;
+    }
+
+    function smallAreaLikelyOverlapsTown(smallAreaFeature, townGeometry, townBounds) {
+      const smallAreaBounds = getFeatureBounds(smallAreaFeature);
+
+      if (!smallAreaBounds || !townBounds || !boundsIntersect(smallAreaBounds, townBounds)) {
+        return false;
+      }
+
+      const centroid = getFeatureCentroid(smallAreaFeature);
+
+      if (centroid && pointInGeometry(centroid.lng, centroid.lat, townGeometry)) {
+        return true;
+      }
+
+      const smallAreaPoints = [];
+      collectCoordinates(smallAreaFeature.geometry, smallAreaPoints);
+
+      for (const coord of smallAreaPoints) {
+        const lng = Number(coord[0]);
+        const lat = Number(coord[1]);
+
+        if (pointInGeometry(lng, lat, townGeometry)) return true;
+      }
+
+      const townPoints = [];
+      collectCoordinates(townGeometry, townPoints);
+
+      for (const coord of townPoints) {
+        const lng = Number(coord[0]);
+        const lat = Number(coord[1]);
+
+        if (pointInGeometry(lng, lat, smallAreaFeature.geometry)) return true;
+      }
+
+      return false;
+    }
+
+    function getColorForPopulation(value) {
+      const number = Number(value);
+
+      if (Number.isNaN(number)) return "#e5eef0";
+      if (number >= 800) return "#08306b";
+      if (number >= 600) return "#08519c";
+      if (number >= 400) return "#2171b5";
+      if (number >= 250) return "#4292c6";
+      if (number >= 100) return "#9ecae1";
+      return "#deebf7";
+    }
+
+    function buildSmallAreaLookup(rows) {
+      const lookup = {};
+
+      rows.forEach(row => {
+        const code = String(row.SA_PUB2022 || "").trim();
+        if (!code) return;
+
+        const clean = {};
+
+        Object.keys(row).forEach(key => {
+          if (key === "SA_PUB2022") {
+            clean[key] = row[key];
+            return;
+          }
+
+          const value = Number(row[key]);
+          clean[key] = Number.isNaN(value) ? null : value;
+        });
+
+        lookup[code] = clean;
+      });
+
+      return lookup;
+    }
+
+    function haversineKm(lat1, lng1, lat2, lng2) {
+      const radius = 6371;
+      const dLat = ((lat2 - lat1) * Math.PI) / 180;
+      const dLng = ((lng2 - lng1) * Math.PI) / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) *
+          Math.cos((lat2 * Math.PI) / 180) *
+          Math.sin(dLng / 2) *
+          Math.sin(dLng / 2);
+
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return radius * c;
+    }
+
+    function getChurchName(row) {
+      return row.name || row["Church Name"] || row.church_name || "Unnamed church";
+    }
+
+    function analyseChurches(churchRows, townFeature) {
+      const townGeometry = townFeature.geometry;
+      const townCentroid = getFeatureCentroid(townFeature);
+
+      const validChurches = churchRows
+        .map(row => {
+          const lat = Number(row.latitude || row.Latitude);
+          const lng = Number(row.longitude || row.Longitude);
+
+          if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+
+          return {
+            ...row,
+            lat,
+            lng,
+            distanceKm: townCentroid ? haversineKm(townCentroid.lat, townCentroid.lng, lat, lng) : null
+          };
+        })
+        .filter(Boolean);
+
+      const inside = validChurches
+        .filter(church => pointInGeometry(church.lng, church.lat, townGeometry))
+        .sort((a, b) => getChurchName(a).localeCompare(getChurchName(b), "en-IE"));
+
+      const nearby = validChurches
+        .filter(church => !pointInGeometry(church.lng, church.lat, townGeometry))
+        .filter(church => typeof church.distanceKm === "number" && church.distanceKm <= 15)
+        .sort((a, b) => a.distanceKm - b.distanceKm)
+        .slice(0, 8);
+
+      return { inside, nearby };
+    }
+
+    function initialiseMap() {
+      if (!window.L) {
+        setStatus("Leaflet did not load.");
+        return;
+      }
+
+      map = L.map("map", {
+        zoomControl: true,
+        attributionControl: true,
+        scrollWheelZoom: true,
+        dragging: true,
+        doubleClickZoom: true,
+        boxZoom: false,
+        keyboard: true
+      });
+
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+    }
+
+    function renderMap(townFeature, matchingSmallAreas, lookup, churchAnalysis) {
+      const smallAreaCollection = {
+        type: "FeatureCollection",
+        features: matchingSmallAreas.map(feature => {
+          const clone = JSON.parse(JSON.stringify(feature));
+          const code = getSmallAreaCode(clone.properties);
+          const data = lookup[code] || {};
+          clone.properties.population_2022 = data.population_2022;
+          return clone;
+        })
+      };
+
+      L.geoJSON(smallAreaCollection, {
+        style: feature => ({
+          fillColor: getColorForPopulation(feature.properties.population_2022),
+          fillOpacity: 0.46,
+          color: "#0f172a",
+          weight: 0.55,
+          opacity: 0.65
+        }),
+        interactive: false
+      }).addTo(map);
+
+      const townLayer = L.geoJSON(townFeature, {
+        style: {
+          color: "#111827",
+          weight: 3,
+          opacity: 0.95,
+          fillColor: "transparent",
+          fillOpacity: 0
+        }
+      }).addTo(map);
+
+      churchAnalysis.inside.forEach(church => {
+        const marker = L.circleMarker([church.lat, church.lng], {
+          radius: 5.5,
+          color: "#111827",
+          weight: 2,
+          fillColor: "#ffffff",
+          fillOpacity: 1
+        });
+
+        marker.bindPopup(`<strong>${escapeHtml(getChurchName(church))}</strong><br>Listed inside this town`);
+        marker.addTo(map);
+      });
+
+      churchAnalysis.nearby.slice(0, 5).forEach(church => {
+        const marker = L.circleMarker([church.lat, church.lng], {
+          radius: 4,
+          color: "#0f4f49",
+          weight: 1.8,
+          fillColor: "#ffffff",
+          fillOpacity: 0.45
+        });
+
+        marker.bindPopup(`<strong>${escapeHtml(getChurchName(church))}</strong><br>${church.distanceKm.toFixed(1)} km from town centre`);
+        marker.addTo(map);
+      });
+
+      const bounds = townLayer.getBounds();
+
+      setTimeout(() => {
+        map.invalidateSize(true);
+
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, {
+            padding: [90, 90],
+            maxZoom: 12,
+            animate: false
+          });
+        }
+
+        townLayer.bringToFront();
+        setStatus("", true);
+      }, 350);
+    }
+
+    function loadMap() {
+      initialiseMap();
+
+      if (!map) return;
+
+      if (!selectedCode) {
+        setStatus("No LEA code provided.");
+        map.setView([53.4, -8.1], 7);
+        return;
+      }
+
+      Promise.all([
+        loadJson("lea-demographics-map.geojson"),
+        loadJson("small-areas-2022.geojson"),
+        loadCsv("small-area-demographics-2022.csv"),
+        loadCsv("churches-points.csv")
+      ])
+        .then(([townData, smallAreasData, smallAreaDemographicsRows, churches]) => {
+          const selectedLeaFeature = findLeaFeature(townData, selectedCode);
+
+          if (!selectedLeaFeature) {
+            setStatus("LEA boundary not found.");
+            map.setView([53.4, -8.1], 7);
+            return;
+          }
+
+          const lookup = buildSmallAreaLookup(smallAreaDemographicsRows);
+          const townBounds = getFeatureBounds(selectedLeaFeature);
+
+          const matchingSmallAreas = smallAreasData.features.filter(feature => {
+            return smallAreaLikelyOverlapsTown(feature, selectedLeaFeature.geometry, townBounds);
+          });
+
+          const churchAnalysis = analyseChurches(churches, selectedLeaFeature);
+
+          renderMap(selectedLeaFeature, matchingSmallAreas, lookup, churchAnalysis);
+        })
+        .catch(error => {
+          console.error(error);
+          setStatus("Map data could not be loaded.");
+          map.setView([53.4, -8.1], 7);
+        });
+    }
+
+    loadMap();
+  </script>
+</body>
+</html>
