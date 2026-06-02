@@ -982,43 +982,31 @@ function normaliseName(value) {
 function getDetailModeTownName(props) {
   const name = normaliseName(getAreaName(props));
   const code = getUrbanAreaCode(props);
-  const allValues = normaliseName(Object.values(props || {}).join(" "));
 
+  /*
+    City Detail Mode should only switch on for the actual major city
+    urban-area records, not every town that happens to sit in the same county
+    or be visually covered by a larger city boundary.
+
+    Earlier versions checked all property values and used loose includes()
+    matching. That meant places like Bearna could trigger Galway Detail Mode
+    because the county/property values contained “Galway”.
+
+    This version uses exact Urban Area codes first, with exact name fallback.
+  */
   const detailModeTowns = [
-    {
-      label: "Dublin",
-      codes: [],
-      matches: ["dublin", "dublin city", "dublin urban", "dublin city and suburbs"]
-    },
-    {
-      label: "Cork",
-      codes: ["17364"],
-      matches: ["cork", "cork city", "cork urban", "cork city and suburbs"]
-    },
-    {
-      label: "Galway",
-      codes: ["26305"],
-      matches: ["galway", "galway city", "galway urban", "galway city and suburbs"]
-    },
-    {
-      label: "Limerick",
-      codes: ["20497"],
-      matches: ["limerick", "limerick city", "limerick urban", "limerick city and suburbs"]
-    },
-    {
-      label: "Waterford",
-      codes: ["24643"],
-      matches: ["waterford", "waterford city", "waterford urban", "waterford city and suburbs"]
-    }
+    { label: "Dublin", code: "02341", names: ["dublin city and suburbs"] },
+    { label: "Cork", code: "17364", names: ["cork city and suburbs"] },
+    { label: "Galway", code: "26305", names: ["galway city and suburbs"] },
+    { label: "Limerick", code: "20497", names: ["limerick city and suburbs"] },
+    { label: "Waterford", code: "24643", names: ["waterford city and suburbs"] }
   ];
 
-  for (const town of detailModeTowns) {
-    if (town.codes.includes(code)) return town.label;
+  const matchedByCode = detailModeTowns.find(town => town.code === code);
+  if (matchedByCode) return matchedByCode.label;
 
-    if (town.matches.some(match => name === match || name.includes(match) || allValues.includes(match))) {
-      return town.label;
-    }
-  }
+  const matchedByName = detailModeTowns.find(town => town.names.includes(name));
+  if (matchedByName) return matchedByName.label;
 
   return "";
 }
