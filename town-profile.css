@@ -1,3 +1,5 @@
+/* Town Profile CSS replacement */
+
 :root {
   --ink: #17212b;
   --muted: #5f6b76;
@@ -8,7 +10,6 @@
   --wash-strong: #eaf4f1;
   --green: #087d73;
   --green-dark: #0f4f49;
-  --blue: #1f5f8b;
   --shadow: 0 18px 45px rgba(16, 24, 40, 0.08);
   --radius-large: 28px;
   --radius: 18px;
@@ -20,14 +21,7 @@
 
 body {
   margin: 0;
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--ink);
   background:
     radial-gradient(circle at top left, rgba(8, 125, 115, 0.08), transparent 32rem),
@@ -295,6 +289,16 @@ h1 {
   white-space: nowrap;
 }
 
+.panel > .source-note {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--soft-border);
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-style: italic;
+  line-height: 1.6;
+}
+
 .church-list-block + .church-list-block {
   margin-top: 22px;
   border-top: 1px solid var(--soft-border);
@@ -411,38 +415,209 @@ h1 {
   }
 }
 
+/* PDF / print polish */
 @media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  html,
   body {
-    background: #ffffff;
+    width: 100%;
+    background: #ffffff !important;
+    color: #111827;
+    overflow: visible;
+  }
+
+  body {
+    font-size: 10.5pt;
+    line-height: 1.45;
   }
 
   .profile-page {
     width: 100%;
+    max-width: none;
     padding: 0;
+    margin: 0;
   }
 
-  .hero-actions {
-    display: none;
+  .hero-actions,
+  .map-preview-label {
+    display: none !important;
+  }
+
+  .profile-hero {
+    display: block;
+    margin-bottom: 16px;
+    break-after: avoid;
+  }
+
+  .eyebrow {
+    font-size: 8.5pt;
+    letter-spacing: 0.1em;
+  }
+
+  h1 {
+    margin-bottom: 8px;
+    font-size: 30pt;
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+
+  .hero-subtitle {
+    max-width: 100%;
+    font-size: 10.5pt;
+    line-height: 1.45;
+  }
+
+  .town-summary-card {
+    display: grid;
+    grid-template-columns: 0.9fr 1.1fr;
+    margin-bottom: 14px;
+    border-radius: 14px;
+    box-shadow: none;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .town-map-preview-wrap,
+  .town-map-frame {
+    height: 250px;
+    min-height: 250px;
+  }
+
+  .town-summary-content {
+    padding: 18px;
+  }
+
+  .town-summary-content h2 {
+    font-size: 24pt;
+    line-height: 1.05;
+  }
+
+  .summary-meta {
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .summary-meta span {
+    padding: 5px 8px;
+    font-size: 8.5pt;
+  }
+
+  .town-description,
+  .loading-notice {
+    font-size: 9.5pt;
+    line-height: 1.45;
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   .metric-card,
   .panel,
   .wide-panel,
   .town-summary-card {
-    box-shadow: none;
+    box-shadow: none !important;
+  }
+
+  .metric-card {
+    padding: 12px;
+    border-radius: 10px;
     break-inside: avoid;
+    page-break-inside: avoid;
   }
 
-  .profile-hero {
-    margin-bottom: 18px;
+  .metric-label {
+    font-size: 8.5pt;
   }
 
-  .map-preview-label {
-    display: none;
+  .metric-value {
+    font-size: 18pt;
   }
 
-  .town-map-preview-wrap {
-    height: 360px;
-    min-height: 360px;
+  .metric-note {
+    font-size: 8.5pt;
+    line-height: 1.35;
+  }
+
+  .content-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .panel,
+  .wide-panel {
+    padding: 14px;
+    border-radius: 10px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .panel-header {
+    margin-bottom: 10px;
+  }
+
+  .panel-header h2 {
+    font-size: 13.5pt;
+  }
+
+  .data-list {
+    gap: 6px;
+  }
+
+  .data-row {
+    padding-bottom: 6px;
+    font-size: 9pt;
+  }
+
+  .panel > .source-note {
+    margin-top: 12px;
+    padding-top: 8px;
+    font-size: 8.5pt;
+  }
+
+  .church-list,
+  .church-list li {
+    font-size: 9pt;
+    line-height: 1.4;
+  }
+
+  .wide-panel {
+    margin-bottom: 10px;
+  }
+
+  .insight-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .insight-card {
+    padding: 12px;
+    border-radius: 10px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .insight-card h3 {
+    font-size: 10.5pt;
+    margin-bottom: 5px;
+  }
+
+  .insight-card p {
+    font-size: 9pt;
+    line-height: 1.4;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
   }
 }
