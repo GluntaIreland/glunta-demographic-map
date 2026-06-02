@@ -980,23 +980,36 @@ function normaliseName(value) {
 }
 
 function getDetailModeTownName(props) {
-  const displayName = getAreaName(props);
-  const name = normaliseName(displayName);
+  const name = normaliseName(getAreaName(props));
+  const code = getUrbanAreaCode(props);
+  const allValues = normaliseName(Object.values(props || {}).join(" "));
 
-  if (name === "dublin" || name.includes("dublin city") || name.includes("dublin urban") || name.includes("dublin city and suburbs")) {
-    return "Dublin";
+  if (
+    code === "17364" ||
+    name === "cork" ||
+    name.includes("cork city") ||
+    name.includes("cork urban") ||
+    name.includes("cork city and suburbs") ||
+    allValues.includes("cork city and suburbs")
+  ) {
+    return "Cork";
   }
 
-  if (name === "cork" || name.includes("cork city") || name.includes("cork urban") || name.includes("cork city and suburbs")) {
-    return "Cork";
+  if (
+    name === "dublin" ||
+    name.includes("dublin city") ||
+    name.includes("dublin urban") ||
+    name.includes("dublin city and suburbs") ||
+    allValues.includes("dublin city and suburbs")
+  ) {
+    return "Dublin";
   }
 
   return "";
 }
 
 function isDublinTown(props) {
-  // Kept as a compatibility wrapper for the existing Detail Mode code.
-  // It now means “large city detail mode” rather than Dublin only.
+  // Compatibility wrapper: this now means “City Detail Mode”.
   return Boolean(getDetailModeTownName(props));
 }
 
@@ -1181,7 +1194,7 @@ function openDublinSmallAreaPopup(layer) {
 
   let popupHtml = `
     <div class="area-popup">
-      <h2>Small Area inside selected city</h2>
+      <h2>Small Area inside ${escapeHtml(getDetailModeTownName(selectedTownPropsForSmallAreas || {}) || "selected city")}</h2>
   `;
 
   if (code) {
@@ -1549,7 +1562,7 @@ function updateLegend() {
         div.innerHTML += `
           <div class="legend-row">
             <span class="legend-color" style="background:#0f766e; opacity:0.32; border:2px solid #111827;"></span>
-            <span>Clickable city Small Areas</span>
+            <span>Clickable City Small Areas</span>
           </div>
         `;
       }
