@@ -718,18 +718,45 @@ function addInsight(insights, title, text, priority = false) {
   insights.push({ title, text, priority });
 }
 
+function safeMetric(profile, keys) {
+  const value = getMetric(profile, keys);
+  return value === null ? NaN : Number(value);
+}
+
+function metricIsAtLeast(profile, keys, threshold) {
+  const value = safeMetric(profile, keys);
+  return !Number.isNaN(value) && value >= threshold;
+}
+
 function renderMissiologicalInsights(profile, churchAnalysis, townName) {
   const insights = [];
 
-  const population = Number(profile.population_2022);
-  const children = Number(profile.age_0_14_pct);
-  const youngAdults = Number(profile.age_15_34_pct);
-  const olderAdults = Number(profile.age_65_plus_pct);
-  const bornOutside = Number(profile.born_outside_ireland_pct);
-  const nonIrishCitizenship = Number(profile.non_irish_citizenship_pct);
-  const foreignLanguage = Number(profile.foreign_language_speakers_pct);
-  const noReligion = Number(profile.religion_none_pct);
-  const otherReligion = Number(profile.religion_other_pct);
+  const population = safeMetric(profile, ["population_2022"]);
+  const children = safeMetric(profile, ["age_0_14_pct"]);
+  const youngAdults = safeMetric(profile, ["age_15_34_pct"]);
+  const olderAdults = safeMetric(profile, ["age_65_plus_pct"]);
+  const bornOutside = safeMetric(profile, ["born_outside_ireland_pct", "birthplace_rest_world_pct"]);
+  const nonIrishCitizenship = safeMetric(profile, ["non_irish_citizenship_pct"]);
+  const foreignLanguage = safeMetric(profile, ["foreign_language_speakers_pct"]);
+  const noReligion = safeMetric(profile, ["religion_no_religion_pct", "religion_none_pct"]);
+  const otherReligion = safeMetric(profile, ["religion_other_religion_pct", "religion_other_pct"]);
+  const privateRenting = safeMetric(profile, ["housing_rented_from_private_landlord_pct"]);
+  const localAuthorityRenting = safeMetric(profile, ["housing_rented_from_local_authority_pct"]);
+  const ownerOccupied = safeMetric(profile, ["housing_owner_occupied_pct"]);
+  const thirdLevel = safeMetric(profile, ["education_third_level_or_higher_pct"]);
+  const atWork = safeMetric(profile, ["status_at_work_pct"]);
+  const students = safeMetric(profile, ["status_student_pct"]);
+  const retired = safeMetric(profile, ["status_retired_pct"]);
+  const unableWork = safeMetric(profile, ["status_unable_work_disability_pct", "status_unable_to_work_pct"]);
+  const unemployment = safeMetric(profile, ["status_unemployed_pct"]);
+  const households2 = safeMetric(profile, ["household_2_persons_pct"]);
+  const familiesWithChildren = safeMetric(profile, ["families_with_children_pct"]);
+  const professionalOccupations = safeMetric(profile, ["occupation_professional_occupations_pct"]);
+  const skilledTrades = safeMetric(profile, ["occupation_skilled_trades_occupations_pct"]);
+  const elementaryOccupations = safeMetric(profile, ["occupation_elementary_occupations_pct"]);
+  const agriculture = safeMetric(profile, ["industry_agriculture_forestry_fishing_pct"]);
+  const construction = safeMetric(profile, ["industry_construction_pct"]);
+  const professionalServices = safeMetric(profile, ["industry_professional_services_pct"]);
 
   addInsight(
     insights,
@@ -797,27 +824,147 @@ function renderMissiologicalInsights(profile, churchAnalysis, townName) {
     );
   }
 
-  if (!Number.isNaN(children) && children >= 20) {
+  if (!Number.isNaN(children) && children >= 20 && !Number.isNaN(familiesWithChildren) && familiesWithChildren >= 50) {
+    addInsight(
+      insights,
+      "Family networks may be a primary doorway",
+      "The combination of children and families with children suggests that schools, sports clubs, parent-and-toddler relationships, children’s ministry, and practical support for households may be significant pathways into community life.",
+      true
+    );
+  } else if (!Number.isNaN(children) && children >= 20) {
     addInsight(
       insights,
       "Family rhythms may be a key doorway",
-      "A significant children’s population points toward the importance of schools, sports clubs, parent-and-toddler relationships, youth work, and practical support for households. In a town like this, mission may move through ordinary family networks long before it moves through formal events."
+      "A significant children’s population points toward the importance of schools, sports clubs, parent networks, and practical support for households. Mission may move through ordinary family relationships before it moves through formal events."
     );
   }
 
-  if (!Number.isNaN(youngAdults) && youngAdults >= 25) {
+  if (!Number.isNaN(youngAdults) && youngAdults >= 25 && !Number.isNaN(privateRenting) && privateRenting >= 20) {
+    addInsight(
+      insights,
+      "Younger adults may be mobile and relationally unsettled",
+      "The profile combines a noticeable younger adult population with private renting. That often points to mobility, thinner local roots, and friendship networks built around work, cafés, gyms, sport, and shared housing rather than inherited community structures.",
+      true
+    );
+  } else if (!Number.isNaN(youngAdults) && youngAdults >= 25) {
     addInsight(
       insights,
       "Do not ignore younger adult networks",
-      "The younger adult profile suggests paying attention to work, commuting, rental housing, cafés, gyms, sports, and informal friendship networks. A church plant that only imagines Sunday attendance may miss where younger adults actually build community."
+      "The younger adult profile suggests paying attention to work, rental housing, cafés, gyms, sports, and informal friendship networks. A church plant that only imagines Sunday attendance may miss where younger adults actually build community."
     );
   }
 
-  if (!Number.isNaN(olderAdults) && olderAdults >= 20) {
+  if (!Number.isNaN(olderAdults) && olderAdults >= 20 && !Number.isNaN(retired) && retired >= 18) {
     addInsight(
       insights,
       "Pastoral presence among older adults matters",
-      "The older age profile means that loneliness, bereavement, care, weekday availability, and trusted pastoral presence may be central to faithful ministry. A mission strategy focused only on young families would read the town too narrowly."
+      "The age and retirement profile suggest that loneliness, bereavement, transport, healthcare, weekday availability, and trusted pastoral presence may be central to faithful ministry. A strategy focused only on young families would read the place too narrowly.",
+      true
+    );
+  }
+
+  if (!Number.isNaN(ownerOccupied) && ownerOccupied >= 65) {
+    addInsight(
+      insights,
+      "This may be a settled community",
+      "A high owner-occupied housing profile can indicate stability and long local memory. New ministry here may need patience, consistency, and visible faithfulness over time rather than quick programme-driven activity."
+    );
+  }
+
+  if (!Number.isNaN(privateRenting) && privateRenting >= 25) {
+    addInsight(
+      insights,
+      "Housing may shape belonging",
+      "A higher private-renting profile may mean people are more mobile, newer to the area, or less rooted in older local networks. Hospitality, small groups, and low-barrier community spaces could be unusually important."
+    );
+  }
+
+  if (!Number.isNaN(localAuthorityRenting) && localAuthorityRenting >= 18) {
+    addInsight(
+      insights,
+      "Pay attention to disadvantage without making assumptions",
+      "A higher level of local-authority renting may point toward particular pastoral and community needs. This should lead to listening, dignity, practical friendship, and partnership with local workers, not crude assumptions about poverty or receptivity."
+    );
+  }
+
+  if (!Number.isNaN(thirdLevel) && thirdLevel >= 45 && !Number.isNaN(noReligion) && noReligion >= 20) {
+    addInsight(
+      insights,
+      "Apologetics and trust may belong together",
+      "The combination of higher education and a sizeable non-religious population suggests that mission may need both intellectual clarity and relational credibility. People may not simply need an invitation to church; they may need space to reconsider whether Christianity is believable at all.",
+      true
+    );
+  }
+
+  if (!Number.isNaN(atWork) && atWork >= 62) {
+    addInsight(
+      insights,
+      "Daily rhythms may be shaped by work pressure",
+      "A high proportion of adults at work suggests that evening availability, commuting, childcare, tiredness, and weekend patterns should be considered carefully. Ministry rhythms that assume endless volunteer capacity may struggle here."
+    );
+  }
+
+  if (!Number.isNaN(students) && students >= 12) {
+    addInsight(
+      insights,
+      "Students may be a distinct mission field",
+      "The student profile suggests the need to ask where younger adults gather, whether there are colleges nearby, and how transient student life affects discipleship, hospitality, and continuity."
+    );
+  }
+
+  if (!Number.isNaN(unableWork) && unableWork >= 8) {
+    addInsight(
+      insights,
+      "Accessibility and care should not be secondary",
+      "A noticeable share of people unable to work because of sickness or disability should shape how churches think about access, transport, pastoral care, daytime presence, and the dignity of those often left at the edge of busy church life."
+    );
+  }
+
+  if (!Number.isNaN(unemployment) && unemployment >= 8) {
+    addInsight(
+      insights,
+      "Work, dignity, and hope may be live questions",
+      "A higher unemployment profile may point to economic pressure, discouragement, and fragile confidence. Local mission should avoid treating people as projects, but practical care, friendship, and pathways into purposeful community may matter deeply."
+    );
+  }
+
+  if (!Number.isNaN(households2) && households2 >= 45 && !Number.isNaN(olderAdults) && olderAdults >= 18) {
+    addInsight(
+      insights,
+      "Small households may hide loneliness",
+      "A high share of two-person households alongside an older age profile may indicate settled couples, empty nesters, widows and widowers, or smaller household units. Pastoral visiting and neighbourly attention may matter more than a purely event-led strategy."
+    );
+  }
+
+  if (!Number.isNaN(professionalOccupations) && professionalOccupations >= 20 || !Number.isNaN(professionalServices) && professionalServices >= 25) {
+    addInsight(
+      insights,
+      "Professional networks may shape community life",
+      "The work profile suggests that professional networks, commuting patterns, and time pressure may shape how people form relationships. In a place like this, careful teaching, thoughtful apologetics, and flexible discipleship rhythms may carry particular weight."
+    );
+  }
+
+  if (!Number.isNaN(skilledTrades) && skilledTrades >= 12 || !Number.isNaN(construction) && construction >= 12) {
+    addInsight(
+      insights,
+      "Practical credibility may matter",
+      "A strong trades or construction profile suggests that churches should not only think in terms of formal programmes. Practical service, reliability, embodied community, and everyday usefulness may speak loudly."
+    );
+  }
+
+  if (!Number.isNaN(agriculture) && agriculture >= 10) {
+    addInsight(
+      insights,
+      "Rural working patterns may shape ministry",
+      "An agricultural profile may mean seasonal pressure, dispersed relationships, and a different rhythm of availability. Ministry here may need to account for farming calendars, local marts, parish memory, and the slow work of trust."
+    );
+  }
+
+  if (!Number.isNaN(elementaryOccupations) && elementaryOccupations >= 12) {
+    addInsight(
+      insights,
+      "Do not design ministry only for the articulate and available",
+      "A noticeable elementary-occupations profile should remind churches not to build everything around middle-class assumptions of time, confidence, education, and communication style. Plain speech, practical friendship, and non-performative community may be important."
     );
   }
 
