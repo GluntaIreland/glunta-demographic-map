@@ -8,7 +8,6 @@
   --wash-strong: #eaf4f1;
   --green: #087d73;
   --green-dark: #0f4f49;
-  --blue: #1f5f8b;
   --shadow: 0 18px 45px rgba(16, 24, 40, 0.08);
   --radius-large: 28px;
   --radius: 18px;
@@ -293,6 +292,16 @@ h1 {
 .data-row strong {
   color: var(--ink);
   white-space: nowrap;
+}
+
+.panel > .source-note {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--soft-border);
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-style: italic;
+  line-height: 1.6;
 }
 
 .church-list-block + .church-list-block {
