@@ -6,6 +6,67 @@
   <title>LEA Mission Profile | Glúnta</title>
 
   <link rel="stylesheet" href="town-profile.css" />
+
+  <style>
+    .town-static-map-preview {
+      display: none;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background: #dfe9e7;
+    }
+
+    .static-town-map-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .static-map-fallback {
+      height: 100%;
+      display: grid;
+      place-items: center;
+      color: #5f6b76;
+      font-weight: 800;
+    }
+
+    .primary-button:disabled {
+      opacity: 0.72;
+      cursor: wait;
+    }
+
+    body.pdf-export-mode {
+      background: #ffffff !important;
+    }
+
+    body.pdf-export-mode .profile-page {
+      width: 1100px;
+      max-width: 1100px;
+      padding: 24px 0 40px;
+    }
+
+    body.pdf-export-mode .hero-actions {
+      display: none !important;
+    }
+
+    body.pdf-export-mode .town-map-frame {
+      display: none !important;
+    }
+
+    body.pdf-export-mode .town-static-map-preview {
+      display: block !important;
+    }
+
+    body.pdf-export-mode .map-preview-label span {
+      font-size: 0;
+    }
+
+    body.pdf-export-mode .map-preview-label span::after {
+      content: "Map-generated LEA view";
+      font-size: 0.8rem;
+    }
+  </style>
 </head>
 
 <body>
@@ -22,7 +83,7 @@
 
       <div class="hero-actions">
         <a class="secondary-button" href="index.html">Back to map</a>
-        <button class="primary-button" type="button" onclick="window.print()">Save as PDF</button>
+        <button id="downloadPdfButton" class="primary-button" type="button">Download PDF</button>
       </div>
     </header>
 
@@ -35,6 +96,8 @@
           src="lea-profile-map.html"
           loading="eager"
         ></iframe>
+
+        <div id="townStaticMapPreview" class="town-static-map-preview" aria-hidden="true"></div>
 
         <div class="map-preview-label">
           <span>Interactive LEA context map</span>
@@ -192,7 +255,7 @@
     <section class="wide-panel">
       <div class="panel-header">
         <p class="eyebrow">Full demographic profile</p>
-        <h2>Town profile statistics</h2>
+        <h2>LEA profile statistics</h2>
       </div>
 
       <div id="fullDemographicProfile" class="content-grid">
@@ -202,7 +265,7 @@
             <h2>Demographic data</h2>
           </div>
           <p class="source-note">
-            Full Census 2022 Small Area profile data will appear here once the town is loaded.
+            Full Census 2022 Small Area profile data will appear here once the LEA is loaded.
           </p>
         </article>
       </div>
@@ -247,6 +310,8 @@
     </section>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="lea-profile.js"></script>
 </body>
 </html>

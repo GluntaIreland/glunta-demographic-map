@@ -38,6 +38,11 @@ const churchesInsideListEl = document.getElementById("churchesInsideList");
 const nearbyChurchesListEl = document.getElementById("nearbyChurchesList");
 const missionInsightsEl = document.getElementById("missionInsights");
 const fullDemographicProfileEl = document.getElementById("fullDemographicProfile");
+const downloadPdfButtonEl = document.getElementById("downloadPdfButton");
+const townStaticMapPreviewEl = document.getElementById("townStaticMapPreview");
+
+let currentRenderedLeaName = "lea-mission-profile";
+let currentExportReady = false;
 
 function escapeHtml(value) {
   return String(value || "")
@@ -658,9 +663,262 @@ function renderFullDemographicProfile(profile) {
         <p class="eyebrow">No data</p>
         <h2>Full profile unavailable</h2>
       </div>
-      <p class="source-note">No matching rows were found in small-area-town-profile-2022.csv for the Small Areas inside this town.</p>
+      <p class="source-note">No matching rows were found in small-area-town-profile-2022.csv for the Small Areas inside this LEA.</p>
     </article>
   `;
+}
+
+function getFeatureCoords(geometry) {
+  const coords = [];
+  collectCoordinates(geometry, coords);
+  return coords
+    .map(coord => ({ lng: Number(coord[0]), lat: Number(coord[1]) }))
+    .filter(coord => !Number.isNaN(coord.lng) && !Number.isNaN(coord.lat));
+}
+
+function geometryBounds(features) {
+  const all = [];
+  features.forEach(feature => {
+    all.push(...getFeatureCoords(feature.geometry));
+  });
+  if (!all.length) return null;
+  return {
+    minLng: Math.min(...all.map(c => c.lng)),
+    maxLng: Math.max(...all.map(c => c.lng)),
+    minLat: Math.min(...all.map(c => c.lat)),
+    maxLat: Math.max(...all.map(c => c.lat))
+  };
+}
+
+function buildSvgPathForGeometry(geometry, project) {
+  if (!geometry) return "";
+
+  function ringToPath(ring) {
+    return ring
+      .map((coord, index) => {
+        const point = project(Number(coord[0]), Number(coord[1]));
+        return `${index === 0 ? "M" : "L"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
+      })
+      .join(" ") + " Z";
+  }
+
+  if (geometry.type === "Polygon") {
+    return geometry.coordinates.map(ringToPath).join(" ");
+  }
+
+  if (geometry.type === "MultiPolygon") {
+    return geometry.coordinates
+      .flatMap(polygon => polygon.map(ringToPath))
+      .join(" ");
+  }
+
+  return "";
+}
+
+function renderStaticMapPreview(leaFeature, matchingSmallAreas, lookup, churchRows) {
+  if (!townStaticMapPreviewEl || !leaFeature) return;
+
+  const leaName = getAreaName(leaFeature.properties || {});
+  const width = 900;
+  const height = 520;
+  const padding = 34;
+  const features = [leaFeature, ...matchingSmallAreas];
+  const bounds = geometryBounds(features);
+
+  if (!bounds) {
+    townStaticMapPreviewEl.innerHTML = `<div class="static-map-fallback">Map boundary unavailable</div>`;
+    return;
+  }
+
+  const lngSpan = bounds.maxLng - bounds.minLng || 0.01;
+  const latSpan = bounds.maxLat - bounds.minLat || 0.01;
+  const scale = Math.min((width - padding * 2) / lngSpan, (height - padding * 2) / latSpan);
+  const usedWidth = lngSpan * scale;
+  const usedHeight = latSpan * scale;
+  const offsetX = (width - usedWidth) / 2;
+  const offsetY = (height - usedHeight) / 2;
+
+  function project(lng, lat) {
+    return {
+      x: offsetX + (lng - bounds.minLng) * scale,
+      y: offsetY + (bounds.maxLat - lat) * scale
+    };
+  }
+
+  const smallAreaPaths = matchingSmallAreas.map(feature => {
+    const code = getSmallAreaCode(feature.properties || {});
+    const data = lookup[code] || {};
+    const population = Number(data.population_2022);
+    const fill = Number.isNaN(population)
+      ? "#dbe7eb"
+      : population >= 600
+        ? "#5f8ebf"
+        : population >= 300
+          ? "#8fb4d1"
+          : "#c6dce8";
+    return `<path d="${buildSvgPathForGeometry(feature.geometry, project)}" fill="${fill}" fill-opacity="0.58" stroke="#1f3340" stroke-opacity="0.55" stroke-width="1"/>`;
+  }).join("");
+
+  const townPath = `<path d="${buildSvgPathForGeometry(leaFeature.geometry, project)}" fill="none" stroke="#111827" stroke-width="4" stroke-linejoin="round"/>`;
+
+  const churchAnalysis = analyseChurches(churchRows || [], leaFeature);
+  const churchDots = churchAnalysis.inside.map(church => {
+    const point = project(church.lng, church.lat);
+    return `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="7" fill="#ffffff" stroke="#111827" stroke-width="3"><title>${escapeHtml(getChurchName(church))}</title></circle>`;
+  }).join("");
+
+  townStaticMapPreviewEl.innerHTML = `
+    <svg class="static-town-map-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Map of ${escapeHtml(leaName)}">
+      <rect width="${width}" height="${height}" fill="#dfe9e7"/>
+      <g opacity="0.65">
+        <path d="M0 ${height * 0.68} C ${width * 0.22} ${height * 0.58}, ${width * 0.42} ${height * 0.78}, ${width} ${height * 0.6}" fill="none" stroke="#c7d6d3" stroke-width="26" stroke-linecap="round"/>
+        <path d="M${width * 0.08} ${height * 0.18} L${width * 0.92} ${height * 0.84}" stroke="#eef2d5" stroke-width="18" stroke-linecap="round"/>
+        <path d="M${width * 0.08} ${height * 0.18} L${width * 0.92} ${height * 0.84}" stroke="#d5c16a" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      ${smallAreaPaths}
+      ${townPath}
+      ${churchDots}
+      <text x="24" y="42" font-size="24" font-weight="800" fill="#0f4f49">${escapeHtml(leaName)}</text>
+      <text x="24" y="72" font-size="15" fill="#5f6b76">LEA boundary, Small Areas, and listed churches</text>
+    </svg>
+  `;
+}
+
+function slugifyFileName(value) {
+  return String(value || "lea-mission-profile")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "lea-mission-profile";
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function getPdfBlocks() {
+  const blocks = [];
+  const hero = document.querySelector(".profile-hero");
+  const summary = document.querySelector(".town-summary-card");
+  const metrics = document.querySelector(".metric-grid");
+  const topPanelGrid = document.querySelector(".content-grid");
+  const fullProfilePanel = document.querySelector("#fullProfileSection") || document.querySelector(".wide-panel:has(#fullDemographicProfile)");
+  const missionPanel = document.querySelector("#missionReadingSection") || document.querySelector(".wide-panel:has(#missionInsights)");
+  const muted = document.querySelector(".muted-panel");
+
+  [hero, summary, metrics, topPanelGrid, fullProfilePanel, missionPanel, muted].forEach(el => {
+    if (el) blocks.push(el);
+  });
+
+  return blocks;
+}
+
+async function addElementToPdf(pdf, element, layout) {
+  const canvas = await html2canvas(element, {
+    scale: 2,
+    backgroundColor: "#ffffff",
+    useCORS: true,
+    allowTaint: true,
+    logging: false,
+    windowWidth: document.documentElement.scrollWidth,
+    windowHeight: document.documentElement.scrollHeight
+  });
+
+  const imgData = canvas.toDataURL("image/jpeg", 0.96);
+  const imgWidth = layout.contentWidth;
+  const imgHeight = canvas.height * imgWidth / canvas.width;
+
+  if (layout.currentY + imgHeight > layout.pageHeight - layout.margin && layout.currentY > layout.margin) {
+    pdf.addPage();
+    layout.currentY = layout.margin;
+  }
+
+  if (imgHeight <= layout.pageHeight - layout.margin * 2) {
+    pdf.addImage(imgData, "JPEG", layout.margin, layout.currentY, imgWidth, imgHeight);
+    layout.currentY += imgHeight + layout.gap;
+    return;
+  }
+
+  const pageCanvas = document.createElement("canvas");
+  const pageCtx = pageCanvas.getContext("2d");
+  const sliceHeight = Math.floor(canvas.width * (layout.pageHeight - layout.margin * 2) / imgWidth);
+  pageCanvas.width = canvas.width;
+  pageCanvas.height = sliceHeight;
+
+  let sourceY = 0;
+  while (sourceY < canvas.height) {
+    pageCtx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
+    pageCtx.fillStyle = "#ffffff";
+    pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+    pageCtx.drawImage(canvas, 0, sourceY, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+    const sliceData = pageCanvas.toDataURL("image/jpeg", 0.96);
+    const actualSliceHeight = Math.min(sliceHeight, canvas.height - sourceY) * imgWidth / canvas.width;
+    if (layout.currentY > layout.margin) {
+      pdf.addPage();
+      layout.currentY = layout.margin;
+    }
+    pdf.addImage(sliceData, "JPEG", layout.margin, layout.currentY, imgWidth, actualSliceHeight);
+    sourceY += sliceHeight;
+    if (sourceY < canvas.height) {
+      pdf.addPage();
+      layout.currentY = layout.margin;
+    } else {
+      layout.currentY += actualSliceHeight + layout.gap;
+    }
+  }
+}
+
+async function downloadProfilePdf() {
+  if (!downloadPdfButtonEl) return;
+
+  if (!currentExportReady) {
+    alert("The profile is still loading. Please wait a moment and try again.");
+    return;
+  }
+
+  if (!window.html2canvas || !window.jspdf) {
+    alert("The PDF tools did not load. Please refresh the page and try again.");
+    return;
+  }
+
+  const originalText = downloadPdfButtonEl.textContent;
+  downloadPdfButtonEl.disabled = true;
+  downloadPdfButtonEl.textContent = "Creating PDF...";
+  document.body.classList.add("pdf-export-mode");
+
+  try {
+    await sleep(250);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4");
+    const layout = {
+      margin: 10,
+      gap: 5,
+      pageWidth: 210,
+      pageHeight: 297,
+      contentWidth: 190,
+      currentY: 10
+    };
+
+    const blocks = getPdfBlocks();
+    for (const block of blocks) {
+      await addElementToPdf(pdf, block, layout);
+    }
+
+    const filename = `${slugifyFileName(currentRenderedLeaName)}-lea-mission-profile.pdf`;
+    pdf.save(filename);
+  } catch (error) {
+    console.error(error);
+    alert("The PDF could not be created. Please try refreshing the page, then use Download PDF again.");
+  } finally {
+    document.body.classList.remove("pdf-export-mode");
+    downloadPdfButtonEl.disabled = false;
+    downloadPdfButtonEl.textContent = originalText;
+  }
+}
+
+if (downloadPdfButtonEl) {
+  downloadPdfButtonEl.addEventListener("click", downloadProfilePdf);
 }
 
 function renderProfileData(leaFeature, matchingSmallAreas, summaryLookup, fullLookup, churches) {
@@ -672,6 +930,8 @@ function renderProfileData(leaFeature, matchingSmallAreas, summaryLookup, fullLo
   const fullProfile = aggregateSmallAreas(matchingSmallAreas, fullLookup);
   const profile = { ...summaryProfile, ...fullProfile };
   const churchAnalysis = analyseChurches(churches, leaFeature);
+  currentRenderedLeaName = leaName;
+  currentExportReady = false;
 
   leaNameEl.textContent = leaName;
   countyNameEl.textContent = "County: " + countyName;
@@ -714,6 +974,8 @@ function renderProfileData(leaFeature, matchingSmallAreas, summaryLookup, fullLo
 
   renderFullDemographicProfile(profile);
   renderMissiologicalInsights(profile, churchAnalysis, leaName);
+  renderStaticMapPreview(leaFeature, matchingSmallAreas, summaryLookup, churches);
+  currentExportReady = true;
 }
 
 function addInsight(insights, title, text, priority = false) {
@@ -787,7 +1049,7 @@ function renderMissiologicalInsights(profile, churchAnalysis, leaName) {
     addInsight(
       insights,
       "Population without listed church presence",
-      "The town has a meaningful urban population but no listed church inside the boundary. That combination should raise the priority of local research, especially around meeting places, community rhythms, and whether believers are already travelling elsewhere for fellowship.",
+      "The LEA has a meaningful population but no listed church inside the boundary. That combination should raise the priority of local research, especially around meeting places, community rhythms, and whether believers are already travelling elsewhere for fellowship.",
       true
     );
   }
@@ -981,7 +1243,7 @@ function renderMissiologicalInsights(profile, churchAnalysis, leaName) {
   addInsight(
     insights,
     "Use the map as a prompt for fieldwork",
-    "The next step is not just more data. Walk the town. Notice schools, estates, cafés, marts, shops, community halls, sports clubs, direct provision or migrant housing where relevant, and the places where people already gather. Good missiology starts with attention.",
+    "The next step is not just more data. Walk the area. Notice schools, estates, cafés, marts, shops, community halls, sports clubs, direct provision or migrant housing where relevant, and the places where people already gather. Good missiology starts with attention.",
     true
   );
 
@@ -996,7 +1258,7 @@ function renderMissiologicalInsights(profile, churchAnalysis, leaName) {
 }
 
 function showMissingCodeState() {
-  leaNameEl.textContent = "No town selected";
+  leaNameEl.textContent = "No LEA selected";
   countyNameEl.textContent = "County: —";
   urbanAreaCodeEl.textContent = "LEA Code: —";
 
@@ -1007,7 +1269,7 @@ function showMissingCodeState() {
 }
 
 function showTownNotFoundState(code) {
-  leaNameEl.textContent = "Town not found";
+  leaNameEl.textContent = "LEA not found";
   countyNameEl.textContent = "County: —";
   urbanAreaCodeEl.textContent = "LEA Code: " + code;
 
@@ -1017,11 +1279,13 @@ function showTownNotFoundState(code) {
   );
 }
 
-function loadTownProfile() {
-  if (selectedCode) {
-    townMapFrameEl.src = `lea-profile-map.html?code=${encodeURIComponent(selectedCode)}&v=iframe1`;
-  } else {
-    townMapFrameEl.src = "lea-profile-map.html?v=iframe1";
+function loadLeaProfile() {
+  if (townMapFrameEl) {
+    if (selectedCode) {
+      townMapFrameEl.src = `lea-profile-map.html?code=${encodeURIComponent(selectedCode)}&v=iframe1`;
+    } else {
+      townMapFrameEl.src = "lea-profile-map.html?v=iframe1";
+    }
   }
 
   if (!selectedCode) {
@@ -1077,4 +1341,4 @@ function loadTownProfile() {
     });
 }
 
-loadTownProfile();
+loadLeaProfile();
