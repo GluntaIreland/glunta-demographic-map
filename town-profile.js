@@ -1016,10 +1016,12 @@ function showTownNotFoundState(code) {
 }
 
 function loadTownProfile() {
-  if (selectedCode) {
-    townMapFrameEl.src = `town-profile-map.html?code=${encodeURIComponent(selectedCode)}&v=iframe1`;
-  } else {
-    townMapFrameEl.src = "town-profile-map.html?v=iframe1";
+  if (townMapFrameEl) {
+    if (selectedCode) {
+      townMapFrameEl.src = `town-profile-map.html?code=${encodeURIComponent(selectedCode)}&v=iframe1`;
+    } else {
+      townMapFrameEl.src = "town-profile-map.html?v=iframe1";
+    }
   }
 
   if (!selectedCode) {
@@ -1062,6 +1064,7 @@ function loadTownProfile() {
         "Town profile loaded from the Glúnta demographic map data. Church presence is based on the current Glúnta church points dataset.",
         "success"
       );
+      window.dispatchEvent(new CustomEvent("townProfileReady"));
     })
     .catch(error => {
       console.error(error);
