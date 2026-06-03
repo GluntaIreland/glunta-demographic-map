@@ -1,4 +1,4 @@
-/* Town Profile CSS replacement */
+/* Town Profile CSS replacement with compact direct-PDF export mode */
 
 :root {
   --ink: #17212b;
@@ -21,7 +21,14 @@
 
 body {
   margin: 0;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   color: var(--ink);
   background:
     radial-gradient(circle at top left, rgba(8, 125, 115, 0.08), transparent 32rem),
@@ -95,6 +102,11 @@ h1 {
 .primary-button {
   color: #ffffff;
   background: var(--green);
+}
+
+.primary-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
 }
 
 .secondary-button {
@@ -367,10 +379,55 @@ h1 {
   line-height: 1.6;
 }
 
+.full-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.profile-stat-card {
+  border: 1px solid var(--soft-border);
+  border-radius: 16px;
+  padding: 18px;
+  background: #ffffff;
+}
+
+.profile-stat-card h3 {
+  margin-bottom: 12px;
+  color: var(--green-dark);
+  font-size: 1.05rem;
+}
+
+.profile-stat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--soft-border);
+  padding: 7px 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.profile-stat-row strong {
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.profile-stat-note {
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--soft-border);
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-style: italic;
+  line-height: 1.55;
+}
+
 @media (max-width: 860px) {
   .profile-hero,
   .town-summary-card,
-  .content-grid {
+  .content-grid,
+  .full-profile-grid {
     grid-template-columns: 1fr;
   }
 
@@ -405,7 +462,8 @@ h1 {
   .panel,
   .wide-panel,
   .metric-card,
-  .town-summary-content {
+  .town-summary-content,
+  .profile-stat-card {
     padding: 20px;
   }
 
@@ -415,209 +473,269 @@ h1 {
   }
 }
 
-/* PDF / print polish */
+/* Compact layout used only while the Download PDF button is generating the PDF. */
+body.pdf-export-mode {
+  background: #ffffff !important;
+}
+
+body.pdf-export-mode .profile-page {
+  width: 1180px;
+  max-width: none;
+  padding: 18px 0 28px;
+}
+
+body.pdf-export-mode .profile-hero {
+  margin-bottom: 16px;
+}
+
+body.pdf-export-mode h1 {
+  font-size: 3rem;
+}
+
+body.pdf-export-mode .hero-subtitle {
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+body.pdf-export-mode .hero-actions {
+  display: none;
+}
+
+body.pdf-export-mode .town-summary-card {
+  margin-bottom: 14px;
+  border-radius: 18px;
+}
+
+body.pdf-export-mode .town-map-preview-wrap {
+  height: 300px;
+  min-height: 300px;
+}
+
+body.pdf-export-mode .town-summary-content {
+  padding: 24px;
+}
+
+body.pdf-export-mode .town-summary-content h2 {
+  font-size: 2.4rem;
+}
+
+body.pdf-export-mode .town-description {
+  font-size: 0.96rem;
+  line-height: 1.45;
+}
+
+body.pdf-export-mode .metric-grid {
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+body.pdf-export-mode .metric-card {
+  padding: 14px;
+  border-radius: 12px;
+}
+
+body.pdf-export-mode .metric-value {
+  font-size: 1.6rem;
+}
+
+body.pdf-export-mode .content-grid {
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+body.pdf-export-mode .panel,
+body.pdf-export-mode .wide-panel {
+  padding: 16px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+}
+
+body.pdf-export-mode .panel-header {
+  margin-bottom: 12px;
+}
+
+body.pdf-export-mode .panel-header h2 {
+  font-size: 1.15rem;
+}
+
+body.pdf-export-mode .data-list {
+  gap: 7px;
+}
+
+body.pdf-export-mode .data-row {
+  font-size: 0.86rem;
+  padding-bottom: 6px;
+}
+
+body.pdf-export-mode .full-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+body.pdf-export-mode .profile-stat-card {
+  padding: 12px;
+  border-radius: 12px;
+}
+
+body.pdf-export-mode .profile-stat-card h3 {
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+body.pdf-export-mode .profile-stat-row {
+  font-size: 0.82rem;
+  padding: 4px 0;
+}
+
+body.pdf-export-mode .profile-stat-note,
+body.pdf-export-mode .metric-note,
+body.pdf-export-mode .loading-notice,
+body.pdf-export-mode .map-preview-label {
+  display: none;
+}
+
+body.pdf-export-mode .insight-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+body.pdf-export-mode .insight-card {
+  padding: 12px;
+  border-radius: 12px;
+}
+
+body.pdf-export-mode .insight-card h3 {
+  font-size: 0.98rem;
+}
+
+body.pdf-export-mode .insight-card p {
+  font-size: 0.88rem;
+  line-height: 1.42;
+}
+
+body.pdf-export-mode .muted-panel p {
+  font-size: 0.88rem;
+  line-height: 1.42;
+}
+
+/* Print remains available as a fallback, but Download PDF is the preferred export. */
 @media print {
-  @page {
-    size: A4;
-    margin: 14mm;
-  }
-
-  html,
   body {
-    width: 100%;
-    background: #ffffff !important;
-    color: #111827;
-    overflow: visible;
-  }
-
-  body {
-    font-size: 10.5pt;
-    line-height: 1.45;
+    background: #ffffff;
   }
 
   .profile-page {
     width: 100%;
-    max-width: none;
     padding: 0;
-    margin: 0;
   }
 
-  .hero-actions,
-  .map-preview-label {
-    display: none !important;
-  }
-
-  .profile-hero {
-    display: block;
-    margin-bottom: 16px;
-    break-after: avoid;
-  }
-
-  .eyebrow {
-    font-size: 8.5pt;
-    letter-spacing: 0.1em;
-  }
-
-  h1 {
-    margin-bottom: 8px;
-    font-size: 30pt;
-    line-height: 1;
-    letter-spacing: -0.04em;
-  }
-
-  .hero-subtitle {
-    max-width: 100%;
-    font-size: 10.5pt;
-    line-height: 1.45;
-  }
-
-  .town-summary-card {
-    display: grid;
-    grid-template-columns: 0.9fr 1.1fr;
-    margin-bottom: 14px;
-    border-radius: 14px;
-    box-shadow: none;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .town-map-preview-wrap,
-  .town-map-frame {
-    height: 250px;
-    min-height: 250px;
-  }
-
-  .town-summary-content {
-    padding: 18px;
-  }
-
-  .town-summary-content h2 {
-    font-size: 24pt;
-    line-height: 1.05;
-  }
-
-  .summary-meta {
-    gap: 6px;
-    margin-bottom: 12px;
-  }
-
-  .summary-meta span {
-    padding: 5px 8px;
-    font-size: 8.5pt;
-  }
-
-  .town-description,
-  .loading-notice {
-    font-size: 9.5pt;
-    line-height: 1.45;
-  }
-
-  .metric-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    margin-bottom: 14px;
-    break-inside: avoid;
-    page-break-inside: avoid;
+  .hero-actions {
+    display: none;
   }
 
   .metric-card,
   .panel,
   .wide-panel,
-  .town-summary-card {
-    box-shadow: none !important;
-  }
-
-  .metric-card {
-    padding: 12px;
-    border-radius: 10px;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .metric-label {
-    font-size: 8.5pt;
-  }
-
-  .metric-value {
-    font-size: 18pt;
-  }
-
-  .metric-note {
-    font-size: 8.5pt;
-    line-height: 1.35;
-  }
-
-  .content-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-
-  .panel,
-  .wide-panel {
-    padding: 14px;
-    border-radius: 10px;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .panel-header {
-    margin-bottom: 10px;
-  }
-
-  .panel-header h2 {
-    font-size: 13.5pt;
-  }
-
-  .data-list {
-    gap: 6px;
-  }
-
-  .data-row {
-    padding-bottom: 6px;
-    font-size: 9pt;
-  }
-
-  .panel > .source-note {
-    margin-top: 12px;
-    padding-top: 8px;
-    font-size: 8.5pt;
-  }
-
-  .church-list,
-  .church-list li {
-    font-size: 9pt;
-    line-height: 1.4;
-  }
-
-  .wide-panel {
-    margin-bottom: 10px;
-  }
-
-  .insight-list {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-
+  .town-summary-card,
+  .profile-stat-card,
   .insight-card {
-    padding: 12px;
-    border-radius: 10px;
+    box-shadow: none;
     break-inside: avoid;
     page-break-inside: avoid;
   }
 
-  .insight-card h3 {
-    font-size: 10.5pt;
-    margin-bottom: 5px;
+  .profile-hero {
+    margin-bottom: 18px;
   }
 
-  .insight-card p {
-    font-size: 9pt;
-    line-height: 1.4;
+  .map-preview-label {
+    display: none;
   }
 
-  a {
-    color: inherit;
-    text-decoration: none;
+  .town-map-preview-wrap {
+    height: 360px;
+    min-height: 360px;
   }
+}
+
+/* PDF grid compression v2: capture cards as grouped grids rather than individual pages. */
+body.pdf-export-mode .content-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+body.pdf-export-mode .content-grid .panel {
+  min-height: 0;
+}
+
+body.pdf-export-mode #fullProfileSection,
+body.pdf-export-mode .wide-panel:has(#fullDemographicProfile) {
+  padding: 14px;
+}
+
+body.pdf-export-mode .full-profile-grid,
+body.pdf-export-mode #fullDemographicProfile {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+body.pdf-export-mode .profile-stat-card {
+  padding: 10px;
+  border-radius: 10px;
+}
+
+body.pdf-export-mode .profile-stat-card .eyebrow,
+body.pdf-export-mode .profile-stat-card .profile-stat-eyebrow {
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  margin-bottom: 4px;
+}
+
+body.pdf-export-mode .profile-stat-card h3 {
+  font-size: 0.92rem;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+
+body.pdf-export-mode .profile-stat-row {
+  font-size: 0.72rem;
+  line-height: 1.18;
+  padding: 3px 0;
+  gap: 8px;
+}
+
+body.pdf-export-mode .profile-stat-row strong {
+  font-size: 0.72rem;
+}
+
+body.pdf-export-mode #missionReadingSection,
+body.pdf-export-mode .wide-panel:has(#missionInsights) {
+  padding: 14px;
+}
+
+body.pdf-export-mode .insight-list,
+body.pdf-export-mode #missionInsights {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+body.pdf-export-mode .insight-card {
+  padding: 10px;
+  border-radius: 10px;
+}
+
+body.pdf-export-mode .insight-card h3 {
+  font-size: 0.82rem;
+  line-height: 1.12;
+  margin-bottom: 4px;
+}
+
+body.pdf-export-mode .insight-card p {
+  font-size: 0.68rem;
+  line-height: 1.24;
 }

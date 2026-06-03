@@ -800,20 +800,14 @@ function getPdfBlocks() {
   const hero = document.querySelector(".profile-hero");
   const summary = document.querySelector(".town-summary-card");
   const metrics = document.querySelector(".metric-grid");
-  const topPanels = document.querySelectorAll(".content-grid > .panel");
-  const fullHeader = document.querySelector(".wide-panel .panel-header");
-  const fullCards = document.querySelectorAll("#fullDemographicProfile > .panel");
-  const insightsHeader = Array.from(document.querySelectorAll(".wide-panel .panel-header")).find(header => header.textContent.includes("Mission reading"));
-  const insightCards = document.querySelectorAll("#missionInsights > .insight-card");
+  const topPanelGrid = document.querySelector(".content-grid");
+  const fullProfilePanel = document.querySelector("#fullProfileSection") || document.querySelector(".wide-panel:has(#fullDemographicProfile)");
+  const missionPanel = document.querySelector("#missionReadingSection") || document.querySelector(".wide-panel:has(#missionInsights)");
   const muted = document.querySelector(".muted-panel");
 
-  [hero, summary, metrics].forEach(el => { if (el) blocks.push(el); });
-  topPanels.forEach(el => blocks.push(el));
-  if (fullHeader) blocks.push(fullHeader);
-  fullCards.forEach(el => blocks.push(el));
-  if (insightsHeader) blocks.push(insightsHeader);
-  insightCards.forEach(el => blocks.push(el));
-  if (muted) blocks.push(muted);
+  [hero, summary, metrics, topPanelGrid, fullProfilePanel, missionPanel, muted].forEach(el => {
+    if (el) blocks.push(el);
+  });
 
   return blocks;
 }
