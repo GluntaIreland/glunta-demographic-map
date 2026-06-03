@@ -4,8 +4,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Printable Town Mission Profile | Glúnta</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
 :root{--ink:#17212b;--muted:#5f6b76;--border:#d8e0e6;--soft:#f4f8f8;--green:#087d73;--green-dark:#0f4f49;--paper:#fff}*{box-sizing:border-box}html,body{margin:0;padding:0;color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f8fbfc}.profile-page{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:28px 0 44px}.profile-hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:end;margin-bottom:20px}.eyebrow{margin:0 0 8px;color:var(--green-dark);font-size:.76rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase}h1,h2,h3,p{margin-top:0}h1{margin-bottom:10px;font-size:clamp(2.2rem,4.8vw,4rem);line-height:1;letter-spacing:-.055em}.hero-subtitle{max-width:760px;margin-bottom:0;color:var(--muted);font-size:1.05rem;line-height:1.5}.hero-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}.primary-button,.secondary-button{appearance:none;border:2px solid var(--green);border-radius:999px;padding:10px 16px;font:inherit;font-weight:800;text-decoration:none;cursor:pointer}.primary-button{color:#fff;background:var(--green)}.secondary-button{color:var(--green-dark);background:#fff}.town-summary-card{display:block;margin-bottom:16px;border:1px solid var(--border);border-radius:20px;background:#fff}.town-summary-content{padding:28px}.town-summary-content h2{margin-bottom:10px;font-size:clamp(1.9rem,4vw,3rem);line-height:1;letter-spacing:-.05em}.summary-meta{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:16px}.summary-meta span{display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:999px;padding:7px 10px;color:var(--green-dark);background:var(--soft);font-weight:800}.town-description{margin-bottom:14px;color:var(--muted);font-size:1rem;line-height:1.5}.loading-notice{border:1px solid #e8eef2;border-radius:14px;padding:10px 12px;color:var(--muted);background:var(--soft);font-size:.92rem;line-height:1.4}.loading-notice.is-success{color:var(--green-dark);background:#edf8f5}.loading-notice.is-error{color:#8a1f11;background:#fff1ed}.metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}.metric-card,.panel,.wide-panel{border:1px solid var(--border);border-radius:16px;background:#fff}.metric-card{padding:16px}.metric-label{margin-bottom:6px;color:var(--muted);font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.metric-value{margin-bottom:6px;color:var(--green-dark);font-size:1.7rem;font-weight:900;letter-spacing:-.04em}.metric-note{margin-bottom:0;color:var(--muted);font-size:.88rem;line-height:1.4}.content-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:14px}.panel,.wide-panel{padding:20px}.panel-header{margin-bottom:14px}.panel-header h2{margin-bottom:0;font-size:1.28rem;letter-spacing:-.025em}.data-list{display:grid;gap:8px}.data-row{display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid #e8eef2;padding-bottom:8px;color:var(--muted)}.data-row strong{color:var(--ink);white-space:nowrap}.panel>.source-note{margin-top:18px;padding-top:12px;border-top:1px solid #e8eef2;color:var(--muted);font-size:.88rem;font-style:italic;line-height:1.55}.church-list-block+.church-list-block{margin-top:18px;border-top:1px solid #e8eef2;padding-top:16px}.church-list-block h3{margin-bottom:8px;color:var(--green-dark);font-size:.98rem}.church-list{margin:0;padding-left:20px;color:var(--muted);line-height:1.55}.church-list a{color:var(--green-dark);font-weight:800}.wide-panel{margin-bottom:14px}.insight-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.insight-card{border:1px solid #e8eef2;border-radius:14px;padding:14px;background:var(--soft)}.insight-card h3{margin-bottom:7px;color:var(--green-dark);font-size:1rem}.insight-card p{margin-bottom:0;color:var(--muted);line-height:1.5}.insight-card.is-priority{border-color:rgba(8,125,115,.35);background:#edf8f5}.muted-panel{background:#eaf4f1}.muted-panel p{margin-bottom:0;color:var(--muted);line-height:1.55}.print-help{margin:0 0 18px;border:1px solid #d8e0e6;border-radius:14px;background:#fff;padding:12px 14px;color:var(--muted);font-size:.92rem;line-height:1.45}@media(max-width:860px){.profile-hero,.content-grid{grid-template-columns:1fr}.hero-actions{justify-content:flex-start}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.insight-list{grid-template-columns:1fr}}@media print{@page{size:A4;margin:12mm}html,body{background:#fff!important;color:#111827;overflow:visible}.profile-page{width:100%;max-width:none;margin:0;padding:0}.hero-actions,.print-help{display:none!important}.profile-hero{display:block;margin-bottom:12px;break-after:avoid}.eyebrow{font-size:8pt;letter-spacing:.1em}h1{margin-bottom:6px;font-size:28pt;line-height:1;letter-spacing:-.04em}.hero-subtitle{max-width:100%;font-size:9.5pt;line-height:1.4}.town-summary-card{margin-bottom:10px;border-radius:10px;break-inside:avoid;page-break-inside:avoid}.town-summary-content{padding:14px}.town-summary-content h2{font-size:22pt}.summary-meta{gap:6px;margin-bottom:10px}.summary-meta span{padding:4px 7px;font-size:8pt}.town-description,.loading-notice{font-size:8.8pt;line-height:1.35}.metric-grid{grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:10px;break-inside:avoid}.metric-card,.panel,.wide-panel,.town-summary-card{box-shadow:none!important}.metric-card{padding:9px;border-radius:8px;break-inside:avoid}.metric-label{font-size:7.6pt}.metric-value{font-size:16pt}.metric-note{font-size:7.8pt;line-height:1.25}.content-grid{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px}.panel,.wide-panel{padding:10px;border-radius:8px;break-inside:avoid;page-break-inside:avoid}.panel-header{margin-bottom:8px}.panel-header h2{font-size:12pt}.data-list{gap:4px}.data-row{padding-bottom:4px;font-size:8.2pt}.panel>.source-note{margin-top:8px;padding-top:6px;font-size:7.8pt}.church-list,.church-list li{font-size:8.2pt;line-height:1.3}.wide-panel{margin-bottom:8px}.insight-list{grid-template-columns:repeat(2,1fr);gap:6px}.insight-card{padding:8px;border-radius:8px;break-inside:avoid}.insight-card h3{font-size:9.5pt;margin-bottom:4px}.insight-card p{font-size:8.2pt;line-height:1.3}a{color:inherit;text-decoration:none}}
+
+.print-map-panel{margin-bottom:16px}.print-town-map{position:relative;height:300px;min-height:300px;overflow:hidden;border:1px solid var(--border);border-radius:16px;background:#dfe9e7}.print-town-map .leaflet-container{height:100%;width:100%;background:#dfe9e7}.print-map-note{margin:10px 0 0;color:var(--muted);font-size:.88rem;font-style:italic;line-height:1.45}.print-map-status{position:absolute;left:12px;top:12px;z-index:1200;border-radius:999px;padding:7px 10px;background:rgba(255,255,255,.94);color:var(--green-dark);font-size:.82rem;font-weight:800;box-shadow:0 8px 20px rgba(16,24,40,.12)}.print-map-status.is-hidden{display:none}@media print{.print-map-panel{break-inside:avoid-page;page-break-inside:avoid;margin-bottom:10px}.print-town-map{height:210px!important;min-height:210px!important;border-radius:8px}.print-map-status,.leaflet-control-container{display:none!important}.full-demographic-profile-section{break-inside:auto!important;page-break-inside:auto!important}.full-demographic-profile-section>.panel-header{break-after:avoid}.full-demographic-profile-section #fullDemographicProfile{display:block!important}.full-demographic-profile-section #fullDemographicProfile>.panel{display:block!important;margin-bottom:8px;break-inside:avoid-page!important;page-break-inside:avoid!important;overflow:visible!important}.full-demographic-profile-section #fullDemographicProfile>.panel:last-child{margin-bottom:0}.full-demographic-profile-section .data-row{break-inside:avoid-page;page-break-inside:avoid}.full-demographic-profile-section .source-note{break-inside:avoid-page;page-break-inside:avoid}.content-grid>.panel{break-inside:avoid-page!important;page-break-inside:avoid!important}}
+
 </style>
 </head>
 <body>
@@ -46,6 +50,21 @@
           Loading town boundary from the Glúnta demographic map data...
         </div>
       </div>
+    </section>
+
+    <section class="wide-panel print-map-panel">
+      <div class="panel-header">
+        <p class="eyebrow">Town context map</p>
+        <h2>Map-generated town view</h2>
+      </div>
+
+      <div id="printTownMap" class="print-town-map">
+        <div id="printMapStatus" class="print-map-status">Loading map...</div>
+      </div>
+
+      <p class="print-map-note">
+        Map view generated from the selected town boundary, Census 2022 Small Areas, and listed church locations.
+      </p>
     </section>
 
     <section class="metric-grid" aria-label="Summary metrics">
@@ -176,7 +195,7 @@
     </section>
 
 
-    <section class="wide-panel">
+    <section class="wide-panel full-demographic-profile-section">
       <div class="panel-header">
         <p class="eyebrow">Full demographic profile</p>
         <h2>Town profile statistics</h2>
@@ -237,21 +256,423 @@
       This print-friendly version removes the interactive map iframe so PDF export works more reliably across browsers. Use your browser's PDF menu to save this page as a PDF.
     </p>
   </main>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+(function () {
+  const params = new URLSearchParams(window.location.search);
+  const selectedCode = params.get("code");
+  const mapEl = document.getElementById("printTownMap");
+  const statusEl = document.getElementById("printMapStatus");
+
+  function signalReady() {
+    window.dispatchEvent(new CustomEvent("printMapReady"));
+  }
+
+  function setStatus(message, hide = false) {
+    if (!statusEl) return;
+    statusEl.textContent = message || "";
+    statusEl.classList.toggle("is-hidden", Boolean(hide));
+  }
+
+  function escapeHtml(value) {
+    return String(value || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function parseCsvLine(line) {
+    const result = [];
+    let current = "";
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      const next = line[i + 1];
+
+      if (char === '"' && inQuotes && next === '"') {
+        current += '"';
+        i++;
+      } else if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === "," && !inQuotes) {
+        result.push(current);
+        current = "";
+      } else {
+        current += char;
+      }
+    }
+
+    result.push(current);
+    return result;
+  }
+
+  function parseCsv(text) {
+    const lines = text.replace(/\r/g, "").split("\n").filter(line => line.trim().length > 0);
+    if (lines.length < 2) return [];
+    const headers = parseCsvLine(lines[0]).map(header => header.trim());
+    return lines.slice(1).map(line => {
+      const values = parseCsvLine(line);
+      const row = {};
+      headers.forEach((header, index) => {
+        row[header] = values[index] ? values[index].trim() : "";
+      });
+      return row;
+    });
+  }
+
+  function loadJson(url) {
+    return fetch(url).then(response => {
+      if (!response.ok) throw new Error(`Could not load ${url}. HTTP status: ${response.status}`);
+      return response.json();
+    });
+  }
+
+  function loadCsv(url) {
+    return fetch(url)
+      .then(response => {
+        if (!response.ok) throw new Error(`Could not load ${url}. HTTP status: ${response.status}`);
+        return response.text();
+      })
+      .then(parseCsv);
+  }
+
+  function getUrbanAreaCode(props) {
+    return String(
+      props.urban_area_code ||
+      props.URBAN_AREA_CODE ||
+      props.urbanAreaCode ||
+      props.URBAN_CODE ||
+      props.BUA_CODE ||
+      props.CSO_CODE ||
+      props.code ||
+      props.CODE ||
+      ""
+    ).trim();
+  }
+
+  function getSmallAreaCode(props) {
+    return String(props.SA_PUB2022 || props.SA_PUB2016 || props.SA_PUB2011 || "").trim();
+  }
+
+  function propertyContainsSelectedCode(props, code) {
+    if (!code) return false;
+    const target = String(code).trim();
+    return Object.values(props).some(value => String(value || "").trim() === target);
+  }
+
+  function findTownFeature(data, code) {
+    if (!code) return null;
+    return data.features.find(feature => {
+      const props = feature.properties || {};
+      const directCode = getUrbanAreaCode(props);
+      if (directCode && directCode === String(code).trim()) return true;
+      return propertyContainsSelectedCode(props, code);
+    });
+  }
+
+  function collectCoordinates(geometry, output) {
+    if (!geometry) return;
+    if (geometry.type === "Polygon") {
+      geometry.coordinates.forEach(ring => ring.forEach(coord => output.push(coord)));
+    }
+    if (geometry.type === "MultiPolygon") {
+      geometry.coordinates.forEach(polygon => polygon.forEach(ring => ring.forEach(coord => output.push(coord))));
+    }
+  }
+
+  function getFeatureCentroid(feature) {
+    const coords = [];
+    collectCoordinates(feature.geometry, coords);
+    if (coords.length === 0) return null;
+    let lngTotal = 0;
+    let latTotal = 0;
+    let validCount = 0;
+    coords.forEach(coord => {
+      const lng = Number(coord[0]);
+      const lat = Number(coord[1]);
+      if (Number.isNaN(lng) || Number.isNaN(lat)) return;
+      lngTotal += lng;
+      latTotal += lat;
+      validCount++;
+    });
+    if (validCount === 0) return null;
+    return { lng: lngTotal / validCount, lat: latTotal / validCount };
+  }
+
+  function getFeatureBounds(feature) {
+    const coords = [];
+    collectCoordinates(feature.geometry, coords);
+    if (coords.length === 0) return null;
+    let minLng = Infinity;
+    let minLat = Infinity;
+    let maxLng = -Infinity;
+    let maxLat = -Infinity;
+    coords.forEach(coord => {
+      const lng = Number(coord[0]);
+      const lat = Number(coord[1]);
+      if (Number.isNaN(lng) || Number.isNaN(lat)) return;
+      minLng = Math.min(minLng, lng);
+      minLat = Math.min(minLat, lat);
+      maxLng = Math.max(maxLng, lng);
+      maxLat = Math.max(maxLat, lat);
+    });
+    if (!Number.isFinite(minLng)) return null;
+    return { minLng, minLat, maxLng, maxLat };
+  }
+
+  function boundsIntersect(a, b) {
+    if (!a || !b) return false;
+    return !(b.minLng > a.maxLng || b.maxLng < a.minLng || b.minLat > a.maxLat || b.maxLat < a.minLat);
+  }
+
+  function pointInRing(lng, lat, ring) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const xi = Number(ring[i][0]);
+      const yi = Number(ring[i][1]);
+      const xj = Number(ring[j][0]);
+      const yj = Number(ring[j][1]);
+      const intersect = yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  function pointInPolygon(lng, lat, rings) {
+    if (!rings || rings.length === 0) return false;
+    const insideOuter = pointInRing(lng, lat, rings[0]);
+    if (!insideOuter) return false;
+    for (let i = 1; i < rings.length; i++) {
+      if (pointInRing(lng, lat, rings[i])) return false;
+    }
+    return true;
+  }
+
+  function pointInGeometry(lng, lat, geometry) {
+    if (!geometry) return false;
+    if (geometry.type === "Polygon") return pointInPolygon(lng, lat, geometry.coordinates);
+    if (geometry.type === "MultiPolygon") return geometry.coordinates.some(polygon => pointInPolygon(lng, lat, polygon));
+    return false;
+  }
+
+  function smallAreaLikelyOverlapsTown(smallAreaFeature, townGeometry, townBounds) {
+    const smallAreaBounds = getFeatureBounds(smallAreaFeature);
+    if (!smallAreaBounds || !townBounds || !boundsIntersect(smallAreaBounds, townBounds)) return false;
+    const centroid = getFeatureCentroid(smallAreaFeature);
+    if (centroid && pointInGeometry(centroid.lng, centroid.lat, townGeometry)) return true;
+    const smallAreaPoints = [];
+    collectCoordinates(smallAreaFeature.geometry, smallAreaPoints);
+    for (const coord of smallAreaPoints) {
+      const lng = Number(coord[0]);
+      const lat = Number(coord[1]);
+      if (pointInGeometry(lng, lat, townGeometry)) return true;
+    }
+    const townPoints = [];
+    collectCoordinates(townGeometry, townPoints);
+    for (const coord of townPoints) {
+      const lng = Number(coord[0]);
+      const lat = Number(coord[1]);
+      if (pointInGeometry(lng, lat, smallAreaFeature.geometry)) return true;
+    }
+    return false;
+  }
+
+  function buildSmallAreaLookup(rows) {
+    const lookup = {};
+    rows.forEach(row => {
+      const code = String(row.SA_PUB2022 || row.sa_code || "").trim();
+      if (!code) return;
+      lookup[code] = row;
+    });
+    return lookup;
+  }
+
+  function getColorForPopulation(value) {
+    const number = Number(value);
+    if (Number.isNaN(number)) return "#e5eef0";
+    if (number >= 800) return "#08306b";
+    if (number >= 600) return "#08519c";
+    if (number >= 400) return "#2171b5";
+    if (number >= 250) return "#4292c6";
+    if (number >= 100) return "#9ecae1";
+    return "#deebf7";
+  }
+
+  function getChurchName(row) {
+    return row.name || row["Church Name"] || row.church_name || "Unnamed church";
+  }
+
+  function renderMap(townFeature, matchingSmallAreas, lookup, churches) {
+    if (!window.L || !mapEl) {
+      signalReady();
+      return;
+    }
+
+    const map = L.map(mapEl, {
+      zoomControl: false,
+      attributionControl: false,
+      scrollWheelZoom: false,
+      dragging: false,
+      doubleClickZoom: false,
+      boxZoom: false,
+      keyboard: false,
+      tap: false
+    });
+
+    const tileLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      crossOrigin: true
+    });
+
+    tileLayer.addTo(map);
+
+    const smallAreaCollection = {
+      type: "FeatureCollection",
+      features: matchingSmallAreas.map(feature => {
+        const clone = JSON.parse(JSON.stringify(feature));
+        const code = getSmallAreaCode(clone.properties || {});
+        const data = lookup[code] || {};
+        clone.properties.population_2022 = data.population_2022;
+        return clone;
+      })
+    };
+
+    L.geoJSON(smallAreaCollection, {
+      style: feature => ({
+        fillColor: getColorForPopulation(feature.properties.population_2022),
+        fillOpacity: 0.46,
+        color: "#0f172a",
+        weight: 0.55,
+        opacity: 0.65
+      }),
+      interactive: false
+    }).addTo(map);
+
+    const townLayer = L.geoJSON(townFeature, {
+      style: {
+        color: "#111827",
+        weight: 3,
+        opacity: 0.95,
+        fillColor: "transparent",
+        fillOpacity: 0
+      },
+      interactive: false
+    }).addTo(map);
+
+    const townCentroid = getFeatureCentroid(townFeature);
+    churches.forEach(row => {
+      const lat = Number(row.latitude || row.Latitude);
+      const lng = Number(row.longitude || row.Longitude);
+      if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+      if (!pointInGeometry(lng, lat, townFeature.geometry)) return;
+
+      L.circleMarker([lat, lng], {
+        radius: 5,
+        color: "#111827",
+        weight: 2,
+        fillColor: "#ffffff",
+        fillOpacity: 1,
+        interactive: false
+      }).addTo(map);
+    });
+
+    const bounds = townLayer.getBounds();
+    setTimeout(() => {
+      map.invalidateSize(true);
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [34, 34], maxZoom: 12, animate: false });
+      } else if (townCentroid) {
+        map.setView([townCentroid.lat, townCentroid.lng], 11);
+      }
+      townLayer.bringToFront();
+      setStatus("", true);
+    }, 250);
+
+    let readySent = false;
+    function done() {
+      if (readySent) return;
+      readySent = true;
+      setTimeout(signalReady, 900);
+    }
+
+    tileLayer.once("load", done);
+    setTimeout(done, 2600);
+  }
+
+  function loadMap() {
+    if (!selectedCode || !mapEl) {
+      signalReady();
+      return;
+    }
+
+    if (!window.L) {
+      setStatus("Map library could not be loaded.");
+      signalReady();
+      return;
+    }
+
+    Promise.all([
+      loadJson("urban-areas-boundaries.geojson"),
+      loadJson("small-areas-2022.geojson"),
+      loadCsv("small-area-demographics-2022.csv").catch(() => []),
+      loadCsv("churches-points.csv").catch(() => [])
+    ])
+      .then(([townData, smallAreasData, smallAreaRows, churches]) => {
+        const townFeature = findTownFeature(townData, selectedCode);
+        if (!townFeature) {
+          setStatus("Town map could not be found.");
+          signalReady();
+          return;
+        }
+
+        const lookup = buildSmallAreaLookup(smallAreaRows);
+        const townBounds = getFeatureBounds(townFeature);
+        const matchingSmallAreas = smallAreasData.features.filter(feature => smallAreaLikelyOverlapsTown(feature, townFeature.geometry, townBounds));
+        renderMap(townFeature, matchingSmallAreas, lookup, churches);
+      })
+      .catch(error => {
+        console.error(error);
+        setStatus("Map data could not be loaded.");
+        signalReady();
+      });
+  }
+
+  loadMap();
+})();
+</script>
   <script src="town-profile.js"></script>
   <script>
 (function () {
   const params = new URLSearchParams(window.location.search);
   const auto = params.get("auto") !== "0";
   let printed = false;
+  let profileReady = false;
+  let mapReady = false;
 
-  function triggerPrint() {
-    if (printed || !auto) return;
+  function maybePrint() {
+    if (printed || !auto || !profileReady || !mapReady) return;
     printed = true;
-    setTimeout(() => window.print(), 700);
+    setTimeout(() => window.print(), 900);
   }
 
-  window.addEventListener("townProfileReady", triggerPrint);
-  setTimeout(triggerPrint, 4500);
+  window.addEventListener("townProfileReady", function () {
+    profileReady = true;
+    maybePrint();
+  });
+
+  window.addEventListener("printMapReady", function () {
+    mapReady = true;
+    maybePrint();
+  });
+
+  setTimeout(function () {
+    profileReady = true;
+    mapReady = true;
+    maybePrint();
+  }, 6500);
 })();
 </script>
 </body>
