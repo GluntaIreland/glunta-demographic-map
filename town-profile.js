@@ -38,6 +38,11 @@ const churchesInsideListEl = document.getElementById("churchesInsideList");
 const nearbyChurchesListEl = document.getElementById("nearbyChurchesList");
 const missionInsightsEl = document.getElementById("missionInsights");
 const fullDemographicProfileEl = document.getElementById("fullDemographicProfile");
+const downloadPdfButtonEl = document.getElementById("downloadPdfButton");
+const townStaticMapPreviewEl = document.getElementById("townStaticMapPreview");
+
+let currentRenderedTownName = "town-mission-profile";
+let currentExportReady = false;
 
 function escapeHtml(value) {
   return String(value || "")
@@ -661,6 +666,265 @@ function renderFullDemographicProfile(profile) {
   `;
 }
 
+function getFeatureCoords(geometry) {
+  const coords = [];
+  collectCoordinates(geometry, coords);
+  return coords
+    .map(coord => ({ lng: Number(coord[0]), lat: Number(coord[1]) }))
+    .filter(coord => !Number.isNaN(coord.lng) && !Number.isNaN(coord.lat));
+}
+
+function geometryBounds(features) {
+  const all = [];
+  features.forEach(feature => {
+    all.push(...getFeatureCoords(feature.geometry));
+  });
+  if (!all.length) return null;
+  return {
+    minLng: Math.min(...all.map(c => c.lng)),
+    maxLng: Math.max(...all.map(c => c.lng)),
+    minLat: Math.min(...all.map(c => c.lat)),
+    maxLat: Math.max(...all.map(c => c.lat))
+  };
+}
+
+function buildSvgPathForGeometry(geometry, project) {
+  if (!geometry) return "";
+
+  function ringToPath(ring) {
+    return ring
+      .map((coord, index) => {
+        const point = project(Number(coord[0]), Number(coord[1]));
+        return `${index === 0 ? "M" : "L"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
+      })
+      .join(" ") + " Z";
+  }
+
+  if (geometry.type === "Polygon") {
+    return geometry.coordinates.map(ringToPath).join(" ");
+  }
+
+  if (geometry.type === "MultiPolygon") {
+    return geometry.coordinates
+      .flatMap(polygon => polygon.map(ringToPath))
+      .join(" ");
+  }
+
+  return "";
+}
+
+function renderStaticMapPreview(townFeature, matchingSmallAreas, lookup, churchRows) {
+  if (!townStaticMapPreviewEl || !townFeature) return;
+
+  const townName = getAreaName(townFeature.properties || {});
+  const width = 900;
+  const height = 520;
+  const padding = 34;
+  const features = [townFeature, ...matchingSmallAreas];
+  const bounds = geometryBounds(features);
+
+  if (!bounds) {
+    townStaticMapPreviewEl.innerHTML = `<div class="static-map-fallback">Map boundary unavailable</div>`;
+    return;
+  }
+
+  const lngSpan = bounds.maxLng - bounds.minLng || 0.01;
+  const latSpan = bounds.maxLat - bounds.minLat || 0.01;
+  const scale = Math.min((width - padding * 2) / lngSpan, (height - padding * 2) / latSpan);
+  const usedWidth = lngSpan * scale;
+  const usedHeight = latSpan * scale;
+  const offsetX = (width - usedWidth) / 2;
+  const offsetY = (height - usedHeight) / 2;
+
+  function project(lng, lat) {
+    return {
+      x: offsetX + (lng - bounds.minLng) * scale,
+      y: offsetY + (bounds.maxLat - lat) * scale
+    };
+  }
+
+  const smallAreaPaths = matchingSmallAreas.map(feature => {
+    const code = getSmallAreaCode(feature.properties || {});
+    const data = lookup[code] || {};
+    const population = Number(data.population_2022);
+    const fill = Number.isNaN(population)
+      ? "#dbe7eb"
+      : population >= 600
+        ? "#5f8ebf"
+        : population >= 300
+          ? "#8fb4d1"
+          : "#c6dce8";
+    return `<path d="${buildSvgPathForGeometry(feature.geometry, project)}" fill="${fill}" fill-opacity="0.58" stroke="#1f3340" stroke-opacity="0.55" stroke-width="1"/>`;
+  }).join("");
+
+  const townPath = `<path d="${buildSvgPathForGeometry(townFeature.geometry, project)}" fill="none" stroke="#111827" stroke-width="4" stroke-linejoin="round"/>`;
+
+  const churchAnalysis = analyseChurches(churchRows || [], townFeature);
+  const churchDots = churchAnalysis.inside.map(church => {
+    const point = project(church.lng, church.lat);
+    return `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="7" fill="#ffffff" stroke="#111827" stroke-width="3"><title>${escapeHtml(getChurchName(church))}</title></circle>`;
+  }).join("");
+
+  townStaticMapPreviewEl.innerHTML = `
+    <svg class="static-town-map-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Map of ${escapeHtml(townName)}">
+      <rect width="${width}" height="${height}" fill="#dfe9e7"/>
+      <g opacity="0.65">
+        <path d="M0 ${height * 0.68} C ${width * 0.22} ${height * 0.58}, ${width * 0.42} ${height * 0.78}, ${width} ${height * 0.6}" fill="none" stroke="#c7d6d3" stroke-width="26" stroke-linecap="round"/>
+        <path d="M${width * 0.08} ${height * 0.18} L${width * 0.92} ${height * 0.84}" stroke="#eef2d5" stroke-width="18" stroke-linecap="round"/>
+        <path d="M${width * 0.08} ${height * 0.18} L${width * 0.92} ${height * 0.84}" stroke="#d5c16a" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      ${smallAreaPaths}
+      ${townPath}
+      ${churchDots}
+      <text x="24" y="42" font-size="24" font-weight="800" fill="#0f4f49">${escapeHtml(townName)}</text>
+      <text x="24" y="72" font-size="15" fill="#5f6b76">Town boundary, Small Areas, and listed churches</text>
+    </svg>
+  `;
+}
+
+function slugifyFileName(value) {
+  return String(value || "town-mission-profile")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "town-mission-profile";
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function getPdfBlocks() {
+  const blocks = [];
+  const hero = document.querySelector(".profile-hero");
+  const summary = document.querySelector(".town-summary-card");
+  const metrics = document.querySelector(".metric-grid");
+  const topPanels = document.querySelectorAll(".content-grid > .panel");
+  const fullHeader = document.querySelector(".wide-panel .panel-header");
+  const fullCards = document.querySelectorAll("#fullDemographicProfile > .panel");
+  const insightsHeader = Array.from(document.querySelectorAll(".wide-panel .panel-header")).find(header => header.textContent.includes("Mission reading"));
+  const insightCards = document.querySelectorAll("#missionInsights > .insight-card");
+  const muted = document.querySelector(".muted-panel");
+
+  [hero, summary, metrics].forEach(el => { if (el) blocks.push(el); });
+  topPanels.forEach(el => blocks.push(el));
+  if (fullHeader) blocks.push(fullHeader);
+  fullCards.forEach(el => blocks.push(el));
+  if (insightsHeader) blocks.push(insightsHeader);
+  insightCards.forEach(el => blocks.push(el));
+  if (muted) blocks.push(muted);
+
+  return blocks;
+}
+
+async function addElementToPdf(pdf, element, layout) {
+  const canvas = await html2canvas(element, {
+    scale: 2,
+    backgroundColor: "#ffffff",
+    useCORS: true,
+    allowTaint: true,
+    logging: false,
+    windowWidth: document.documentElement.scrollWidth,
+    windowHeight: document.documentElement.scrollHeight
+  });
+
+  const imgData = canvas.toDataURL("image/jpeg", 0.96);
+  const imgWidth = layout.contentWidth;
+  const imgHeight = canvas.height * imgWidth / canvas.width;
+
+  if (layout.currentY + imgHeight > layout.pageHeight - layout.margin && layout.currentY > layout.margin) {
+    pdf.addPage();
+    layout.currentY = layout.margin;
+  }
+
+  if (imgHeight <= layout.pageHeight - layout.margin * 2) {
+    pdf.addImage(imgData, "JPEG", layout.margin, layout.currentY, imgWidth, imgHeight);
+    layout.currentY += imgHeight + layout.gap;
+    return;
+  }
+
+  const pageCanvas = document.createElement("canvas");
+  const pageCtx = pageCanvas.getContext("2d");
+  const sliceHeight = Math.floor(canvas.width * (layout.pageHeight - layout.margin * 2) / imgWidth);
+  pageCanvas.width = canvas.width;
+  pageCanvas.height = sliceHeight;
+
+  let sourceY = 0;
+  while (sourceY < canvas.height) {
+    pageCtx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
+    pageCtx.fillStyle = "#ffffff";
+    pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+    pageCtx.drawImage(canvas, 0, sourceY, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+    const sliceData = pageCanvas.toDataURL("image/jpeg", 0.96);
+    const actualSliceHeight = Math.min(sliceHeight, canvas.height - sourceY) * imgWidth / canvas.width;
+    if (layout.currentY > layout.margin) {
+      pdf.addPage();
+      layout.currentY = layout.margin;
+    }
+    pdf.addImage(sliceData, "JPEG", layout.margin, layout.currentY, imgWidth, actualSliceHeight);
+    sourceY += sliceHeight;
+    if (sourceY < canvas.height) {
+      pdf.addPage();
+      layout.currentY = layout.margin;
+    } else {
+      layout.currentY += actualSliceHeight + layout.gap;
+    }
+  }
+}
+
+async function downloadProfilePdf() {
+  if (!downloadPdfButtonEl) return;
+
+  if (!currentExportReady) {
+    alert("The profile is still loading. Please wait a moment and try again.");
+    return;
+  }
+
+  if (!window.html2canvas || !window.jspdf) {
+    alert("The PDF tools did not load. Please refresh the page and try again.");
+    return;
+  }
+
+  const originalText = downloadPdfButtonEl.textContent;
+  downloadPdfButtonEl.disabled = true;
+  downloadPdfButtonEl.textContent = "Creating PDF...";
+  document.body.classList.add("pdf-export-mode");
+
+  try {
+    await sleep(250);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4");
+    const layout = {
+      margin: 10,
+      gap: 5,
+      pageWidth: 210,
+      pageHeight: 297,
+      contentWidth: 190,
+      currentY: 10
+    };
+
+    const blocks = getPdfBlocks();
+    for (const block of blocks) {
+      await addElementToPdf(pdf, block, layout);
+    }
+
+    const filename = `${slugifyFileName(currentRenderedTownName)}-town-mission-profile.pdf`;
+    pdf.save(filename);
+  } catch (error) {
+    console.error(error);
+    alert("The PDF could not be created. Please try refreshing the page, then use Download PDF again.");
+  } finally {
+    document.body.classList.remove("pdf-export-mode");
+    downloadPdfButtonEl.disabled = false;
+    downloadPdfButtonEl.textContent = originalText;
+  }
+}
+
+if (downloadPdfButtonEl) {
+  downloadPdfButtonEl.addEventListener("click", downloadProfilePdf);
+}
+
 function renderProfileData(townFeature, matchingSmallAreas, summaryLookup, fullLookup, churches) {
   const props = townFeature.properties || {};
   const townName = getAreaName(props);
@@ -670,6 +934,8 @@ function renderProfileData(townFeature, matchingSmallAreas, summaryLookup, fullL
   const fullProfile = aggregateSmallAreas(matchingSmallAreas, fullLookup);
   const profile = { ...summaryProfile, ...fullProfile };
   const churchAnalysis = analyseChurches(churches, townFeature);
+  currentRenderedTownName = townName;
+  currentExportReady = false;
 
   townNameEl.textContent = townName;
   countyNameEl.textContent = "County: " + countyName;
@@ -712,6 +978,8 @@ function renderProfileData(townFeature, matchingSmallAreas, summaryLookup, fullL
 
   renderFullDemographicProfile(profile);
   renderMissiologicalInsights(profile, churchAnalysis, townName);
+  renderStaticMapPreview(townFeature, matchingSmallAreas, summaryLookup, churches);
+  currentExportReady = true;
 }
 
 function addInsight(insights, title, text, priority = false) {
@@ -1016,12 +1284,10 @@ function showTownNotFoundState(code) {
 }
 
 function loadTownProfile() {
-  if (townMapFrameEl) {
-    if (selectedCode) {
-      townMapFrameEl.src = `town-profile-map.html?code=${encodeURIComponent(selectedCode)}&v=iframe1`;
-    } else {
-      townMapFrameEl.src = "town-profile-map.html?v=iframe1";
-    }
+  if (selectedCode) {
+    townMapFrameEl.src = `town-profile-map.html?code=${encodeURIComponent(selectedCode)}&v=iframe1`;
+  } else {
+    townMapFrameEl.src = "town-profile-map.html?v=iframe1";
   }
 
   if (!selectedCode) {
@@ -1064,7 +1330,6 @@ function loadTownProfile() {
         "Town profile loaded from the Glúnta demographic map data. Church presence is based on the current Glúnta church points dataset.",
         "success"
       );
-      window.dispatchEvent(new CustomEvent("townProfileReady"));
     })
     .catch(error => {
       console.error(error);
