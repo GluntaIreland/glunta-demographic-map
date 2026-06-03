@@ -720,22 +720,22 @@ body.pdf-export-mode .wide-panel:has(#missionInsights) {
 body.pdf-export-mode .insight-list,
 body.pdf-export-mode #missionInsights {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 body.pdf-export-mode .insight-card {
-  padding: 10px;
-  border-radius: 10px;
+  padding: 16px;
+  border-radius: 12px;
 }
 
 body.pdf-export-mode .insight-card h3 {
-  font-size: 0.82rem;
-  line-height: 1.12;
-  margin-bottom: 4px;
+  font-size: 1rem;
+  line-height: 1.18;
+  margin-bottom: 6px;
 }
 
 body.pdf-export-mode .insight-card p {
-  font-size: 0.68rem;
-  line-height: 1.24;
+  font-size: 0.9rem;
+  line-height: 1.45;
 }
