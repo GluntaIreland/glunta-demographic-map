@@ -420,6 +420,28 @@
       margin-bottom: 6px;
     }
 
+    .legend-toggle {
+      display: none;
+      width: 100%;
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      padding: 0;
+      margin: 0;
+      font: inherit;
+      font-weight: 800;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .legend-toggle-icon {
+      display: inline-block;
+      margin-left: 5px;
+      font-size: 12px;
+      line-height: 1;
+    }
+
     .legend-row {
       display: flex;
       align-items: center;
@@ -534,6 +556,40 @@
     }
 
     @media (max-width: 760px) {
+      .legend {
+        max-width: 190px;
+        padding: 9px 10px;
+        border-radius: 10px;
+        font-size: 12px;
+      }
+
+      .legend-title {
+        display: none;
+      }
+
+      .legend-toggle {
+        display: block;
+      }
+
+      .legend-body {
+        margin-top: 7px;
+      }
+
+      .legend.is-collapsed .legend-body {
+        display: none;
+      }
+
+      .legend-row {
+        gap: 6px;
+        margin: 2px 0;
+      }
+
+      .legend-color {
+        width: 13px;
+        height: 13px;
+        flex: 0 0 13px;
+      }
+
       body {
         display: block;
         overflow: auto;

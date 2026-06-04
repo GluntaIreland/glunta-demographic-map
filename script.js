@@ -1528,6 +1528,36 @@ function bindAreaInteractions(feature, layer) {
   });
 }
 
+function getCompactLegendLabel(label) {
+  return String(label || "")
+    .replace(/500,000\+/g, "500k+")
+    .replace(/300,001 to 500,000/g, "300k to 500k")
+    .replace(/200,001 to 300,000/g, "200k to 300k")
+    .replace(/150,001 to 200,000/g, "150k to 200k")
+    .replace(/100,001 to 150,000/g, "100k to 150k")
+    .replace(/75,001 to 100,000/g, "75k to 100k")
+    .replace(/50,001 to 75,000/g, "50k to 75k")
+    .replace(/Up to 50,000/g, "Up to 50k")
+    .replace(/75,000\+/g, "75k+")
+    .replace(/50,001 to 75,000/g, "50k to 75k")
+    .replace(/35,001 to 50,000/g, "35k to 50k")
+    .replace(/25,001 to 35,000/g, "25k to 35k")
+    .replace(/15,001 to 25,000/g, "15k to 25k")
+    .replace(/Up to 15,000/g, "Up to 15k")
+    .replace(/800\+/g, "800+")
+    .replace(/600 to 799/g, "600 to 799")
+    .replace(/400 to 599/g, "400 to 599")
+    .replace(/250 to 399/g, "250 to 399")
+    .replace(/100 to 249/g, "100 to 249")
+    .replace(/Under 100/g, "Under 100")
+    .replace(/40%\+/g, "40%+")
+    .replace(/30% to 39.9%/g, "30% to 39.9%")
+    .replace(/20% to 29.9%/g, "20% to 29.9%")
+    .replace(/10% to 19.9%/g, "10% to 19.9%")
+    .replace(/5% to 9.9%/g, "5% to 9.9%")
+    .replace(/Under 5%/g, "Under 5%");
+}
+
 function updateLegend() {
   if (legend) {
     map.removeControl(legend);
@@ -1537,38 +1567,62 @@ function updateLegend() {
   legend = L.control({ position: "bottomright" });
 
   legend.onAdd = function () {
-    const div = L.DomUtil.create("div", "legend");
+    const div = L.DomUtil.create("div", "legend is-collapsed");
     const config = getIndicatorConfig(currentIndicator);
     const colors = colorSets[config.colorSet] || colorSets.blue;
     const opacity = currentGeography === "town" ? 0.68 : DEFAULT_FILL_OPACITY;
+    const title = escapeHtml(config.legendTitle);
 
-    div.innerHTML = `<div class="legend-title">${escapeHtml(config.legendTitle)}</div>`;
+    let rowsHtml = "";
 
     config.grades.forEach((item, index) => {
-      div.innerHTML += `
+      rowsHtml += `
         <div class="legend-row">
           <span class="legend-color" style="background:${colors[index]}; opacity:${opacity};"></span>
-          <span>${escapeHtml(item.label)}</span>
+          <span class="legend-label" data-full-label="${escapeHtml(item.label)}">${escapeHtml(getCompactLegendLabel(item.label))}</span>
         </div>
       `;
     });
 
     if (currentGeography === "town") {
-      div.innerHTML += `
+      rowsHtml += `
         <div class="legend-row">
           <span class="legend-color" style="background:transparent; border:2px solid #111827;"></span>
-          <span>Selected Built Up Area</span>
+          <span class="legend-label" data-full-label="Selected Built Up Area">Selected area</span>
         </div>
       `;
 
       if (selectedTownPropsForSmallAreas && isDublinTown(selectedTownPropsForSmallAreas)) {
-        div.innerHTML += `
+        rowsHtml += `
           <div class="legend-row">
             <span class="legend-color" style="background:#0f766e; opacity:0.32; border:2px solid #111827;"></span>
-            <span>Clickable City Small Areas</span>
+            <span class="legend-label" data-full-label="Clickable City Small Areas">Clickable Small Areas</span>
           </div>
         `;
       }
+    }
+
+    div.innerHTML = `
+      <div class="legend-title">${title}</div>
+      <button class="legend-toggle" type="button" aria-expanded="false">
+        <span class="legend-toggle-text">${title}</span>
+        <span class="legend-toggle-icon" aria-hidden="true">▾</span>
+      </button>
+      <div class="legend-body">${rowsHtml}</div>
+    `;
+
+    const toggle = div.querySelector(".legend-toggle");
+    const icon = div.querySelector(".legend-toggle-icon");
+
+    if (toggle) {
+      L.DomEvent.disableClickPropagation(toggle);
+      L.DomEvent.disableScrollPropagation(toggle);
+
+      toggle.addEventListener("click", function () {
+        const collapsed = div.classList.toggle("is-collapsed");
+        toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        if (icon) icon.textContent = collapsed ? "▾" : "▴";
+      });
     }
 
     return div;
