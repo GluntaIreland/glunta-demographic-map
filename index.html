@@ -472,6 +472,14 @@
       font-weight: 700;
     }
 
+    .area-popup a.county-profile-popup-link {
+      display: inline-block;
+      margin-top: 8px;
+      color: var(--brand-dark);
+      font-weight: 800;
+      text-decoration: underline;
+    }
+
     .leaflet-control-zoom {
       margin-left: 12px !important;
       margin-top: 12px !important;
@@ -680,6 +688,15 @@
         <p id="selectedIndicatorValue" class="selected-indicator-value">—</p>
       </div>
 
+      <div id="countyProfileAction" class="town-profile-action">
+        <a id="countyProfileLink" class="town-profile-button" href="#" target="_blank" rel="noopener noreferrer">
+          Open County Mission Profile
+        </a>
+        <p class="town-profile-note">
+          Opens a printable county profile with demographic summary, church presence, and mission observations.
+        </p>
+      </div>
+
       <div id="townProfileAction" class="town-profile-action">
         <a id="townProfileLink" class="town-profile-button" href="#" target="_blank" rel="noopener noreferrer">
           Open Town Mission Profile
@@ -745,5 +762,150 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="script.js"></script>
+  <script>
+    /*
+      County Mission Profile link patch.
+
+      This file keeps your existing script.js untouched, and adds the missing
+      County profile link to the selected-area sidebar when the County tab is active.
+
+      Expected county profile URL pattern:
+      county-profile.html?county=galway
+      county-profile.html?county=cork
+      county-profile.html?county=dublin-city
+    */
+
+    (function () {
+      const countyProfileAction = document.getElementById("countyProfileAction");
+      const countyProfileLink = document.getElementById("countyProfileLink");
+      const areaNameElement = document.getElementById("areaName");
+      const countyViewButton = document.getElementById("countyViewButton");
+      const leaViewButton = document.getElementById("leaViewButton");
+      const townViewButton = document.getElementById("townViewButton");
+
+      function normaliseCountySlug(value) {
+        if (!value) return "";
+
+        return String(value)
+          .toLowerCase()
+          .replace(/&/g, "and")
+          .replace(/\bcity and county council\b/g, "")
+          .replace(/\bcounty council\b/g, "")
+          .replace(/\bcity council\b/g, "city")
+          .replace(/\bcounty\b/g, "")
+          .replace(/\bcouncil\b/g, "")
+          .replace(/\blocal authority\b/g, "")
+          .replace(/\bmunicipal district\b/g, "")
+          .trim()
+          .replace(/\s+/g, "-")
+          .replace(/[^\w-]/g, "");
+      }
+
+      function isCountyViewActive() {
+        return Boolean(countyViewButton && countyViewButton.classList.contains("is-active"));
+      }
+
+      function getSelectedAreaName() {
+        return areaNameElement ? areaNameElement.textContent.trim() : "";
+      }
+
+      function selectedAreaIsEmpty(areaName) {
+        return !areaName || /^no area selected$/i.test(areaName);
+      }
+
+      function getCountyProfileUrl(areaName) {
+        const countySlug = normaliseCountySlug(areaName);
+
+        if (!countySlug) return "";
+
+        return `county-profile.html?county=${encodeURIComponent(countySlug)}`;
+      }
+
+      function updateCountyProfileLink() {
+        if (!countyProfileAction || !countyProfileLink) return;
+
+        const areaName = getSelectedAreaName();
+
+        if (!isCountyViewActive() || selectedAreaIsEmpty(areaName)) {
+          countyProfileAction.style.display = "none";
+          countyProfileLink.href = "#";
+          return;
+        }
+
+        const url = getCountyProfileUrl(areaName);
+
+        if (!url) {
+          countyProfileAction.style.display = "none";
+          countyProfileLink.href = "#";
+          return;
+        }
+
+        countyProfileLink.href = url;
+        countyProfileAction.style.display = "block";
+      }
+
+      function addCountyProfileLinkToPopup() {
+        if (!isCountyViewActive()) return;
+
+        const popupContent = document.querySelector(".leaflet-popup-content .area-popup");
+        if (!popupContent) return;
+
+        if (popupContent.querySelector(".county-profile-popup-link")) return;
+
+        const title = popupContent.querySelector("h2");
+        const countyName = title ? title.textContent.trim() : getSelectedAreaName();
+        const url = getCountyProfileUrl(countyName);
+
+        if (!url) return;
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.className = "county-profile-popup-link";
+        link.textContent = "Open County Mission Profile";
+
+        popupContent.appendChild(link);
+      }
+
+      function refresh() {
+        updateCountyProfileLink();
+
+        // Leaflet creates popups asynchronously, so give it a tick.
+        window.setTimeout(addCountyProfileLinkToPopup, 50);
+      }
+
+      if (areaNameElement) {
+        const areaObserver = new MutationObserver(refresh);
+        areaObserver.observe(areaNameElement, {
+          childList: true,
+          characterData: true,
+          subtree: true
+        });
+      }
+
+      if (countyViewButton) countyViewButton.addEventListener("click", refresh);
+      if (leaViewButton) leaViewButton.addEventListener("click", refresh);
+      if (townViewButton) townViewButton.addEventListener("click", refresh);
+
+      document.addEventListener("click", function () {
+        window.setTimeout(refresh, 50);
+      });
+
+      document.addEventListener("popupopen", refresh);
+
+      const popupObserver = new MutationObserver(function () {
+        window.setTimeout(addCountyProfileLinkToPopup, 50);
+      });
+
+      popupObserver.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+
+      refresh();
+    })();
+  </script>
+
 </body>
 </html>
