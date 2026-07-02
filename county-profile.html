@@ -272,12 +272,59 @@
     }
 
     @media print {
-      body { background: #fff; }
-      .page { max-width: none; padding: 0; }
-      .actions { display: none; }
-      .hero, .card { box-shadow: none; break-inside: avoid; }
-      #map { height: 300px; }
-      a { color: inherit; text-decoration: none; }
+      @page {
+        size: A4 portrait;
+        margin: 12mm;
+      }
+
+      html,
+      body {
+        height: auto !important;
+        min-height: auto !important;
+        overflow: visible !important;
+        background: #fff !important;
+      }
+
+      body {
+        display: block !important;
+      }
+
+      .page {
+        display: block !important;
+        width: auto !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      .topbar {
+        display: none !important;
+      }
+
+      .layout {
+        display: block !important;
+      }
+
+      .hero,
+      .card {
+        box-shadow: none !important;
+        break-inside: avoid-page;
+        page-break-inside: avoid;
+      }
+
+      #map {
+        height: 240px !important;
+        min-height: 240px !important;
+      }
+
+      .leaflet-control-container {
+        display: none !important;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
     }
   </style>
 </head>
@@ -288,7 +335,7 @@
       <div class="brand">Glúnta Research</div>
       <div class="actions">
         <a class="button secondary" href="index.html">Back to map</a>
-        <button class="button" type="button" onclick="window.print()">Download PDF</button>
+        <button class="button" type="button" onclick="printProfile()">Download PDF</button>
       </div>
     </div>
 
@@ -424,6 +471,41 @@
     const requestedCountySlug = params.get("county") || params.get("code");
 
     let map;
+    let profileReadyForPrint = false;
+
+    function printProfile() {
+      const startedAt = Date.now();
+      const maxWaitMs = 8000;
+
+      function tryPrint() {
+        const titleText = document.getElementById("profileTitle")?.textContent || "";
+        const hasLoadedTitle = titleText && !titleText.toLowerCase().includes("loading");
+
+        if (profileReadyForPrint && hasLoadedTitle) {
+          window.dispatchEvent(new Event("resize"));
+
+          if (map && typeof map.invalidateSize === "function") {
+            map.invalidateSize();
+          }
+
+          requestAnimationFrame(() => {
+            setTimeout(() => window.print(), 350);
+          });
+          return;
+        }
+
+        if (Date.now() - startedAt > maxWaitMs) {
+          requestAnimationFrame(() => {
+            setTimeout(() => window.print(), 350);
+          });
+          return;
+        }
+
+        setTimeout(tryPrint, 250);
+      }
+
+      tryPrint();
+    }
 
     const COUNTY_GEOJSON_URLS = [
       "county-demographics-map.geojson",
@@ -1034,6 +1116,7 @@
       renderBasicProfile(countyFeature, churchesInsideCounty, leaCount);
       renderDemographicFields(countyFeature.properties || {});
       renderUnreachedTowns(unreachedTownsInsideCounty, urbanResult.data, churchesResult.data);
+      profileReadyForPrint = true;
     }
 
     loadCountyProfile().catch(error => {
