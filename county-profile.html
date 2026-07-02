@@ -713,23 +713,87 @@
       return getProp(town, ["Status", "status", "Priority", "priority", "Classification", "classification"], "");
     }
 
-    function getNearestChurchText(town) {
-      const nearestName = getProp(town, [
+    function getStoredNearestChurchName(town) {
+      return getProp(town, [
         "Nearest counted church",
         "nearest_counted_church",
+        "Nearest counted Church",
         "Nearest Church",
-        "nearest_church"
+        "nearest_church",
+        "nearest church",
+        "nearest_church_name",
+        "Nearest church name"
       ], "");
+    }
 
-      const nearestDistance = getProp(town, [
+    function getStoredNearestChurchDistance(town) {
+      return getProp(town, [
         "Nearest counted church distance km",
         "nearest_counted_church_distance_km",
+        "Nearest counted church distance",
+        "nearest_counted_church_distance",
+        "Nearest Church Distance km",
+        "Nearest church distance km",
+        "nearest_church_distance_km",
+        "nearest_church_distance",
         "Distance km",
-        "distance_km"
+        "distance_km",
+        "Distance to nearest church km",
+        "distance_to_nearest_church_km",
+        "nearest_distance_km"
       ], "");
+    }
 
-      if (nearestName && nearestDistance) return `Nearest counted church: ${nearestName} (${nearestDistance} km)`;
-      if (nearestName) return `Nearest counted church: ${nearestName}`;
+    function formatDistanceKm(value) {
+      const distance = toNumber(value);
+      if (distance === null) return "";
+
+      if (distance < 10) {
+        return `${distance.toFixed(1)} km`;
+      }
+
+      return `${Math.round(distance)} km`;
+    }
+
+    function getNearestChurchInfo(town, churches) {
+      const storedName = getStoredNearestChurchName(town);
+      const storedDistance = getStoredNearestChurchDistance(town);
+
+      let bestChurch = null;
+      let bestDistance = null;
+
+      if (rowHasValidCoordinates(town) && Array.isArray(churches)) {
+        const townPoint = rowToPoint(town);
+
+        churches.forEach(church => {
+          if (!rowHasValidCoordinates(church)) return;
+
+          const churchPoint = rowToPoint(church);
+          const distance = turf.distance(townPoint, churchPoint, { units: "kilometers" });
+
+          if (bestDistance === null || distance < bestDistance) {
+            bestDistance = distance;
+            bestChurch = church;
+          }
+        });
+      }
+
+      const nearestName = bestChurch ? getChurchName(bestChurch) : storedName;
+      const nearestDistance = bestDistance !== null ? bestDistance : storedDistance;
+      const distanceText = formatDistanceKm(nearestDistance);
+
+      if (nearestName && distanceText) {
+        return `${distanceText} to the nearest church: ${nearestName}`;
+      }
+
+      if (distanceText) {
+        return `${distanceText} to the nearest church`;
+      }
+
+      if (nearestName) {
+        return `To the nearest church: ${nearestName}`;
+      }
+
       return "";
     }
 
@@ -792,7 +856,7 @@
       }).join("");
     }
 
-    function renderUnreachedTowns(towns, urbanAreas) {
+    function renderUnreachedTowns(towns, urbanAreas, churches) {
       const list = document.getElementById("unreachedTownList");
 
       if (!towns.length) {
@@ -810,7 +874,7 @@
         const name = getTownName(town);
         const population = getTownPopulation(town);
         const status = getTownStatus(town);
-        const nearest = getNearestChurchText(town);
+        const nearest = getNearestChurchInfo(town, churches);
         const townCode = getTownCode(town, urbanAreas);
         const details = [];
 
@@ -969,7 +1033,7 @@
       drawCounty(countyFeature);
       renderBasicProfile(countyFeature, churchesInsideCounty, leaCount);
       renderDemographicFields(countyFeature.properties || {});
-      renderUnreachedTowns(unreachedTownsInsideCounty, urbanResult.data);
+      renderUnreachedTowns(unreachedTownsInsideCounty, urbanResult.data, churchesResult.data);
     }
 
     loadCountyProfile().catch(error => {
