@@ -300,6 +300,10 @@
       margin-bottom: 5px;
     }
 
+    .prayer-prompts-standalone {
+      margin-top: 0;
+    }
+
     .note {
       padding: 15px;
       border-radius: 14px;
@@ -479,6 +483,17 @@
             </tbody>
           </table>
         </section>
+
+        <section class="card">
+          <p class="section-label">Prayer focus</p>
+          <h2>Unreached towns in this county</h2>
+          <p class="meta">
+            These towns are currently marked in the Glúnta research dataset as having no listed church inside the town boundary or requiring priority research.
+          </p>
+          <ul id="unreachedTownList" class="unreached-list" style="margin-top:14px;">
+            <li class="loading">Unreached towns will appear here.</li>
+          </ul>
+        </section>
       </div>
 
       <aside>
@@ -524,23 +539,18 @@
         </section>
 
         <section class="card">
-          <p class="section-label">Prayer focus</p>
-          <h2>Unreached towns in this county</h2>
-          <p class="meta">
-            These towns are currently marked in the Glúnta research dataset as having no listed church inside the town boundary or requiring priority research.
-          </p>
-          <ul id="unreachedTownList" class="unreached-list" style="margin-top:14px;">
-            <li class="loading">Unreached towns will appear here.</li>
-          </ul>
-          <div class="prayer-prompts">
-            <p>Prayer prompts</p>
+          <p class="section-label">Prayer prompts</p>
+          <h2>Pray for this county</h2>
+          <div class="prayer-prompts prayer-prompts-standalone">
             <ul>
-              <li>Pray for faithful gospel witness in these towns.</li>
-              <li>Pray for existing believers, hidden relationships, and future leaders.</li>
+              <li>Pray for faithful gospel witness in the unreached towns listed in this county.</li>
+              <li>Pray for existing believers, hidden relationships, and future local leaders.</li>
+              <li>Pray for churches already serving in the county to be encouraged, strengthened, and fruitful.</li>
               <li>Pray for wise partnerships and careful local research before any ministry decisions are made.</li>
             </ul>
           </div>
         </section>
+
       </aside>
     </section>
 
