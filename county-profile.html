@@ -2,316 +2,1075 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <title>County Mission Profile | Glúnta</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Town Mission Profile | Glúnta</title>
 
-  <link rel="stylesheet" href="town-profile.css" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
 
   <style>
-    .town-static-map-preview {
-      display: none;
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      background: #dfe9e7;
+    :root {
+      --bg: #eef5f4;
+      --card: #ffffff;
+      --ink: #17202a;
+      --muted: #5f6b7a;
+      --line: #d7e4e1;
+      --brand: #0f766e;
+      --brand-dark: #115e59;
+      --soft: #edf8f5;
+      --warning-bg: #fff7ed;
+      --warning-border: #fed7aa;
+      --warning-ink: #7c2d12;
     }
 
-    .static-town-map-svg {
-      width: 100%;
-      height: 100%;
-      display: block;
+    * {
+      box-sizing: border-box;
     }
 
-    .static-map-fallback {
-      height: 100%;
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 18px 60px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .brand {
+      font-size: 0.95rem;
+      font-weight: 850;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--brand-dark);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .button {
+      display: inline-block;
+      border: 1px solid var(--brand);
+      background: var(--brand);
+      color: #fff;
+      padding: 9px 14px;
+      border-radius: 999px;
+      text-decoration: none;
+      font-weight: 750;
+      font-size: 0.92rem;
+      cursor: pointer;
+    }
+
+    .button.secondary {
+      background: #fff;
+      color: var(--brand-dark);
+    }
+
+    .hero {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 28px rgba(15, 23, 42, 0.06);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--brand-dark);
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 3.25rem);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      max-width: 820px;
+      margin: 16px 0 0;
+      color: var(--muted);
+      font-size: 1.08rem;
+    }
+
+    .layout {
       display: grid;
-      place-items: center;
-      color: #5f6b76;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.045);
+    }
+
+    .card h2 {
+      margin: 0 0 14px;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+    }
+
+    .card h3 {
+      margin: 18px 0 8px;
+      font-size: 1rem;
+    }
+
+    .section-label {
+      margin: 0 0 12px;
+      color: var(--brand-dark);
+      font-size: 0.76rem;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .meta {
+      color: var(--muted);
+      margin: 0;
+    }
+
+    #map {
+      width: 100%;
+      height: 360px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      overflow: hidden;
+      background: #dcebea;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .stat {
+      background: var(--soft);
+      border: 1px solid #cce4df;
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .stat .label {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
       font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
     }
 
-    .primary-button:disabled {
-      opacity: 0.72;
-      cursor: wait;
+    .stat .value {
+      display: block;
+      font-size: 1.65rem;
+      line-height: 1.1;
+      font-weight: 900;
+      color: var(--brand-dark);
     }
 
-    body.pdf-export-mode {
-      background: #ffffff !important;
+    .stat .small {
+      display: block;
+      color: var(--muted);
+      font-size: 0.83rem;
+      margin-top: 6px;
     }
 
-    body.pdf-export-mode .profile-page {
-      width: 1100px;
-      max-width: 1100px;
-      padding: 24px 0 40px;
+    .profile-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
     }
 
-    body.pdf-export-mode .hero-actions {
-      display: none !important;
+    .profile-table th,
+    .profile-table td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px 0;
+      text-align: left;
+      vertical-align: top;
     }
 
-    body.pdf-export-mode .town-map-frame {
-      display: none !important;
+    .profile-table th {
+      color: var(--muted);
+      font-weight: 750;
+      width: 55%;
+      padding-right: 12px;
     }
 
-    body.pdf-export-mode .town-static-map-preview {
-      display: block !important;
+    .church-list {
+      margin: 0;
+      padding-left: 20px;
     }
 
-    body.pdf-export-mode .map-preview-label span {
-      font-size: 0;
+    .church-list li {
+      margin-bottom: 8px;
     }
 
-    body.pdf-export-mode .map-preview-label span::after {
-      content: "Map-generated town view";
-      font-size: 0.8rem;
+    .church-list a {
+      color: var(--brand-dark);
+      font-weight: 700;
+    }
+
+    .note {
+      background: var(--warning-bg);
+      border: 1px solid var(--warning-border);
+      border-radius: 16px;
+      padding: 16px;
+      color: var(--warning-ink);
+    }
+
+    .note p {
+      margin-top: 0;
+    }
+
+    .note p:last-child {
+      margin-bottom: 0;
+    }
+
+    .loading {
+      color: var(--muted);
+    }
+
+    .error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #7f1d1d;
+      padding: 16px;
+      border-radius: 16px;
+    }
+
+    footer {
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-top: 28px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    @media (max-width: 880px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .page {
+        max-width: none;
+        padding: 0;
+      }
+
+      .actions {
+        display: none;
+      }
+
+      .hero,
+      .card {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+
+      #map {
+        height: 300px;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
     }
   </style>
 </head>
 
 <body>
-  <main class="profile-page">
-    <header class="profile-hero">
-      <div class="profile-hero-text">
-        <p class="eyebrow">Glúnta Research</p>
-        <h1>Town Mission Profile</h1>
-        <p class="hero-subtitle">
-          A mission-focused demographic profile for understanding towns, existing church presence,
-          and possible areas for prayer, partnership, and local research.
-        </p>
+  <main class="page">
+    <div class="topbar">
+      <div class="brand">Glúnta Research</div>
+      <div class="actions">
+        <a class="button secondary" href="index.html">Back to map</a>
+        <button class="button" type="button" onclick="window.print()">Download PDF</button>
       </div>
+    </div>
 
-      <div class="hero-actions">
-        <a class="secondary-button" href="index.html">Back to map</a>
-        <button id="downloadPdfButton" class="primary-button" type="button">Download PDF</button>
-      </div>
-    </header>
-
-    <section class="town-summary-card">
-      <div class="town-map-preview-wrap">
-        <iframe
-          id="townMapFrame"
-          class="town-map-frame"
-          title="Town context map"
-          src="town-profile-map.html"
-          loading="eager"
-        ></iframe>
-
-        <div id="townStaticMapPreview" class="town-static-map-preview" aria-hidden="true"></div>
-
-        <div class="map-preview-label">
-          <span>Interactive town context map</span>
-        </div>
-      </div>
-
-      <div class="town-summary-content">
-        <p class="eyebrow">Selected town</p>
-        <h2 id="townName">Loading town...</h2>
-
-        <div class="summary-meta">
-          <span id="countyName">County: —</span>
-          <span id="urbanAreaCode">Urban Area Code: —</span>
-        </div>
-
-        <p id="townDescription" class="town-description">
-          This page uses the selected town boundary, Small Area demographic data, and listed church
-          locations to create a focused mission profile.
-        </p>
-
-        <div id="loadingNotice" class="loading-notice">
-          Loading town boundary from the Glúnta demographic map data...
-        </div>
-      </div>
-    </section>
-
-    <section class="metric-grid" aria-label="Summary metrics">
-      <article class="metric-card">
-        <p class="metric-label">Population</p>
-        <p id="populationValue" class="metric-value">—</p>
-        <p class="metric-note">Census 2022 urban area estimate from included Small Areas.</p>
-      </article>
-
-      <article class="metric-card">
-        <p class="metric-label">Small Areas</p>
-        <p id="smallAreasValue" class="metric-value">—</p>
-        <p class="metric-note">Small Areas included within the town boundary.</p>
-      </article>
-
-      <article class="metric-card">
-        <p class="metric-label">Churches listed</p>
-        <p id="churchesValue" class="metric-value">—</p>
-        <p class="metric-note">Church points listed in the Glúnta dataset.</p>
-      </article>
-
-      <article class="metric-card">
-        <p class="metric-label">Nearby churches</p>
-        <p id="nearbyChurchesValue" class="metric-value">—</p>
-        <p class="metric-note">Churches within 15 km of the town centre.</p>
-      </article>
-    </section>
-
-    <section class="content-grid">
-      <article class="panel">
-        <div class="panel-header">
-          <p class="eyebrow">Demographic shape</p>
-          <h2>Population and age</h2>
-        </div>
-
-        <div class="data-list">
-          <div class="data-row">
-            <span>Children, 0 to 14</span>
-            <strong id="ageChildren">—</strong>
-          </div>
-          <div class="data-row">
-            <span>Young adults, 15 to 34</span>
-            <strong id="ageYoungAdults">—</strong>
-          </div>
-          <div class="data-row">
-            <span>Adults, 35 to 64</span>
-            <strong id="ageAdults">—</strong>
-          </div>
-          <div class="data-row">
-            <span>Older adults, 65+</span>
-            <strong id="ageOlderAdults">—</strong>
-          </div>
-        </div>
-      </article>
-
-      <article class="panel">
-        <div class="panel-header">
-          <p class="eyebrow">Cultural profile</p>
-          <h2>Migration, language, and background</h2>
-        </div>
-
-        <div class="data-list">
-          <div class="data-row">
-            <span>Born outside Ireland</span>
-            <strong id="bornOutsideIreland">—</strong>
-          </div>
-          <div class="data-row">
-            <span>Non-Irish citizenship</span>
-            <strong id="nonIrishCitizenship">—</strong>
-          </div>
-          <div class="data-row">
-            <span>Foreign-language speakers</span>
-            <strong id="foreignLanguageSpeakers">—</strong>
-          </div>
-          <div class="data-row">
-            <span>Other White background</span>
-            <strong id="otherWhiteBackground">—</strong>
-          </div>
-        </div>
-      </article>
-
-      <article class="panel">
-        <div class="panel-header">
-          <p class="eyebrow">Religious profile</p>
-          <h2>Religious affiliation</h2>
-        </div>
-
-        <div class="data-list">
-          <div class="data-row">
-            <span>Catholic</span>
-            <strong id="religionCatholic">—</strong>
-          </div>
-          <div class="data-row">
-            <span>Other religion</span>
-            <strong id="religionOther">—</strong>
-          </div>
-          <div class="data-row">
-            <span>No religion</span>
-            <strong id="religionNone">—</strong>
-          </div>
-          <div class="data-row">
-            <span>Religion not stated</span>
-            <strong id="religionNotStated">—</strong>
-          </div>
-        </div>
-      </article>
-
-      <article class="panel">
-        <div class="panel-header">
-          <p class="eyebrow">Church presence</p>
-          <h2>Listed churches</h2>
-        </div>
-
-        <div class="church-list-block">
-          <h3>Inside this town</h3>
-          <ul id="churchesInsideList" class="church-list">
-            <li>Church list will appear here.</li>
-          </ul>
-        </div>
-
-        <div class="church-list-block">
-          <h3>Nearby</h3>
-          <ul id="nearbyChurchesList" class="church-list">
-            <li>Nearby churches will appear here.</li>
-          </ul>
-        </div>
-      </article>
-    </section>
-
-
-    <section class="wide-panel">
-      <div class="panel-header">
-        <p class="eyebrow">Full demographic profile</p>
-        <h2>Town profile statistics</h2>
-      </div>
-
-      <div id="fullDemographicProfile" class="content-grid">
-        <article class="panel">
-          <div class="panel-header">
-            <p class="eyebrow">Loading</p>
-            <h2>Demographic data</h2>
-          </div>
-          <p class="source-note">
-            Full Census 2022 Small Area profile data will appear here once the town is loaded.
-          </p>
-        </article>
-      </div>
-    </section>
-
-    <section class="wide-panel">
-      <div class="panel-header">
-        <p class="eyebrow">Mission reading</p>
-        <h2>Missiological observations</h2>
-      </div>
-
-      <div id="missionInsights" class="insight-list">
-        <article class="insight-card">
-          <h3>Begin with local listening</h3>
-          <p>
-            This profile is intended to support prayer, partnership, and research. It should not be read
-            as a mechanical church planting recommendation.
-          </p>
-        </article>
-
-        <article class="insight-card">
-          <h3>Read the data alongside people</h3>
-          <p>
-            Demographic data can show patterns, but it cannot tell the full story of relationships,
-            history, local trust, existing witness, or spiritual openness.
-          </p>
-        </article>
-      </div>
-    </section>
-
-    <section class="wide-panel muted-panel">
-      <div class="panel-header">
-        <p class="eyebrow">Data note</p>
-        <h2>Sources and method</h2>
-      </div>
-
-      <p>
-        This profile draws from Census 2022 Built Up Area boundaries, Small Area boundaries,
-        processed Small Area demographic tables, and the Glúnta church points dataset. Figures should be
-        treated as planning and research aids, not as final local knowledge.
+    <section class="hero">
+      <p class="eyebrow">County Mission Profile</p>
+      <h1 id="profileTitle">Loading county...</h1>
+      <p class="subtitle">
+        A mission-focused demographic profile for understanding county context,
+        existing church presence, and possible areas for prayer, partnership,
+        and local research.
       </p>
     </section>
+
+    <section class="layout">
+      <div>
+        <section class="card">
+          <p class="section-label">Interactive county context map</p>
+          <div id="map"></div>
+        </section>
+
+        <section class="card">
+          <p class="section-label">Demographic shape</p>
+          <h2>Population and age</h2>
+          <table class="profile-table">
+            <tbody>
+              <tr>
+                <th>Children, 0 to 14</th>
+                <td id="ageChildren">—</td>
+              </tr>
+              <tr>
+                <th>Young adults, 15 to 34</th>
+                <td id="ageYoungAdults">—</td>
+              </tr>
+              <tr>
+                <th>Adults, 35 to 64</th>
+                <td id="ageAdults">—</td>
+              </tr>
+              <tr>
+                <th>Older adults, 65+</th>
+                <td id="ageOlderAdults">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="card">
+          <p class="section-label">Cultural profile</p>
+          <h2>Migration, language, and background</h2>
+          <table class="profile-table">
+            <tbody>
+              <tr>
+                <th>Born outside Ireland</th>
+                <td id="bornOutsideIreland">—</td>
+              </tr>
+              <tr>
+                <th>Non-Irish citizenship</th>
+                <td id="nonIrishCitizenship">—</td>
+              </tr>
+              <tr>
+                <th>Foreign-language speakers</th>
+                <td id="foreignLanguageSpeakers">—</td>
+              </tr>
+              <tr>
+                <th>Other White background</th>
+                <td id="otherWhiteBackground">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="card">
+          <p class="section-label">Religious profile</p>
+          <h2>Relious affiliation</h2>
+          <table class="profile-table">
+            <tbody>
+              <tr>
+                <th>Catholic</th>
+                <td id="religionCatholic">—</td>
+              </tr>
+              <tr>
+                <th>Other religion</th>
+                <td id="religionOther">—</td>
+              </tr>
+              <tr>
+                <th>No religion</th>
+                <td id="religionNone">—</td>
+              </tr>
+              <tr>
+                <th>Religion not stated</th>
+                <td id="religionNotStated">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <aside>
+        <section class="card">
+          <p class="section-label">Selected county</p>
+          <h2 id="countyName">Loading county...</h2>
+          <p class="meta" id="countyMeta">County: —</p>
+
+          <p class="meta" style="margin-top:14px;">
+            This page uses the selected county boundary, Census 2022 demographic data,
+            and listed church locations to create a focused mission profile.
+          </p>
+
+          <div class="stats">
+            <div class="stat">
+              <span class="label">Population</span>
+              <span class="value" id="populationValue">—</span>
+              <span class="small">Census 2022 county total.</span>
+            </div>
+
+            <div class="stat">
+              <span class="label">Churches listed</span>
+              <span class="value" id="churchCountValue">—</span>
+              <span class="small">Church points listed in the Glúnta dataset.</span>
+            </div>
+
+            <div class="stat">
+              <span class="label">LEAs</span>
+              <span class="value" id="leaCountValue">—</span>
+              <span class="small">Local Electoral Areas in this county.</span>
+            </div>
+
+            <div class="stat">
+              <span class="label">People per church</span>
+              <span class="value" id="peoplePerChurchValue">—</span>
+              <span class="small">Approximate population divided by listed churches.</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <p class="section-label">Church presence</p>
+          <h2>Listed churches</h2>
+          <ul id="churchList" class="church-list">
+            <li class="loading">Church list will appear here.</li>
+          </ul>
+        </section>
+
+        <section class="card">
+          <p class="section-label">Mission reading</p>
+          <h2>Missiological observations</h2>
+
+          <div class="note">
+            <h3>Begin with local listening</h3>
+            <p>
+              This profile is intended to support prayer, partnership, and research.
+              It should not be read as a mechanical church planting recommendation.
+            </p>
+
+            <h3>Read the data alongside people</h3>
+            <p>
+              Demographic data can show patterns, but it cannot tell the full story
+              of relationships, history, local trust, existing witness, or spiritual openness.
+            </p>
+          </div>
+        </section>
+      </aside>
+    </section>
+
+    <section class="card">
+      <p class="section-label">Full demographic profile</p>
+      <h2>County profile statistics</h2>
+      <div id="fullStats" class="loading">
+        Loading county demographic data...
+      </div>
+    </section>
+
+    <footer>
+      <strong>Sources and method:</strong>
+      This profile draws from Census 2022 county boundaries, Local Electoral Area boundaries,
+      processed demographic tables, and the Glúnta church points dataset. Figures should be
+      treated as planning and research aids, not as final local knowledge.
+    </footer>
   </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <script src="town-profile.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const requestedCountySlug = params.get("county") || params.get("code");
+
+    let map;
+    let selectedCountyLayer;
+
+    /*
+      IMPORTANT:
+      If your actual filenames differ, change these three paths only.
+      These are the most likely names based on your existing map structure.
+    */
+    const COUNTY_GEOJSON_URLS = [
+      "data/counties.geojson",
+      "data/county-boundaries.geojson",
+      "counties.geojson",
+      "county-boundaries.geojson"
+    ];
+
+    const LEA_GEOJSON_URLS = [
+      "data/leas.geojson",
+      "data/lea-boundaries.geojson",
+      "leas.geojson",
+      "lea-boundaries.geojson"
+    ];
+
+    const CHURCH_CSV_URLS = [
+      "data/churches.csv",
+      "data/churches-points.csv",
+      "churches.csv",
+      "churches-points.csv"
+    ];
+
+    function slugifyCountyName(name) {
+      if (!name) return "";
+
+      return String(name)
+        .toLowerCase()
+        .replace(/&/g, "and")
+        .replace(/county council/g, "")
+        .replace(/city and county council/g, "")
+        .replace(/city council/g, "city")
+        .replace(/county/g, "")
+        .replace(/council/g, "")
+        .replace(/local authority/g, "")
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/[^\w-]/g, "");
+    }
+
+    function normaliseCountyName(name) {
+      return slugifyCountyName(name);
+    }
+
+    function formatNumber(value) {
+      const number = Number(String(value).replace(/,/g, ""));
+      if (!Number.isFinite(number)) return "—";
+      return number.toLocaleString("en-IE");
+    }
+
+    function toNumber(value) {
+      const number = Number(String(value ?? "").replace(/,/g, ""));
+      return Number.isFinite(number) ? number : null;
+    }
+
+    function formatPercent(value, total) {
+      const number = toNumber(value);
+      const denominator = toNumber(total);
+
+      if (number === null || denominator === null || denominator === 0) {
+        return "—";
+      }
+
+      return `${formatNumber(number)} (${((number / denominator) * 100).toFixed(1)}%)`;
+    }
+
+    function getProp(props, names, fallback = null) {
+      for (const name of names) {
+        if (
+          Object.prototype.hasOwnProperty.call(props, name) &&
+          props[name] !== undefined &&
+          props[name] !== null &&
+          props[name] !== ""
+        ) {
+          return props[name];
+        }
+      }
+
+      return fallback;
+    }
+
+    function getCountyName(props) {
+      return getProp(props, [
+        "name",
+        "Name",
+        "NAME",
+        "County",
+        "COUNTY",
+        "county",
+        "COUNTYNAME",
+        "COUNTY_NAME",
+        "ENGLISH",
+        "English",
+        "LOCAL_AUTHORITY",
+        "Local Authority",
+        "LocalAuthority",
+        "LA_NAME",
+        "LGDNAME"
+      ], "Unknown county");
+    }
+
+    function getCountyPopulation(props) {
+      return getProp(props, [
+        "population",
+        "Population",
+        "POPULATION",
+        "pop_2022",
+        "POP_2022",
+        "Pop_2022",
+        "TOTAL",
+        "Total",
+        "total",
+        "total_population",
+        "Total population",
+        "Population, 2022",
+        "T1_1AGETT"
+      ], null);
+    }
+
+    async function fetchFirstAvailableText(urls) {
+      const errors = [];
+
+      for (const url of urls) {
+        try {
+          const response = await fetch(url);
+          if (response.ok) {
+            return {
+              url,
+              text: await response.text()
+            };
+          }
+
+          errors.push(`${url}: ${response.status}`);
+        } catch (error) {
+          errors.push(`${url}: ${error.message}`);
+        }
+      }
+
+      throw new Error(`Could not load any of these files: ${urls.join(", ")}. Tried: ${errors.join(" | ")}`);
+    }
+
+    async function fetchFirstAvailableJson(urls) {
+      const result = await fetchFirstAvailableText(urls);
+      return {
+        url: result.url,
+        data: JSON.parse(result.text)
+      };
+    }
+
+    async function fetchFirstAvailableCsv(urls) {
+      const result = await fetchFirstAvailableText(urls);
+      return {
+        url: result.url,
+        data: parseCsv(result.text)
+      };
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
+      if (!lines.length) return rows;
+
+      const headers = splitCsvLine(lines[0]).map(header => header.trim());
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = splitCsvLine(lines[i]);
+        const row = {};
+
+        headers.forEach((header, index) => {
+          row[header] = values[index] ? values[index].trim() : "";
+        });
+
+        rows.push(row);
+      }
+
+      return rows;
+    }
+
+    function splitCsvLine(line) {
+      const values = [];
+      let current = "";
+      let insideQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        const next = line[i + 1];
+
+        if (char === '"' && insideQuotes && next === '"') {
+          current += '"';
+          i++;
+        } else if (char === '"') {
+          insideQuotes = !insideQuotes;
+        } else if (char === "," && !insideQuotes) {
+          values.push(current);
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+
+      values.push(current);
+      return values;
+    }
+
+    function initialiseMap() {
+      map = L.map("map", {
+        scrollWheelZoom: false
+      }).setView([53.3, -8.2], 7);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors"
+      }).addTo(map);
+    }
+
+    function drawCounty(feature) {
+      selectedCountyLayer = L.geoJSON(feature, {
+        style: {
+          color: "#111827",
+          weight: 3,
+          fillColor: "#0ea5b7",
+          fillOpacity: 0.35
+        }
+      }).addTo(map);
+
+      map.fitBounds(selectedCountyLayer.getBounds(), {
+        padding: [20, 20]
+      });
+    }
+
+    function getChurchCounty(church) {
+      return getProp(church, [
+        "County",
+        "county",
+        "COUNTY",
+        "County Name",
+        "Local Authority",
+        "LOCAL_AUTHORITY"
+      ], "");
+    }
+
+    function getChurchName(church) {
+      return getProp(church, [
+        "Church Name",
+        "church_name",
+        "Name",
+        "name"
+      ], "Unnamed church");
+    }
+
+    function getChurchTown(church) {
+      return getProp(church, [
+        "City",
+        "Town",
+        "town",
+        "Locality",
+        "Settlement"
+      ], "");
+    }
+
+    function getChurchWebsite(church) {
+      return getProp(church, [
+        "Website",
+        "Website (if available)",
+        "website",
+        "URL",
+        "url"
+      ], "");
+    }
+
+    function getChurchDenomination(church) {
+      return getProp(church, [
+        "Denomination",
+        "denomination",
+        "Tradition",
+        "tradition"
+      ], "");
+    }
+
+    function renderChurches(churches) {
+      const list = document.getElementById("churchList");
+
+      if (!churches.length) {
+        list.innerHTML = "<li>No listed churches found for this county in the current Glúnta dataset.</li>";
+        return;
+      }
+
+      const sorted = [...churches].sort((a, b) => {
+        return getChurchName(a).localeCompare(getChurchName(b));
+      });
+
+      list.innerHTML = sorted.map(church => {
+        const name = getChurchName(church);
+        const town = getChurchTown(church);
+        const denomination = getChurchDenomination(church);
+        const website = getChurchWebsite(church);
+
+        const detailParts = [town, denomination].filter(Boolean).join(" · ");
+        const detailHtml = detailParts ? `<br><span class="meta">${escapeHtml(detailParts)}</span>` : "";
+
+        if (website) {
+          return `<li><a href="${escapeAttribute(website)}" target="_blank" rel="noopener">${escapeHtml(name)}</a>${detailHtml}</li>`;
+        }
+
+        return `<li>${escapeHtml(name)}${detailHtml}</li>`;
+      }).join("");
+    }
+
+    function renderBasicProfile(feature, churches, leaCount) {
+      const props = feature.properties;
+      const countyName = getCountyName(props);
+      const population = toNumber(getCountyPopulation(props));
+
+      const churchCount = churches.length;
+      const peoplePerChurch =
+        churchCount > 0 && population !== null
+          ? Math.round(population / churchCount)
+          : null;
+
+      document.title = `${countyName} Mission Profile | Glúnta`;
+
+      document.getElementById("profileTitle").textContent = countyName;
+      document.getElementById("countyName").textContent = countyName;
+      document.getElementById("countyMeta").textContent = `County: ${countyName}`;
+
+      document.getElementById("populationValue").textContent = formatNumber(population);
+      document.getElementById("churchCountValue").textContent = formatNumber(churchCount);
+      document.getElementById("leaCountValue").textContent = formatNumber(leaCount);
+      document.getElementById("peoplePerChurchValue").textContent =
+        peoplePerChurch ? formatNumber(peoplePerChurch) : "—";
+
+      renderChurches(churches);
+    }
+
+    function renderDemographicFields(props) {
+      const total = getCountyPopulation(props);
+
+      document.getElementById("ageChildren").textContent = formatPercent(getProp(props, [
+        "age_0_14",
+        "Age 0-14",
+        "Children 0-14",
+        "children_0_14",
+        "T1_1AGE0T",
+        "T1_1AGE1T",
+        "T1_1AGE2T"
+      ], null), total);
+
+      document.getElementById("ageYoungAdults").textContent = formatPercent(getProp(props, [
+        "age_15_34",
+        "Age 15-34",
+        "Young adults 15-34",
+        "young_adults_15_34"
+      ], null), total);
+
+      document.getElementById("ageAdults").textContent = formatPercent(getProp(props, [
+        "age_35_64",
+        "Age 35-64",
+        "Adults 35-64",
+        "adults_35_64"
+      ], null), total);
+
+      document.getElementById("ageOlderAdults").textContent = formatPercent(getProp(props, [
+        "age_65_plus",
+        "Age 65+",
+        "Older adults 65+",
+        "older_adults_65_plus"
+      ], null), total);
+
+      document.getElementById("bornOutsideIreland").textContent = formatPercent(getProp(props, [
+        "born_outside_ireland",
+        "Born outside Ireland",
+        "BORN_OUTSIDE_IRELAND"
+      ], null), total);
+
+      document.getElementById("nonIrishCitizenship").textContent = formatPercent(getProp(props, [
+        "non_irish_citizenship",
+        "Non-Irish citizenship",
+        "NON_IRISH_CITIZENSHIP"
+      ], null), total);
+
+      document.getElementById("foreignLanguageSpeakers").textContent = formatPercent(getProp(props, [
+        "foreign_language_speakers",
+        "Foreign-language speakers",
+        "FOREIGN_LANGUAGE_SPEAKERS"
+      ], null), total);
+
+      document.getElementById("otherWhiteBackground").textContent = formatPercent(getProp(props, [
+        "other_white_background",
+        "Other White background",
+        "OTHER_WHITE_BACKGROUND"
+      ], null), total);
+
+      document.getElementById("religionCatholic").textContent = formatPercent(getProp(props, [
+        "religion_catholic",
+        "Catholic",
+        "RELIGION_CATHOLIC"
+      ], null), total);
+
+      document.getElementById("religionOther").textContent = formatPercent(getProp(props, [
+        "religion_other",
+        "Other religion",
+        "RELIGION_OTHER"
+      ], null), total);
+
+      document.getElementById("religionNone").textContent = formatPercent(getProp(props, [
+        "religion_none",
+        "No religion",
+        "RELIGION_NONE"
+      ], null), total);
+
+      document.getElementById("religionNotStated").textContent = formatPercent(getProp(props, [
+        "religion_not_stated",
+        "Religion not stated",
+        "RELIGION_NOT_STATED"
+      ], null), total);
+    }
+
+    function renderFullStats(props) {
+      const excluded = new Set([
+        "geometry",
+        "shape",
+        "Shape__Area",
+        "Shape__Length"
+      ]);
+
+      const rows = Object.entries(props)
+        .filter(([key, value]) => {
+          return !excluded.has(key) && value !== null && value !== undefined && value !== "";
+        })
+        .map(([key, value]) => {
+          const renderedValue =
+            typeof value === "number" || /^[0-9,]+(\.[0-9]+)?$/.test(String(value))
+              ? formatNumber(value)
+              : escapeHtml(String(value));
+
+          return `
+            <tr>
+              <th>${escapeHtml(key)}</th>
+              <td>${renderedValue}</td>
+            </tr>
+          `;
+        })
+        .join("");
+
+      document.getElementById("fullStats").innerHTML = `
+        <table class="profile-table">
+          <tbody>
+            ${rows || "<tr><td>No additional county statistics available.</td></tr>"}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function countLeasInCounty(leas, countySlug) {
+      if (!leas || !Array.isArray(leas.features)) return 0;
+
+      return leas.features.filter(feature => {
+        const props = feature.properties || {};
+        const leaCountyName = getProp(props, [
+          "County",
+          "COUNTY",
+          "county",
+          "COUNTYNAME",
+          "COUNTY_NAME",
+          "LOCAL_AUTHORITY",
+          "Local Authority",
+          "LA_NAME"
+        ], "");
+
+        return normaliseCountyName(leaCountyName) === countySlug;
+      }).length;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function escapeAttribute(value) {
+      return escapeHtml(value);
+    }
+
+    function showError(message) {
+      document.getElementById("profileTitle").textContent = "County profile not found";
+      document.getElementById("countyName").textContent = "County profile not found";
+      document.getElementById("countyMeta").innerHTML = `<span class="error">${escapeHtml(message)}</span>`;
+      document.getElementById("fullStats").innerHTML = `<div class="error">${escapeHtml(message)}</div>`;
+    }
+
+    async function loadCountyProfile() {
+      if (!requestedCountySlug) {
+        showError("No county was supplied in the URL. Use county-profile.html?county=galway");
+        return;
+      }
+
+      initialiseMap();
+
+      const countyResult = await fetchFirstAvailableJson(COUNTY_GEOJSON_URLS);
+      const counties = countyResult.data;
+
+      const churchesResult = await fetchFirstAvailableCsv(CHURCH_CSV_URLS).catch(() => ({
+        url: null,
+        data: []
+      }));
+
+      const leaResult = await fetchFirstAvailableJson(LEA_GEOJSON_URLS).catch(() => ({
+        url: null,
+        data: { features: [] }
+      }));
+
+      const requestedSlug = slugifyCountyName(requestedCountySlug);
+
+      const countyFeature = counties.features.find(feature => {
+        const countyName = getCountyName(feature.properties || {});
+        return slugifyCountyName(countyName) === requestedSlug;
+      });
+
+      if (!countyFeature) {
+        const available = counties.features
+          .map(feature => getCountyName(feature.properties || {}))
+          .filter(Boolean)
+          .slice(0, 10)
+          .join(", ");
+
+        showError(`No county matched "${requestedCountySlug}". First available county names include: ${available}`);
+        return;
+      }
+
+      const countyName = getCountyName(countyFeature.properties || {});
+      const countySlug = slugifyCountyName(countyName);
+
+      const churchesInCounty = churchesResult.data.filter(church => {
+        return normaliseCountyName(getChurchCounty(church)) === countySlug;
+      });
+
+      const leaCount = countLeasInCounty(leaResult.data, countySlug);
+
+      drawCounty(countyFeature);
+      renderBasicProfile(countyFeature, churchesInCounty, leaCount);
+      renderDemographicFields(countyFeature.properties || {});
+      renderFullStats(countyFeature.properties || {});
+    }
+
+    loadCountyProfile().catch(error => {
+      console.error(error);
+      showError(error.message);
+    });
+  </script>
 </body>
 </html>
