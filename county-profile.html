@@ -3,61 +3,54 @@
 <head>
   <meta charset="utf-8" />
   <title>County Mission Profile | Glúnta</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
   <style>
     :root {
+      --bg: #eef5f4;
+      --card: #ffffff;
+      --ink: #17202a;
+      --muted: #5f6b7a;
+      --line: #d7e4e1;
       --brand: #0f766e;
-      --brand-dark: #0f4f49;
-      --border: #d8dee4;
-      --text: #172026;
-      --muted: #5f6b76;
-      --bg: #f6f8fa;
-      --card-bg: #ffffff;
-      --soft: #f3f7f7;
+      --brand-dark: #115e59;
+      --soft: #edf8f5;
       --warning-bg: #fff7ed;
       --warning-border: #fed7aa;
-      --warning-text: #7c2d12;
+      --warning-ink: #7c2d12;
     }
 
-    html,
+    * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      padding: 0;
-      min-height: 100%;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: var(--text);
       background: var(--bg);
-    }
-
-    body {
+      color: var(--ink);
       line-height: 1.5;
     }
 
-    a {
-      color: var(--brand-dark);
-      font-weight: 700;
-    }
-
     .page {
-      width: min(1160px, calc(100% - 32px));
+      max-width: 1180px;
       margin: 0 auto;
-      padding: 24px 0 56px 0;
+      padding: 28px 18px 60px;
     }
 
     .topbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
+      gap: 16px;
+      margin-bottom: 18px;
     }
 
     .brand {
-      font-size: 13px;
+      font-size: 0.95rem;
+      font-weight: 850;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      letter-spacing: 0.09em;
-      font-weight: 800;
       color: var(--brand-dark);
     }
 
@@ -68,356 +61,227 @@
     }
 
     .button {
-      appearance: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
+      display: inline-block;
       border: 1px solid var(--brand);
       background: var(--brand);
-      color: white;
-      border-radius: 12px;
-      padding: 10px 13px;
+      color: #fff;
+      padding: 9px 14px;
+      border-radius: 999px;
       text-decoration: none;
-      font-size: 14px;
-      font-weight: 800;
+      font-weight: 750;
+      font-size: 0.92rem;
       cursor: pointer;
-      font-family: inherit;
-    }
-
-    .button:hover {
-      background: var(--brand-dark);
-      border-color: var(--brand-dark);
     }
 
     .button.secondary {
-      background: white;
+      background: #fff;
       color: var(--brand-dark);
-    }
-
-    .button.secondary:hover {
-      background: var(--soft);
-      color: var(--brand-dark);
-    }
-
-    .hero,
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      box-shadow: 0 8px 26px rgba(0, 0, 0, 0.06);
     }
 
     .hero {
-      padding: 26px;
-      margin-bottom: 18px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 28px rgba(15, 23, 42, 0.06);
     }
 
     .eyebrow {
-      margin: 0 0 7px 0;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-weight: 800;
+      margin: 0 0 8px;
       color: var(--brand-dark);
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.78rem;
     }
 
     h1 {
       margin: 0;
-      font-size: clamp(34px, 4vw, 52px);
-      line-height: 1.04;
+      font-size: clamp(2rem, 5vw, 3.25rem);
+      line-height: 1.05;
       letter-spacing: -0.04em;
     }
 
-    h2 {
-      margin: 0 0 12px 0;
-      font-size: 22px;
-      line-height: 1.2;
-    }
-
-    h3 {
-      margin: 14px 0 6px 0;
-      font-size: 16px;
-    }
-
     .subtitle {
-      max-width: 780px;
-      margin: 14px 0 0 0;
+      max-width: 820px;
+      margin: 16px 0 0;
       color: var(--muted);
-      font-size: 16px;
+      font-size: 1.08rem;
     }
 
-    .grid {
+    .layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
-      gap: 18px;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 20px;
       align-items: start;
     }
 
     .card {
-      padding: 20px;
-      margin-bottom: 18px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.045);
+    }
+
+    .card h2 {
+      margin: 0 0 14px;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+    }
+
+    .card h3 {
+      margin: 18px 0 8px;
+      font-size: 1rem;
     }
 
     .section-label {
-      margin: 0 0 10px 0;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-weight: 800;
+      margin: 0 0 12px;
       color: var(--brand-dark);
+      font-size: 0.76rem;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
 
     .meta {
-      margin: 0;
       color: var(--muted);
-      font-size: 14px;
+      margin: 0;
     }
 
     #map {
       width: 100%;
-      height: 380px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
+      height: 360px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
       overflow: hidden;
-      background: #eef2f3;
+      background: #dcebea;
     }
 
     .stats {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 14px;
+      gap: 14px;
+      margin-top: 18px;
     }
 
     .stat {
-      padding: 14px;
-      border: 1px solid rgba(15, 118, 110, 0.28);
-      border-radius: 14px;
-      background: #f0fdfa;
+      background: var(--soft);
+      border: 1px solid #cce4df;
+      border-radius: 16px;
+      padding: 16px;
     }
 
-    .stat-label {
+    .stat .label {
       display: block;
-      margin-bottom: 4px;
-      color: var(--brand-dark);
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .stat-value {
-      display: block;
-      font-size: 28px;
-      line-height: 1.1;
-      font-weight: 850;
-      color: var(--brand-dark);
-    }
-
-    .stat-note {
-      display: block;
-      margin-top: 6px;
       color: var(--muted);
-      font-size: 12px;
-      line-height: 1.35;
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+
+    .stat .value {
+      display: block;
+      font-size: 1.65rem;
+      line-height: 1.1;
+      font-weight: 900;
+      color: var(--brand-dark);
+    }
+
+    .stat .small {
+      display: block;
+      color: var(--muted);
+      font-size: 0.83rem;
+      margin-top: 6px;
     }
 
     .profile-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 14px;
+      font-size: 0.95rem;
     }
 
     .profile-table th,
     .profile-table td {
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid var(--line);
       padding: 10px 0;
       text-align: left;
       vertical-align: top;
     }
 
     .profile-table th {
-      width: 55%;
-      padding-right: 14px;
       color: var(--muted);
       font-weight: 750;
+      width: 55%;
+      padding-right: 12px;
     }
 
-    .profile-table td {
-      font-weight: 650;
-    }
-
-    .church-list {
+    .church-list,
+    .unreached-list,
+    .prayer-list {
       margin: 0;
       padding-left: 20px;
     }
 
-    .church-list li {
-      margin-bottom: 8px;
-    }
-
-    .church-detail {
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 400;
-    }
-
-    .unreached-list {
-      margin: 0;
-      padding-left: 20px;
-    }
-
-    .unreached-list li {
+    .church-list li,
+    .unreached-list li,
+    .prayer-list li {
       margin-bottom: 10px;
     }
 
-    .unreached-town-name {
+    .church-list a,
+    .unreached-list a {
+      color: var(--brand-dark);
       font-weight: 800;
-    }
-
-    .prayer-prompts {
-      margin: 14px 0 0 0;
-      padding: 13px 14px;
-      border-radius: 14px;
-      background: #fff7ed;
-      border: 1px solid #fed7aa;
-      color: #7c2d12;
-      font-size: 13px;
-      line-height: 1.45;
-    }
-
-    .prayer-prompts p {
-      margin: 0 0 8px 0;
-      font-weight: 800;
-    }
-
-    .prayer-prompts ul {
-      margin: 0;
-      padding-left: 18px;
-    }
-
-    .prayer-prompts li {
-      margin-bottom: 5px;
-    }
-
-    .prayer-prompts-standalone {
-      margin-top: 0;
     }
 
     .note {
-      padding: 15px;
-      border-radius: 14px;
       background: var(--warning-bg);
       border: 1px solid var(--warning-border);
-      color: var(--warning-text);
+      border-radius: 16px;
+      padding: 16px;
+      color: var(--warning-ink);
     }
 
-    .note p {
-      margin: 0 0 10px 0;
-    }
+    .loading { color: var(--muted); }
 
-    .note p:last-child {
-      margin-bottom: 0;
-    }
-
-    .loading,
-    .empty {
-      color: var(--muted);
-    }
-
-    .error-box {
-      padding: 15px;
-      border-radius: 14px;
+    .error {
       background: #fef2f2;
       border: 1px solid #fecaca;
       color: #7f1d1d;
-      font-size: 14px;
-    }
-
-    .full-stats-wrap {
-      max-height: 520px;
-      overflow: auto;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 0 14px;
-      background: #fff;
+      padding: 16px;
+      border-radius: 16px;
     }
 
     footer {
-      margin-top: 20px;
-      padding-top: 16px;
-      border-top: 1px solid var(--border);
       color: var(--muted);
-      font-size: 13px;
+      font-size: 0.88rem;
+      margin-top: 28px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
     }
 
-    @media (max-width: 900px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media (max-width: 640px) {
-      .page {
-        width: min(100% - 20px, 1160px);
-        padding-top: 12px;
-      }
-
-      .topbar {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-
-      .hero,
-      .card {
-        border-radius: 14px;
-      }
-
-      .hero,
-      .card {
-        padding: 16px;
-      }
-
-      .stats {
-        grid-template-columns: 1fr;
-      }
-
-      #map {
-        height: 300px;
-      }
+    @media (max-width: 880px) {
+      .layout { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: 1fr; }
+      .topbar { align-items: flex-start; flex-direction: column; }
     }
 
     @media print {
-      body {
-        background: white;
-      }
-
-      .page {
-        width: 100%;
-        padding: 0;
-      }
-
-      .actions {
-        display: none;
-      }
-
-      .hero,
-      .card {
-        box-shadow: none;
-        break-inside: avoid;
-      }
-
-      #map {
-        height: 300px;
-      }
-
-      .full-stats-wrap {
-        max-height: none;
-        overflow: visible;
-      }
+      body { background: #fff; }
+      .page { max-width: none; padding: 0; }
+      .actions { display: none; }
+      .hero, .card { box-shadow: none; break-inside: avoid; }
+      #map { height: 300px; }
+      a { color: inherit; text-decoration: none; }
     }
   </style>
 </head>
+
 <body>
   <main class="page">
     <div class="topbar">
@@ -438,7 +302,7 @@
       </p>
     </section>
 
-    <section class="grid">
+    <section class="layout">
       <div>
         <section class="card">
           <p class="section-label">Interactive county context map</p>
@@ -487,10 +351,10 @@
         <section class="card">
           <p class="section-label">Prayer focus</p>
           <h2>Unreached towns in this county</h2>
-          <p class="meta">
+          <p class="meta" style="margin-bottom: 16px;">
             These towns are currently marked in the Glúnta research dataset as having no listed church inside the town boundary or requiring priority research.
           </p>
-          <ul id="unreachedTownList" class="unreached-list" style="margin-top:14px;">
+          <ul id="unreachedTownList" class="unreached-list">
             <li class="loading">Unreached towns will appear here.</li>
           </ul>
         </section>
@@ -501,31 +365,35 @@
           <p class="section-label">Selected county</p>
           <h2 id="countyName">Loading county...</h2>
           <p class="meta" id="countyMeta">County: —</p>
-          <p class="meta" style="margin-top:12px;">
+
+          <p class="meta" style="margin-top:14px;">
             This page uses the selected county boundary, Census 2022 demographic data,
             and listed church locations to create a focused mission profile.
           </p>
 
           <div class="stats">
             <div class="stat">
-              <span class="stat-label">Population</span>
-              <span class="stat-value" id="populationValue">—</span>
-              <span class="stat-note">Census 2022 county total.</span>
+              <span class="label">Population</span>
+              <span class="value" id="populationValue">—</span>
+              <span class="small">Census 2022 county total.</span>
             </div>
+
             <div class="stat">
-              <span class="stat-label">Churches listed</span>
-              <span class="stat-value" id="churchCountValue">—</span>
-              <span class="stat-note">Church points listed in the Glúnta dataset.</span>
+              <span class="label">Churches listed</span>
+              <span class="value" id="churchCountValue">—</span>
+              <span class="small">Church points spatially counted inside this council boundary.</span>
             </div>
+
             <div class="stat">
-              <span class="stat-label">LEAs</span>
-              <span class="stat-value" id="leaCountValue">—</span>
-              <span class="stat-note">Local Electoral Areas matched to this county.</span>
+              <span class="label">LEAs</span>
+              <span class="value" id="leaCountValue">—</span>
+              <span class="small">Local Electoral Areas matched to this county.</span>
             </div>
+
             <div class="stat">
-              <span class="stat-label">People per church</span>
-              <span class="stat-value" id="peoplePerChurchValue">—</span>
-              <span class="stat-note">Population divided by listed churches.</span>
+              <span class="label">People per church</span>
+              <span class="value" id="peoplePerChurchValue">—</span>
+              <span class="small">Population divided by listed churches.</span>
             </div>
           </div>
         </section>
@@ -541,8 +409,8 @@
         <section class="card">
           <p class="section-label">Prayer prompts</p>
           <h2>Pray for this county</h2>
-          <div class="prayer-prompts prayer-prompts-standalone">
-            <ul>
+          <div class="note">
+            <ul class="prayer-list">
               <li>Pray for faithful gospel witness in the unreached towns listed in this county.</li>
               <li>Pray for existing believers, hidden relationships, and future local leaders.</li>
               <li>Pray for churches already serving in the county to be encouraged, strengthened, and fruitful.</li>
@@ -550,103 +418,74 @@
             </ul>
           </div>
         </section>
-
       </aside>
     </section>
-
 
     <footer>
       <strong>Sources and method:</strong>
       This profile draws from Census 2022 county boundaries, Local Electoral Area boundaries,
-      processed demographic data, and the Glúnta church points dataset. Figures should be
-      treated as planning and research aids, not as final local knowledge.
+      processed demographic data, the Glúnta church points dataset, and the Glúnta unreached towns dataset.
+      Church counts and unreached town lists are matched spatially to the selected county / local authority boundary using latitude and longitude where available.
     </footer>
   </main>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
   <script>
-    if (typeof L === "undefined") {
-      throw new Error("Leaflet did not load.");
-    }
-
     const params = new URLSearchParams(window.location.search);
-    const requestedCounty = params.get("county") || params.get("code") || "";
-
-    const COUNTY_GEOJSON_URL = "county-demographics-map.geojson";
-    const LEA_GEOJSON_URL = "lea-demographics-map.geojson";
-    const CHURCHES_CSV_URL = "churches-points.csv";
-    const UNREACHED_TOWNS_CSV_URL = "unreached-towns.csv";
-    const URBAN_AREAS_GEOJSON_URL = "urban-areas-boundaries.geojson";
+    const requestedCountySlug = params.get("county") || params.get("code");
 
     let map;
 
-    function normaliseName(value) {
-      return String(value || "")
+    const COUNTY_GEOJSON_URLS = [
+      "county-demographics-map.geojson",
+      "data/county-demographics-map.geojson",
+      "data/counties.geojson",
+      "counties.geojson"
+    ];
+
+    const LEA_GEOJSON_URLS = [
+      "lea-demographics-map.geojson",
+      "data/lea-demographics-map.geojson",
+      "data/leas.geojson",
+      "leas.geojson"
+    ];
+
+    const CHURCH_CSV_URLS = [
+      "churches-points.csv",
+      "data/churches-points.csv",
+      "churches.csv",
+      "data/churches.csv"
+    ];
+
+    const UNREACHED_TOWNS_CSV_URLS = [
+      "unreached-towns.csv",
+      "data/unreached-towns.csv"
+    ];
+
+    const URBAN_AREAS_GEOJSON_URLS = [
+      "urban-areas-boundaries.geojson",
+      "data/urban-areas-boundaries.geojson"
+    ];
+
+    function slugifyName(name) {
+      if (!name) return "";
+
+      return String(name)
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/&/g, "and")
-        .replace(/city and county council/g, "")
         .replace(/county council/g, "")
+        .replace(/city and county council/g, "")
         .replace(/city council/g, "city")
         .replace(/county/g, "")
         .replace(/council/g, "")
         .replace(/local authority/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
-    }
-
-    function slugifyCountyName(value) {
-      return normaliseName(value).replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-    }
-
-    function titleCaseCounty(value) {
-      const cleaned = String(value || "").trim();
-      if (!cleaned) return "Unknown county";
-      if (cleaned === cleaned.toUpperCase()) {
-        return cleaned.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
-      }
-      return cleaned;
-    }
-
-    function getProp(props, names, fallback = "") {
-      if (!props) return fallback;
-      for (const name of names) {
-        if (Object.prototype.hasOwnProperty.call(props, name)) {
-          const value = props[name];
-          if (value !== undefined && value !== null && value !== "") return value;
-        }
-      }
-      return fallback;
-    }
-
-    function getCountyDisplayName(props) {
-      const name = getProp(props, [
-        "name", "Name", "NAME", "area_name", "AREA_NAME", "local_authority", "LOCAL_AUTHORITY",
-        "Local Authority", "county_name", "COUNTY_NAME", "COUNTYNAME"
-      ], "");
-      if (name) return titleCaseCounty(name);
-
-      const county = getProp(props, ["county", "County", "COUNTY"], "");
-      return county ? titleCaseCounty(county) + " County" : "Unknown county";
-    }
-
-    function getCountyShortName(props) {
-      const county = getProp(props, ["county", "County", "COUNTY"], "");
-      if (county) return titleCaseCounty(county);
-      return getCountyDisplayName(props)
-        .replace(/ County Council$/i, "")
-        .replace(/ City Council$/i, " City")
-        .replace(/ County$/i, "");
-    }
-
-    function getPopulation(props) {
-      return getProp(props, ["population_2022", "Population, 2022", "population", "Population", "POPULATION", "total_population", "TOTAL"], "");
-    }
-
-    function toNumber(value) {
-      const number = Number(String(value ?? "").replace(/,/g, ""));
-      return Number.isFinite(number) ? number : null;
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/[^\w-]/g, "");
     }
 
     function formatNumber(value) {
@@ -655,36 +494,426 @@
       return number.toLocaleString("en-IE");
     }
 
-    function formatPercentFromCount(count, total) {
-      const countNumber = toNumber(count);
-      const totalNumber = toNumber(total);
-      if (countNumber === null || totalNumber === null || totalNumber === 0) return "—";
-      return `${formatNumber(countNumber)} (${((countNumber / totalNumber) * 100).toFixed(1)}%)`;
+    function toNumber(value) {
+      if (value === null || value === undefined || value === "") return null;
+      const number = Number(String(value).replace(/,/g, ""));
+      return Number.isFinite(number) ? number : null;
     }
 
-    function formatCountAndPercent(props, countKey, pctKey) {
-      const count = props[countKey];
-      const pct = props[pctKey];
-      const countNumber = toNumber(count);
-      const pctNumber = toNumber(pct);
+    function formatPercent(value, total) {
+      const number = toNumber(value);
+      const denominator = toNumber(total);
 
-      if (countNumber !== null && pctNumber !== null) {
-        return `${formatNumber(countNumber)} (${pctNumber.toFixed(1)}%)`;
+      if (number === null || denominator === null || denominator === 0) return "—";
+      return `${formatNumber(number)} (${((number / denominator) * 100).toFixed(1)}%)`;
+    }
+
+    function getProp(object, names, fallback = "") {
+      if (!object) return fallback;
+
+      for (const name of names) {
+        if (
+          Object.prototype.hasOwnProperty.call(object, name) &&
+          object[name] !== undefined &&
+          object[name] !== null &&
+          object[name] !== ""
+        ) {
+          return object[name];
+        }
       }
 
-      if (countNumber !== null) {
-        return formatPercentFromCount(countNumber, getPopulation(props));
+      return fallback;
+    }
+
+    function getCountyName(props) {
+      return getProp(props, [
+        "name", "Name", "NAME",
+        "County", "COUNTY", "county",
+        "COUNTYNAME", "COUNTY_NAME",
+        "ENGLISH", "English",
+        "LOCAL_AUTHORITY", "Local Authority", "LocalAuthority",
+        "LA_NAME", "LGDNAME"
+      ], "Unknown county");
+    }
+
+    function getCountyPopulation(props) {
+      return getProp(props, [
+        "population_2022",
+        "Population, 2022",
+        "population", "Population", "POPULATION",
+        "pop_2022", "POP_2022", "Pop_2022",
+        "TOTAL", "Total", "total",
+        "total_population", "Total population",
+        "T1_1AGETT"
+      ], null);
+    }
+
+    async function fetchFirstAvailableText(urls) {
+      const errors = [];
+
+      for (const url of urls) {
+        try {
+          const response = await fetch(url);
+          if (response.ok) {
+            return { url, text: await response.text() };
+          }
+          errors.push(`${url}: ${response.status}`);
+        } catch (error) {
+          errors.push(`${url}: ${error.message}`);
+        }
       }
 
-      if (pctNumber !== null) {
-        return `${pctNumber.toFixed(1)}%`;
+      throw new Error(`Could not load any of these files: ${urls.join(", ")}. Tried: ${errors.join(" | ")}`);
+    }
+
+    async function fetchFirstAvailableJson(urls) {
+      const result = await fetchFirstAvailableText(urls);
+      return { url: result.url, data: JSON.parse(result.text) };
+    }
+
+    async function fetchFirstAvailableCsv(urls) {
+      const result = await fetchFirstAvailableText(urls);
+      return { url: result.url, data: parseCsv(result.text) };
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
+      if (!lines.length) return rows;
+
+      const headers = splitCsvLine(lines[0]).map(header => header.trim());
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = splitCsvLine(lines[i]);
+        const row = {};
+
+        headers.forEach((header, index) => {
+          row[header] = values[index] ? values[index].trim() : "";
+        });
+
+        rows.push(row);
       }
 
-      return "—";
+      return rows;
+    }
+
+    function splitCsvLine(line) {
+      const values = [];
+      let current = "";
+      let insideQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        const next = line[i + 1];
+
+        if (char === '"' && insideQuotes && next === '"') {
+          current += '"';
+          i++;
+        } else if (char === '"') {
+          insideQuotes = !insideQuotes;
+        } else if (char === "," && !insideQuotes) {
+          values.push(current);
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+
+      values.push(current);
+      return values;
+    }
+
+    function initialiseMap() {
+      map = L.map("map", { scrollWheelZoom: false }).setView([53.3, -8.2], 7);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors"
+      }).addTo(map);
+    }
+
+    function drawCounty(feature) {
+      const selectedCountyLayer = L.geoJSON(feature, {
+        style: {
+          color: "#111827",
+          weight: 3,
+          fillColor: "#0ea5b7",
+          fillOpacity: 0.35
+        }
+      }).addTo(map);
+
+      map.fitBounds(selectedCountyLayer.getBounds(), { padding: [20, 20] });
+    }
+
+    function getLatitude(row) {
+      return getProp(row, [
+        "Latitude", "latitude", "LATITUDE",
+        "lat", "Lat", "LAT",
+        "Y", "y"
+      ], "");
+    }
+
+    function getLongitude(row) {
+      return getProp(row, [
+        "Longitude", "longitude", "LONGITUDE",
+        "lng", "Lng", "LNG",
+        "lon", "Lon", "LON",
+        "X", "x"
+      ], "");
+    }
+
+    function rowHasValidCoordinates(row) {
+      const lat = toNumber(getLatitude(row));
+      const lng = toNumber(getLongitude(row));
+
+      return (
+        lat !== null && lng !== null &&
+        lat >= -90 && lat <= 90 &&
+        lng >= -180 && lng <= 180
+      );
+    }
+
+    function rowToPoint(row) {
+      const lat = toNumber(getLatitude(row));
+      const lng = toNumber(getLongitude(row));
+      return turf.point([lng, lat]);
+    }
+
+    function pointRowIsInsideFeature(row, feature) {
+      if (!rowHasValidCoordinates(row)) return false;
+      return turf.booleanPointInPolygon(rowToPoint(row), feature);
+    }
+
+    function getRowsInsideFeature(rows, feature) {
+      return rows.filter(row => pointRowIsInsideFeature(row, feature));
+    }
+
+    function getChurchName(church) {
+      return getProp(church, ["Church Name", "church_name", "Name", "name"], "Unnamed church");
+    }
+
+    function getChurchTown(church) {
+      return getProp(church, ["City", "Town", "town", "Locality", "Settlement"], "");
+    }
+
+    function getChurchWebsite(church) {
+      return getProp(church, ["Website (if available)", "Website", "website", "URL", "url"], "");
+    }
+
+    function getChurchDenomination(church) {
+      return getProp(church, ["Denomination", "denomination", "Tradition", "tradition"], "");
+    }
+
+    function getTownName(town) {
+      return getProp(town, [
+        "Town", "town", "TOWN",
+        "Name", "name", "NAME",
+        "Urban Area", "URBAN_AREA",
+        "Settlement", "settlement"
+      ], "Unnamed town");
+    }
+
+    function getTownPopulation(town) {
+      return getProp(town, [
+        "Population", "population",
+        "Population, 2022", "population_2022",
+        "POPULATION", "POP_2022",
+        "Total population", "total_population"
+      ], null);
+    }
+
+    function getTownStatus(town) {
+      return getProp(town, ["Status", "status", "Priority", "priority", "Classification", "classification"], "");
+    }
+
+    function getNearestChurchText(town) {
+      const nearestName = getProp(town, [
+        "Nearest counted church",
+        "nearest_counted_church",
+        "Nearest Church",
+        "nearest_church"
+      ], "");
+
+      const nearestDistance = getProp(town, [
+        "Nearest counted church distance km",
+        "nearest_counted_church_distance_km",
+        "Distance km",
+        "distance_km"
+      ], "");
+
+      if (nearestName && nearestDistance) return `Nearest counted church: ${nearestName} (${nearestDistance} km)`;
+      if (nearestName) return `Nearest counted church: ${nearestName}`;
+      return "";
+    }
+
+    function getTownCode(town, urbanAreas) {
+      const directCode = getProp(town, [
+        "code", "Code", "TOWN_CODE", "town_code",
+        "URBAN_CODE", "urban_code",
+        "CSO_CODE", "GEOGID", "GUID"
+      ], "");
+
+      if (directCode) return directCode;
+
+      const townSlug = slugifyName(getTownName(town));
+      if (!townSlug || !urbanAreas || !Array.isArray(urbanAreas.features)) return "";
+
+      const match = urbanAreas.features.find(feature => {
+        const props = feature.properties || {};
+        const urbanName = getProp(props, [
+          "Name", "name", "NAME",
+          "Town", "town", "TOWN",
+          "Urban Area", "URBAN_AREA",
+          "BUA_NAME", "SETTLEMENT"
+        ], "");
+
+        return slugifyName(urbanName) === townSlug;
+      });
+
+      if (!match) return "";
+
+      return getProp(match.properties || {}, [
+        "code", "Code", "TOWN_CODE", "town_code",
+        "URBAN_CODE", "urban_code",
+        "CSO_CODE", "GEOGID", "GUID", "OBJECTID"
+      ], "");
+    }
+
+    function renderChurches(churches) {
+      const list = document.getElementById("churchList");
+
+      if (!churches.length) {
+        list.innerHTML = "<li>No listed churches with usable coordinates were found inside this county / local authority boundary.</li>";
+        return;
+      }
+
+      const sorted = [...churches].sort((a, b) => getChurchName(a).localeCompare(getChurchName(b)));
+
+      list.innerHTML = sorted.map(church => {
+        const name = getChurchName(church);
+        const town = getChurchTown(church);
+        const denomination = getChurchDenomination(church);
+        const website = getChurchWebsite(church);
+        const detailParts = [town, denomination].filter(Boolean).join(" · ");
+        const detailHtml = detailParts ? `<br><span class="meta">${escapeHtml(detailParts)}</span>` : "";
+
+        if (website) {
+          return `<li><a href="${escapeAttribute(website)}" target="_blank" rel="noopener">${escapeHtml(name)}</a>${detailHtml}</li>`;
+        }
+
+        return `<li>${escapeHtml(name)}${detailHtml}</li>`;
+      }).join("");
+    }
+
+    function renderUnreachedTowns(towns, urbanAreas) {
+      const list = document.getElementById("unreachedTownList");
+
+      if (!towns.length) {
+        list.innerHTML = "<li>No unreached towns with usable coordinates are currently marked inside this county / local authority boundary.</li>";
+        return;
+      }
+
+      const sorted = [...towns].sort((a, b) => {
+        const aPop = toNumber(getTownPopulation(a)) || 0;
+        const bPop = toNumber(getTownPopulation(b)) || 0;
+        return bPop - aPop;
+      });
+
+      list.innerHTML = sorted.map(town => {
+        const name = getTownName(town);
+        const population = getTownPopulation(town);
+        const status = getTownStatus(town);
+        const nearest = getNearestChurchText(town);
+        const townCode = getTownCode(town, urbanAreas);
+        const details = [];
+
+        if (population) details.push(`Population: ${formatNumber(population)}`);
+        if (status) details.push(status);
+        if (nearest) details.push(nearest);
+
+        const nameHtml = townCode
+          ? `<a href="town-profile.html?code=${encodeURIComponent(townCode)}" target="_blank" rel="noopener">${escapeHtml(name)}</a>`
+          : escapeHtml(name);
+
+        return `
+          <li>
+            ${nameHtml}
+            ${details.length ? `<br><span class="meta">${escapeHtml(details.join(" · "))}</span>` : ""}
+          </li>
+        `;
+      }).join("");
+    }
+
+    function renderBasicProfile(feature, churches, leaCount) {
+      const props = feature.properties || {};
+      const countyName = getCountyName(props);
+      const population = toNumber(getCountyPopulation(props));
+      const churchCount = churches.length;
+      const peoplePerChurch = churchCount > 0 && population !== null ? Math.round(population / churchCount) : null;
+
+      document.title = `${countyName} Mission Profile | Glúnta`;
+      document.getElementById("profileTitle").textContent = countyName;
+      document.getElementById("countyName").textContent = countyName;
+      document.getElementById("countyMeta").textContent = `County / local authority: ${countyName}`;
+      document.getElementById("populationValue").textContent = formatNumber(population);
+      document.getElementById("churchCountValue").textContent = formatNumber(churchCount);
+      document.getElementById("leaCountValue").textContent = formatNumber(leaCount);
+      document.getElementById("peoplePerChurchValue").textContent = peoplePerChurch ? formatNumber(peoplePerChurch) : "—";
+
+      renderChurches(churches);
+    }
+
+    function renderDemographicFields(props) {
+      const total = getCountyPopulation(props);
+
+      document.getElementById("ageChildren").textContent = formatPercent(getProp(props, ["age_0_14", "Age 0-14", "Children 0-14"], null), total);
+      document.getElementById("ageYoungAdults").textContent = formatPercent(getProp(props, ["age_15_34", "Age 15-34", "Young adults 15-34"], null), total);
+      document.getElementById("ageAdults").textContent = formatPercent(getProp(props, ["age_35_64", "Age 35-64", "Adults 35-64"], null), total);
+      document.getElementById("ageOlderAdults").textContent = formatPercent(getProp(props, ["age_65_plus", "Age 65+", "Older adults 65+"], null), total);
+
+      document.getElementById("bornOutsideIreland").textContent = formatPercent(getProp(props, ["born_outside_ireland", "Born outside Ireland"], null), total);
+      document.getElementById("nonIrishCitizenship").textContent = formatPercent(getProp(props, ["non_irish_citizenship", "Non-Irish citizenship"], null), total);
+      document.getElementById("foreignLanguageSpeakers").textContent = formatPercent(getProp(props, ["foreign_language_speakers", "Foreign-language speakers"], null), total);
+      document.getElementById("otherWhiteBackground").textContent = formatPercent(getProp(props, ["ethnicity_other_white", "other_white_background", "Other White background"], null), total);
+
+      document.getElementById("religionCatholic").textContent = formatPercent(getProp(props, ["religion_catholic", "Catholic"], null), total);
+      document.getElementById("religionOther").textContent = formatPercent(getProp(props, ["religion_other", "Other religion"], null), total);
+      document.getElementById("religionNone").textContent = formatPercent(getProp(props, ["religion_none", "No religion"], null), total);
+      document.getElementById("religionNotStated").textContent = formatPercent(getProp(props, ["religion_not_stated", "Religion not stated"], null), total);
+    }
+
+    function countLeasInCounty(leas, selectedCountyFeature, countySlug) {
+      if (!leas || !Array.isArray(leas.features)) return 0;
+
+      let nameMatches = 0;
+      let spatialMatches = 0;
+
+      leas.features.forEach(feature => {
+        const props = feature.properties || {};
+        const leaCountyName = getProp(props, [
+          "County", "COUNTY", "county",
+          "COUNTYNAME", "COUNTY_NAME",
+          "LOCAL_AUTHORITY", "Local Authority", "LA_NAME"
+        ], "");
+
+        if (slugifyName(leaCountyName) === countySlug) {
+          nameMatches++;
+          return;
+        }
+
+        try {
+          const centroid = turf.centroid(feature);
+          if (turf.booleanPointInPolygon(centroid, selectedCountyFeature)) spatialMatches++;
+        } catch (error) {
+          // Ignore broken geometry.
+        }
+      });
+
+      return nameMatches || spatialMatches;
     }
 
     function escapeHtml(value) {
-      return String(value ?? "")
+      return String(value)
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;")
@@ -696,460 +925,69 @@
       return escapeHtml(value);
     }
 
-    async function fetchJson(url) {
-      const response = await fetch(url + "?v=" + Date.now());
-      if (!response.ok) throw new Error(`Could not load ${url}. HTTP status: ${response.status}`);
-      return response.json();
-    }
-
-    async function fetchText(url) {
-      const response = await fetch(url + "?v=" + Date.now());
-      if (!response.ok) throw new Error(`Could not load ${url}. HTTP status: ${response.status}`);
-      return response.text();
-    }
-
-    function parseCsvLine(line) {
-      const result = [];
-      let current = "";
-      let inQuotes = false;
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        const next = line[i + 1];
-        if (char === '"' && inQuotes && next === '"') {
-          current += '"';
-          i++;
-        } else if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === "," && !inQuotes) {
-          result.push(current);
-          current = "";
-        } else {
-          current += char;
-        }
-      }
-      result.push(current);
-      return result;
-    }
-
-    function parseCsv(text) {
-      const lines = text.replace(/\r/g, "").split("\n").filter(line => line.trim().length > 0);
-      if (lines.length < 2) return [];
-      const headers = parseCsvLine(lines[0]).map(header => header.trim());
-      return lines.slice(1).map(line => {
-        const values = parseCsvLine(line);
-        const row = {};
-        headers.forEach((header, index) => {
-          row[header] = values[index] ? values[index].trim() : "";
-        });
-        return row;
-      });
-    }
-
-    function initMap() {
-      map = L.map("map", { scrollWheelZoom: false }).setView([53.35, -8.1], 7);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: "&copy; OpenStreetMap contributors"
-      }).addTo(map);
-    }
-
-    function drawCounty(feature) {
-      const layer = L.geoJSON(feature, {
-        style: {
-          color: "#111827",
-          weight: 3,
-          opacity: 1,
-          fillColor: "#0f766e",
-          fillOpacity: 0.35
-        }
-      }).addTo(map);
-      map.fitBounds(layer.getBounds(), { padding: [24, 24] });
-    }
-
-    function getChurchName(row) {
-      return getProp(row, ["name", "Name", "Church Name", "church_name"], "Unnamed church");
-    }
-
-    function getChurchCounty(row) {
-      return getProp(row, ["county", "County", "COUNTY"], "");
-    }
-
-    function getChurchLea(row) {
-      return getProp(row, ["lea", "LEA", "Lea"], "");
-    }
-
-    function getChurchTown(row) {
-      return getProp(row, ["city", "City", "town", "Town", "Street Address", "address"], "");
-    }
-
-    function getChurchWebsite(row) {
-      return getProp(row, ["website", "Website", "Website (if available)", "url", "URL"], "");
-    }
-
-    function getChurchLat(row) {
-      return toNumber(getProp(row, ["latitude", "Latitude", "lat", "Lat"], ""));
-    }
-
-    function getChurchLng(row) {
-      return toNumber(getProp(row, ["longitude", "Longitude", "lng", "Lng", "lon"], ""));
-    }
-
-    function getUnreachedTownName(row) {
-      return getProp(row, ["Town", "town_name", "town", "Name", "name"], "Unreached town");
-    }
-
-    function getUnreachedTownCounty(row) {
-      return getProp(row, ["County", "county", "COUNTY"], "");
-    }
-
-    function getUnreachedTownPopulation(row) {
-      return toNumber(getProp(row, ["Population", "population_2022", "population", "POPULATION"], ""));
-    }
-
-    function getUnreachedTownStatus(row) {
-      return getProp(row, ["Town opportunity", "status", "Status"], "No listed church / priority research town");
-    }
-
-    function getUnreachedTownNearestChurch(row) {
-      return getProp(row, ["Nearest counted church", "nearest_church", "Nearest church"], "");
-    }
-
-    function getUnreachedTownNearestDistance(row) {
-      return getProp(row, ["Distance to nearest counted church km", "nearest_distance_km", "Distance km"], "");
-    }
-
-    function getUnreachedTownLat(row) {
-      return toNumber(getProp(row, ["Latitude", "latitude", "lat", "Lat"], ""));
-    }
-
-    function getUnreachedTownLng(row) {
-      return toNumber(getProp(row, ["Longitude", "longitude", "lng", "Lng", "lon"], ""));
-    }
-
-    function getAreaName(props) {
-      return getProp(props, [
-        "name", "Name", "NAME", "area_name", "AREA_NAME", "town", "Town", "TOWN",
-        "settlement", "Settlement", "BUA_NAME", "URBAN_AREA_NAME"
-      ], "");
-    }
-
-    function getUrbanAreaCode(props) {
-      return getProp(props, [
-        "code", "Code", "CODE", "GEOGID", "GUID", "CSO_CODE", "URBAN_AREA_CODE",
-        "urban_area_code", "BUA_CODE", "TOWN_CODE"
-      ], "");
-    }
-
-    function getUrbanAreaCounty(props) {
-      return getProp(props, ["county", "County", "COUNTY", "county_name", "COUNTY_NAME"], "");
-    }
-
-    function normaliseTownNameForMatch(value) {
-      return normaliseName(String(value || "").replace(/\([^)]*\)/g, "").replace(/\s+/g, " "));
-    }
-
-    function findUrbanAreaFeatureForUnreachedTown(row, urbanData) {
-      const lat = getUnreachedTownLat(row);
-      const lng = getUnreachedTownLng(row);
-
-      if (urbanData && Array.isArray(urbanData.features) && lat !== null && lng !== null) {
-        const containingFeature = urbanData.features.find(feature => pointInGeometry(lng, lat, feature.geometry));
-        if (containingFeature) return containingFeature;
-      }
-
-      const rowName = normaliseTownNameForMatch(getUnreachedTownName(row));
-      const rowCounty = normaliseName(getUnreachedTownCounty(row));
-
-      if (!rowName || !urbanData || !Array.isArray(urbanData.features)) return null;
-
-      return urbanData.features.find(feature => {
-        const props = feature.properties || {};
-        const featureName = normaliseTownNameForMatch(getAreaName(props));
-        const featureCounty = normaliseName(getUrbanAreaCounty(props));
-        if (featureName !== rowName) return false;
-        if (rowCounty && featureCounty && rowCounty !== featureCounty) return false;
-        return true;
-      }) || null;
-    }
-
-    function getUnreachedTownProfileUrl(row, matchedFeature) {
-      const explicitCode = String(
-        row.urban_area_code || row.URBAN_AREA_CODE || row.urbanAreaCode || row.URBAN_CODE ||
-        row.BUA_CODE || row.CSO_CODE || row.code || row.CODE || ""
-      ).trim();
-
-      const matchedCode = matchedFeature ? getUrbanAreaCode(matchedFeature.properties || {}) : "";
-      const code = explicitCode || matchedCode;
-
-      return code ? `town-profile.html?code=${encodeURIComponent(code)}` : "";
-    }
-
-    function unreachedTownMatchesCounty(row, countyFeature) {
-      const props = countyFeature.properties || {};
-      const countySlug = slugifyCountyName(getCountyShortName(props));
-      const rowCountySlug = slugifyCountyName(getUnreachedTownCounty(row));
-
-      if (rowCountySlug && countySlug && rowCountySlug === countySlug) return true;
-
-      const lat = getUnreachedTownLat(row);
-      const lng = getUnreachedTownLng(row);
-      if (lat === null || lng === null) return false;
-
-      return pointInGeometry(lng, lat, countyFeature.geometry);
-    }
-
-    function pointInCountyByGeometry(row, countyFeature) {
-      const lat = getChurchLat(row);
-      const lng = getChurchLng(row);
-      if (lat === null || lng === null) return false;
-      return pointInGeometry(lng, lat, countyFeature.geometry);
-    }
-
-    function churchMatchesCounty(row, countyFeature) {
-      const props = countyFeature.properties || {};
-      const countySlug = slugifyCountyName(getCountyShortName(props));
-      const churchCountySlug = slugifyCountyName(getChurchCounty(row));
-      if (churchCountySlug && countySlug && churchCountySlug === countySlug) return true;
-      return pointInCountyByGeometry(row, countyFeature);
-    }
-
-    function renderChurches(churches) {
-      const list = document.getElementById("churchList");
-      if (!churches.length) {
-        list.innerHTML = `<li class="empty">No listed churches found for this county in the current Glúnta dataset.</li>`;
-        return;
-      }
-
-      const sorted = [...churches].sort((a, b) => getChurchName(a).localeCompare(getChurchName(b), "en-IE"));
-      list.innerHTML = sorted.map(row => {
-        const name = getChurchName(row);
-        const website = getChurchWebsite(row);
-        const details = [getChurchTown(row), getChurchLea(row)].filter(Boolean).join(" · ");
-        const detailHtml = details ? `<br><span class="church-detail">${escapeHtml(details)}</span>` : "";
-        if (website) {
-          return `<li><a href="${escapeAttribute(website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(name)}</a>${detailHtml}</li>`;
-        }
-        return `<li>${escapeHtml(name)}${detailHtml}</li>`;
-      }).join("");
-    }
-
-    function renderUnreachedTowns(unreachedTowns, urbanData) {
-      const list = document.getElementById("unreachedTownList");
-      if (!list) return;
-
-      if (!unreachedTowns.length) {
-        list.innerHTML = `<li class="empty">No unreached towns are currently listed for this county in the Glúnta research dataset.</li>`;
-        return;
-      }
-
-      const sorted = [...unreachedTowns].sort((a, b) => {
-        const popA = getUnreachedTownPopulation(a) || 0;
-        const popB = getUnreachedTownPopulation(b) || 0;
-        if (popA !== popB) return popB - popA;
-        return getUnreachedTownName(a).localeCompare(getUnreachedTownName(b), "en-IE");
-      });
-
-      list.innerHTML = sorted.map(row => {
-        const matchedFeature = findUrbanAreaFeatureForUnreachedTown(row, urbanData);
-        const name = getUnreachedTownName(row);
-        const population = getUnreachedTownPopulation(row);
-        const status = getUnreachedTownStatus(row);
-        const nearestChurch = getUnreachedTownNearestChurch(row);
-        const nearestDistance = getUnreachedTownNearestDistance(row);
-        const profileUrl = getUnreachedTownProfileUrl(row, matchedFeature);
-
-        const details = [];
-        if (population !== null) details.push(`Population: ${formatNumber(population)}`);
-        if (status) details.push(status);
-        if (nearestChurch) {
-          details.push(`Nearest counted church: ${nearestChurch}${nearestDistance ? ` (${nearestDistance} km)` : ""}`);
-        }
-
-        const nameHtml = profileUrl
-          ? `<a class="unreached-town-name" href="${escapeAttribute(profileUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(name)}</a>`
-          : `<span class="unreached-town-name">${escapeHtml(name)}</span>`;
-
-        const detailHtml = details.length
-          ? `<br><span class="church-detail">${escapeHtml(details.join(" · "))}</span>`
-          : "";
-
-        return `<li>${nameHtml}${detailHtml}</li>`;
-      }).join("");
-    }
-
-    function getLeaCountyName(props) {
-      return getProp(props, ["county", "County", "COUNTY", "county_name", "COUNTY_NAME"], "");
-    }
-
-    function countLeas(leas, countyFeature) {
-      if (!leas || !Array.isArray(leas.features)) return 0;
-      const countySlug = slugifyCountyName(getCountyShortName(countyFeature.properties || {}));
-      return leas.features.filter(feature => {
-        const leaSlug = slugifyCountyName(getLeaCountyName(feature.properties || {}));
-        return leaSlug && leaSlug === countySlug;
-      }).length;
-    }
-
-    function renderBasicProfile(countyFeature, churches, leaCount) {
-      const props = countyFeature.properties || {};
-      const displayName = getCountyDisplayName(props);
-      const shortName = getCountyShortName(props);
-      const population = toNumber(getPopulation(props));
-      const churchCount = churches.length;
-      const peoplePerChurch = population !== null && churchCount > 0 ? Math.round(population / churchCount) : null;
-
-      document.title = `${displayName} Mission Profile | Glúnta`;
-      document.getElementById("profileTitle").textContent = displayName;
-      document.getElementById("countyName").textContent = displayName;
-      document.getElementById("countyMeta").textContent = `County: ${shortName}`;
-      document.getElementById("populationValue").textContent = formatNumber(population);
-      document.getElementById("churchCountValue").textContent = formatNumber(churchCount);
-      document.getElementById("leaCountValue").textContent = formatNumber(leaCount);
-      document.getElementById("peoplePerChurchValue").textContent = peoplePerChurch ? formatNumber(peoplePerChurch) : "—";
-    }
-
-    function renderDemographicProfile(props) {
-      document.getElementById("ageChildren").textContent = formatCountAndPercent(props, "age_0_14", "age_0_14_pct");
-      document.getElementById("ageYoungAdults").textContent = formatCountAndPercent(props, "age_15_34", "age_15_34_pct");
-      document.getElementById("ageAdults").textContent = formatCountAndPercent(props, "age_35_64", "age_35_64_pct");
-      document.getElementById("ageOlderAdults").textContent = formatCountAndPercent(props, "age_65_plus", "age_65_plus_pct");
-      document.getElementById("bornOutsideIreland").textContent = formatCountAndPercent(props, "born_outside_ireland", "born_outside_ireland_pct");
-      document.getElementById("nonIrishCitizenship").textContent = formatCountAndPercent(props, "non_irish_citizenship", "non_irish_citizenship_pct");
-      document.getElementById("foreignLanguageSpeakers").textContent = formatCountAndPercent(props, "foreign_language_speakers", "foreign_language_speakers_pct");
-      document.getElementById("otherWhiteBackground").textContent = formatCountAndPercent(props, "ethnicity_other_white", "ethnicity_other_white_pct");
-      document.getElementById("religionCatholic").textContent = formatCountAndPercent(props, "religion_catholic", "religion_catholic_pct");
-      document.getElementById("religionOther").textContent = formatCountAndPercent(props, "religion_other", "religion_other_pct");
-      document.getElementById("religionNone").textContent = formatCountAndPercent(props, "religion_none", "religion_none_pct");
-      document.getElementById("religionNotStated").textContent = formatCountAndPercent(props, "religion_not_stated", "religion_not_stated_pct");
-    }
-
-    function humaniseKey(key) {
-      return String(key)
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, char => char.toUpperCase())
-        .replace(/ Pct$/, " %")
-        .replace(/ 2022$/, ", 2022");
-    }
-
-    function renderFullStats(props) {
-      const hidden = new Set(["fill", "stroke", "stroke-width", "fill-opacity", "opacity"]);
-      const rows = Object.entries(props)
-        .filter(([key, value]) => !hidden.has(key) && value !== null && value !== undefined && value !== "")
-        .map(([key, value]) => {
-          const number = toNumber(value);
-          const valueText = number !== null && String(value).match(/^[\d,.-]+$/) ? formatNumber(value) : String(value);
-          return `<tr><th>${escapeHtml(humaniseKey(key))}</th><td>${escapeHtml(valueText)}</td></tr>`;
-        })
-        .join("");
-
-      // Full demographic statistics are not displayed on the county profile page.
-      // This function is retained only for compatibility if you decide to re-enable that section later.
-    }
-
     function showError(message) {
-      document.getElementById("profileTitle").textContent = "County profile error";
-      document.getElementById("countyName").textContent = "County profile error";
-      document.getElementById("countyMeta").textContent = "County: —";
-      const churchList = document.getElementById("churchList");
-      if (churchList) {
-        churchList.innerHTML = `<li class="error-box">${escapeHtml(message)}</li>`;
-      }
-      const unreachedTownList = document.getElementById("unreachedTownList");
-      if (unreachedTownList) {
-        unreachedTownList.innerHTML = `<li class="error-box">${escapeHtml(message)}</li>`;
-      }
-    }
-
-    function findCountyFeature(counties, requested) {
-      const requestedSlug = slugifyCountyName(requested);
-      if (!requestedSlug) return null;
-
-      return counties.features.find(feature => {
-        const props = feature.properties || {};
-        const candidates = [
-          getCountyDisplayName(props),
-          getCountyShortName(props),
-          getProp(props, ["county", "County", "COUNTY"], ""),
-          getProp(props, ["name", "Name", "NAME"], "")
-        ];
-        return candidates.some(candidate => slugifyCountyName(candidate) === requestedSlug);
-      }) || null;
-    }
-
-    function pointInGeometry(lng, lat, geometry) {
-      if (!geometry) return false;
-      if (geometry.type === "Polygon") return pointInPolygon(lng, lat, geometry.coordinates);
-      if (geometry.type === "MultiPolygon") return geometry.coordinates.some(polygon => pointInPolygon(lng, lat, polygon));
-      return false;
-    }
-
-    function pointInPolygon(lng, lat, rings) {
-      if (!rings || rings.length === 0) return false;
-      let inside = pointInRing(lng, lat, rings[0]);
-      if (!inside) return false;
-      for (let i = 1; i < rings.length; i++) {
-        if (pointInRing(lng, lat, rings[i])) return false;
-      }
-      return true;
-    }
-
-    function pointInRing(lng, lat, ring) {
-      let inside = false;
-      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-        const xi = Number(ring[i][0]);
-        const yi = Number(ring[i][1]);
-        const xj = Number(ring[j][0]);
-        const yj = Number(ring[j][1]);
-        const intersects = yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
-        if (intersects) inside = !inside;
-      }
-      return inside;
+      document.getElementById("profileTitle").textContent = "County profile not found";
+      document.getElementById("countyName").textContent = "County profile not found";
+      document.getElementById("countyMeta").innerHTML = `<span class="error">${escapeHtml(message)}</span>`;
+      document.getElementById("churchList").innerHTML = `<li class="error">${escapeHtml(message)}</li>`;
+      document.getElementById("unreachedTownList").innerHTML = `<li class="error">${escapeHtml(message)}</li>`;
     }
 
     async function loadCountyProfile() {
-      if (!requestedCounty) {
-        showError("No county was supplied in the URL. Example: county-profile.html?county=galway");
+      if (!requestedCountySlug) {
+        showError("No county was supplied in the URL. Use county-profile.html?county=galway");
         return;
       }
 
-      initMap();
+      if (typeof turf === "undefined") {
+        showError("Turf.js did not load, so spatial church counts cannot be calculated.");
+        return;
+      }
 
-      const [counties, churchesCsvText, leas, unreachedTownsCsvText, urbanData] = await Promise.all([
-        fetchJson(COUNTY_GEOJSON_URL),
-        fetchText(CHURCHES_CSV_URL).catch(() => ""),
-        fetchJson(LEA_GEOJSON_URL).catch(() => ({ features: [] })),
-        fetchText(UNREACHED_TOWNS_CSV_URL).catch(() => ""),
-        fetchJson(URBAN_AREAS_GEOJSON_URL).catch(() => ({ features: [] }))
-      ]);
+      initialiseMap();
 
-      const countyFeature = findCountyFeature(counties, requestedCounty);
+      const countyResult = await fetchFirstAvailableJson(COUNTY_GEOJSON_URLS);
+      const counties = countyResult.data;
+
+      const churchesResult = await fetchFirstAvailableCsv(CHURCH_CSV_URLS).catch(() => ({ data: [] }));
+      const leaResult = await fetchFirstAvailableJson(LEA_GEOJSON_URLS).catch(() => ({ data: { features: [] } }));
+      const unreachedResult = await fetchFirstAvailableCsv(UNREACHED_TOWNS_CSV_URLS).catch(() => ({ data: [] }));
+      const urbanResult = await fetchFirstAvailableJson(URBAN_AREAS_GEOJSON_URLS).catch(() => ({ data: { features: [] } }));
+
+      const requestedSlug = slugifyName(requestedCountySlug);
+
+      const countyFeature = counties.features.find(feature => {
+        const countyName = getCountyName(feature.properties || {});
+        return slugifyName(countyName) === requestedSlug;
+      });
+
       if (!countyFeature) {
-        const available = (counties.features || [])
+        const available = counties.features
+          .map(feature => getCountyName(feature.properties || {}))
+          .filter(Boolean)
           .slice(0, 12)
-          .map(feature => getCountyDisplayName(feature.properties || {}))
           .join(", ");
-        showError(`No county matched "${requestedCounty}". Available examples include: ${available}`);
+
+        showError(`No county matched "${requestedCountySlug}". First available county names include: ${available}`);
         return;
       }
 
-      const churchRows = churchesCsvText ? parseCsv(churchesCsvText) : [];
-      const churchesInCounty = churchRows.filter(row => churchMatchesCounty(row, countyFeature));
+      const countyName = getCountyName(countyFeature.properties || {});
+      const countySlug = slugifyName(countyName);
 
-      const unreachedTownRows = unreachedTownsCsvText ? parseCsv(unreachedTownsCsvText) : [];
-      const unreachedTownsInCounty = unreachedTownRows.filter(row => unreachedTownMatchesCounty(row, countyFeature));
-
-      const leaCount = countLeas(leas, countyFeature);
+      const churchesInsideCounty = getRowsInsideFeature(churchesResult.data, countyFeature);
+      const unreachedTownsInsideCounty = getRowsInsideFeature(unreachedResult.data, countyFeature);
+      const leaCount = countLeasInCounty(leaResult.data, countyFeature, countySlug);
 
       drawCounty(countyFeature);
-      renderBasicProfile(countyFeature, churchesInCounty, leaCount);
-      renderDemographicProfile(countyFeature.properties || {});
-      renderChurches(churchesInCounty);
-      renderUnreachedTowns(unreachedTownsInCounty, urbanData);
+      renderBasicProfile(countyFeature, churchesInsideCounty, leaCount);
+      renderDemographicFields(countyFeature.properties || {});
+      renderUnreachedTowns(unreachedTownsInsideCounty, urbanResult.data);
     }
 
     loadCountyProfile().catch(error => {
       console.error(error);
-      showError(error.message || String(error));
+      showError(error.message);
     });
   </script>
 </body>
