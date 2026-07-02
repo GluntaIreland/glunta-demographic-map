@@ -262,6 +262,44 @@
       font-weight: 400;
     }
 
+    .unreached-list {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .unreached-list li {
+      margin-bottom: 10px;
+    }
+
+    .unreached-town-name {
+      font-weight: 800;
+    }
+
+    .prayer-prompts {
+      margin: 14px 0 0 0;
+      padding: 13px 14px;
+      border-radius: 14px;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #7c2d12;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .prayer-prompts p {
+      margin: 0 0 8px 0;
+      font-weight: 800;
+    }
+
+    .prayer-prompts ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .prayer-prompts li {
+      margin-bottom: 5px;
+    }
+
     .note {
       padding: 15px;
       border-radius: 14px;
@@ -486,29 +524,26 @@
         </section>
 
         <section class="card">
-          <p class="section-label">Mission reading</p>
-          <h2>Missiological observations</h2>
-          <div class="note">
-            <h3>Begin with local listening</h3>
-            <p>
-              This profile is intended to support prayer, partnership, and research.
-              It should not be read as a mechanical church planting recommendation.
-            </p>
-            <h3>Read the data alongside people</h3>
-            <p>
-              Demographic data can show patterns, but it cannot tell the full story
-              of relationships, history, local trust, existing witness, or spiritual openness.
-            </p>
+          <p class="section-label">Prayer focus</p>
+          <h2>Unreached towns in this county</h2>
+          <p class="meta">
+            These towns are currently marked in the Glúnta research dataset as having no listed church inside the town boundary or requiring priority research.
+          </p>
+          <ul id="unreachedTownList" class="unreached-list" style="margin-top:14px;">
+            <li class="loading">Unreached towns will appear here.</li>
+          </ul>
+          <div class="prayer-prompts">
+            <p>Prayer prompts</p>
+            <ul>
+              <li>Pray for faithful gospel witness in these towns.</li>
+              <li>Pray for existing believers, hidden relationships, and future leaders.</li>
+              <li>Pray for wise partnerships and careful local research before any ministry decisions are made.</li>
+            </ul>
           </div>
         </section>
       </aside>
     </section>
 
-    <section class="card">
-      <p class="section-label">Full demographic profile</p>
-      <h2>County profile statistics</h2>
-      <div id="fullStats" class="full-stats-wrap loading">Loading county demographic data...</div>
-    </section>
 
     <footer>
       <strong>Sources and method:</strong>
@@ -530,6 +565,8 @@
     const COUNTY_GEOJSON_URL = "county-demographics-map.geojson";
     const LEA_GEOJSON_URL = "lea-demographics-map.geojson";
     const CHURCHES_CSV_URL = "churches-points.csv";
+    const UNREACHED_TOWNS_CSV_URL = "unreached-towns.csv";
+    const URBAN_AREAS_GEOJSON_URL = "urban-areas-boundaries.geojson";
 
     let map;
 
@@ -747,6 +784,110 @@
       return toNumber(getProp(row, ["longitude", "Longitude", "lng", "Lng", "lon"], ""));
     }
 
+    function getUnreachedTownName(row) {
+      return getProp(row, ["Town", "town_name", "town", "Name", "name"], "Unreached town");
+    }
+
+    function getUnreachedTownCounty(row) {
+      return getProp(row, ["County", "county", "COUNTY"], "");
+    }
+
+    function getUnreachedTownPopulation(row) {
+      return toNumber(getProp(row, ["Population", "population_2022", "population", "POPULATION"], ""));
+    }
+
+    function getUnreachedTownStatus(row) {
+      return getProp(row, ["Town opportunity", "status", "Status"], "No listed church / priority research town");
+    }
+
+    function getUnreachedTownNearestChurch(row) {
+      return getProp(row, ["Nearest counted church", "nearest_church", "Nearest church"], "");
+    }
+
+    function getUnreachedTownNearestDistance(row) {
+      return getProp(row, ["Distance to nearest counted church km", "nearest_distance_km", "Distance km"], "");
+    }
+
+    function getUnreachedTownLat(row) {
+      return toNumber(getProp(row, ["Latitude", "latitude", "lat", "Lat"], ""));
+    }
+
+    function getUnreachedTownLng(row) {
+      return toNumber(getProp(row, ["Longitude", "longitude", "lng", "Lng", "lon"], ""));
+    }
+
+    function getAreaName(props) {
+      return getProp(props, [
+        "name", "Name", "NAME", "area_name", "AREA_NAME", "town", "Town", "TOWN",
+        "settlement", "Settlement", "BUA_NAME", "URBAN_AREA_NAME"
+      ], "");
+    }
+
+    function getUrbanAreaCode(props) {
+      return getProp(props, [
+        "code", "Code", "CODE", "GEOGID", "GUID", "CSO_CODE", "URBAN_AREA_CODE",
+        "urban_area_code", "BUA_CODE", "TOWN_CODE"
+      ], "");
+    }
+
+    function getUrbanAreaCounty(props) {
+      return getProp(props, ["county", "County", "COUNTY", "county_name", "COUNTY_NAME"], "");
+    }
+
+    function normaliseTownNameForMatch(value) {
+      return normaliseName(String(value || "").replace(/\([^)]*\)/g, "").replace(/\s+/g, " "));
+    }
+
+    function findUrbanAreaFeatureForUnreachedTown(row, urbanData) {
+      const lat = getUnreachedTownLat(row);
+      const lng = getUnreachedTownLng(row);
+
+      if (urbanData && Array.isArray(urbanData.features) && lat !== null && lng !== null) {
+        const containingFeature = urbanData.features.find(feature => pointInGeometry(lng, lat, feature.geometry));
+        if (containingFeature) return containingFeature;
+      }
+
+      const rowName = normaliseTownNameForMatch(getUnreachedTownName(row));
+      const rowCounty = normaliseName(getUnreachedTownCounty(row));
+
+      if (!rowName || !urbanData || !Array.isArray(urbanData.features)) return null;
+
+      return urbanData.features.find(feature => {
+        const props = feature.properties || {};
+        const featureName = normaliseTownNameForMatch(getAreaName(props));
+        const featureCounty = normaliseName(getUrbanAreaCounty(props));
+        if (featureName !== rowName) return false;
+        if (rowCounty && featureCounty && rowCounty !== featureCounty) return false;
+        return true;
+      }) || null;
+    }
+
+    function getUnreachedTownProfileUrl(row, matchedFeature) {
+      const explicitCode = String(
+        row.urban_area_code || row.URBAN_AREA_CODE || row.urbanAreaCode || row.URBAN_CODE ||
+        row.BUA_CODE || row.CSO_CODE || row.code || row.CODE || ""
+      ).trim();
+
+      const matchedCode = matchedFeature ? getUrbanAreaCode(matchedFeature.properties || {}) : "";
+      const code = explicitCode || matchedCode;
+
+      return code ? `town-profile.html?code=${encodeURIComponent(code)}` : "";
+    }
+
+    function unreachedTownMatchesCounty(row, countyFeature) {
+      const props = countyFeature.properties || {};
+      const countySlug = slugifyCountyName(getCountyShortName(props));
+      const rowCountySlug = slugifyCountyName(getUnreachedTownCounty(row));
+
+      if (rowCountySlug && countySlug && rowCountySlug === countySlug) return true;
+
+      const lat = getUnreachedTownLat(row);
+      const lng = getUnreachedTownLng(row);
+      if (lat === null || lng === null) return false;
+
+      return pointInGeometry(lng, lat, countyFeature.geometry);
+    }
+
     function pointInCountyByGeometry(row, countyFeature) {
       const lat = getChurchLat(row);
       const lng = getChurchLng(row);
@@ -779,6 +920,50 @@
           return `<li><a href="${escapeAttribute(website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(name)}</a>${detailHtml}</li>`;
         }
         return `<li>${escapeHtml(name)}${detailHtml}</li>`;
+      }).join("");
+    }
+
+    function renderUnreachedTowns(unreachedTowns, urbanData) {
+      const list = document.getElementById("unreachedTownList");
+      if (!list) return;
+
+      if (!unreachedTowns.length) {
+        list.innerHTML = `<li class="empty">No unreached towns are currently listed for this county in the Glúnta research dataset.</li>`;
+        return;
+      }
+
+      const sorted = [...unreachedTowns].sort((a, b) => {
+        const popA = getUnreachedTownPopulation(a) || 0;
+        const popB = getUnreachedTownPopulation(b) || 0;
+        if (popA !== popB) return popB - popA;
+        return getUnreachedTownName(a).localeCompare(getUnreachedTownName(b), "en-IE");
+      });
+
+      list.innerHTML = sorted.map(row => {
+        const matchedFeature = findUrbanAreaFeatureForUnreachedTown(row, urbanData);
+        const name = getUnreachedTownName(row);
+        const population = getUnreachedTownPopulation(row);
+        const status = getUnreachedTownStatus(row);
+        const nearestChurch = getUnreachedTownNearestChurch(row);
+        const nearestDistance = getUnreachedTownNearestDistance(row);
+        const profileUrl = getUnreachedTownProfileUrl(row, matchedFeature);
+
+        const details = [];
+        if (population !== null) details.push(`Population: ${formatNumber(population)}`);
+        if (status) details.push(status);
+        if (nearestChurch) {
+          details.push(`Nearest counted church: ${nearestChurch}${nearestDistance ? ` (${nearestDistance} km)` : ""}`);
+        }
+
+        const nameHtml = profileUrl
+          ? `<a class="unreached-town-name" href="${escapeAttribute(profileUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(name)}</a>`
+          : `<span class="unreached-town-name">${escapeHtml(name)}</span>`;
+
+        const detailHtml = details.length
+          ? `<br><span class="church-detail">${escapeHtml(details.join(" · "))}</span>`
+          : "";
+
+        return `<li>${nameHtml}${detailHtml}</li>`;
       }).join("");
     }
 
@@ -847,20 +1032,22 @@
         })
         .join("");
 
-      document.getElementById("fullStats").classList.remove("loading");
-      document.getElementById("fullStats").innerHTML = `
-        <table class="profile-table">
-          <tbody>${rows || `<tr><td>No additional county statistics available.</td></tr>`}</tbody>
-        </table>
-      `;
+      // Full demographic statistics are not displayed on the county profile page.
+      // This function is retained only for compatibility if you decide to re-enable that section later.
     }
 
     function showError(message) {
       document.getElementById("profileTitle").textContent = "County profile error";
       document.getElementById("countyName").textContent = "County profile error";
       document.getElementById("countyMeta").textContent = "County: —";
-      document.getElementById("fullStats").classList.remove("loading");
-      document.getElementById("fullStats").innerHTML = `<div class="error-box">${escapeHtml(message)}</div>`;
+      const churchList = document.getElementById("churchList");
+      if (churchList) {
+        churchList.innerHTML = `<li class="error-box">${escapeHtml(message)}</li>`;
+      }
+      const unreachedTownList = document.getElementById("unreachedTownList");
+      if (unreachedTownList) {
+        unreachedTownList.innerHTML = `<li class="error-box">${escapeHtml(message)}</li>`;
+      }
     }
 
     function findCountyFeature(counties, requested) {
@@ -917,10 +1104,12 @@
 
       initMap();
 
-      const [counties, churchesCsvText, leas] = await Promise.all([
+      const [counties, churchesCsvText, leas, unreachedTownsCsvText, urbanData] = await Promise.all([
         fetchJson(COUNTY_GEOJSON_URL),
         fetchText(CHURCHES_CSV_URL).catch(() => ""),
-        fetchJson(LEA_GEOJSON_URL).catch(() => ({ features: [] }))
+        fetchJson(LEA_GEOJSON_URL).catch(() => ({ features: [] })),
+        fetchText(UNREACHED_TOWNS_CSV_URL).catch(() => ""),
+        fetchJson(URBAN_AREAS_GEOJSON_URL).catch(() => ({ features: [] }))
       ]);
 
       const countyFeature = findCountyFeature(counties, requestedCounty);
@@ -935,13 +1124,17 @@
 
       const churchRows = churchesCsvText ? parseCsv(churchesCsvText) : [];
       const churchesInCounty = churchRows.filter(row => churchMatchesCounty(row, countyFeature));
+
+      const unreachedTownRows = unreachedTownsCsvText ? parseCsv(unreachedTownsCsvText) : [];
+      const unreachedTownsInCounty = unreachedTownRows.filter(row => unreachedTownMatchesCounty(row, countyFeature));
+
       const leaCount = countLeas(leas, countyFeature);
 
       drawCounty(countyFeature);
       renderBasicProfile(countyFeature, churchesInCounty, leaCount);
       renderDemographicProfile(countyFeature.properties || {});
       renderChurches(churchesInCounty);
-      renderFullStats(countyFeature.properties || {});
+      renderUnreachedTowns(unreachedTownsInCounty, urbanData);
     }
 
     loadCountyProfile().catch(error => {
