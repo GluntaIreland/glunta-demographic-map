@@ -3,14 +3,26 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A Glúnta town mission profile and practical field guide, using Irish Census data and local research questions.">
+  <meta
+    name="description"
+    content="A Glúnta town mission profile and practical field guide, using Irish Census data and local research questions."
+  >
+
   <title>Town Mission Profile | Glúnta Research</title>
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  >
   <link rel="stylesheet" href="town-profile.css">
+  <link rel="stylesheet" href="town-mission.css">
 
-  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script
+    defer
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  ></script>
   <script defer src="town-profile.js"></script>
+  <script defer src="town-mission.js"></script>
 </head>
 
 <body>
@@ -23,7 +35,9 @@
 
     <nav aria-label="Report navigation">
       <a href="index.html">Back to map</a>
+      <a href="#mission-reading">Mission reading</a>
       <a href="#field-guide">Field Guide</a>
+
       <button id="printButton" type="button" disabled>
         Print / save PDF
       </button>
@@ -79,8 +93,9 @@
             <a href="#culture">04 · Culture &amp; belief</a>
             <a href="#work">05 · Work &amp; education</a>
             <a href="#community">06 · Church locations</a>
-            <a href="#field-guide">07 · Field Guide</a>
-            <a href="#sources">08 · Sources &amp; limits</a>
+            <a href="#mission-reading">07 · Mission reading</a>
+            <a href="#field-guide">08 · Field Guide</a>
+            <a href="#sources">09 · Sources &amp; limits</a>
           </nav>
         </aside>
 
@@ -111,6 +126,7 @@
 
             <div class="question">
               <strong>Explore locally</strong>
+
               <p>
                 Where do people actually spend time? Walk beyond the commercial
                 centre and ask whether the statistical boundary matches
@@ -193,6 +209,7 @@
 
             <div class="question">
               <strong>Verify and broaden the picture</strong>
+
               <p>
                 Meet local churches and other faith communities. Add schools,
                 clubs, libraries, family resource centres, community
@@ -202,8 +219,46 @@
             </div>
           </section>
 
-          <section id="field-guide" class="report-section field-guide">
-            <p class="eyebrow">07 · Glúnta Field Guide</p>
+          <section
+            id="mission-reading"
+            class="report-section"
+            aria-labelledby="missionTitle"
+          >
+            <p class="eyebrow">07 · Mission reading</p>
+            <h2 id="missionTitle">Missiological observations</h2>
+
+            <p>
+              These reflections bring the reported figures into conversation
+              with Christian mission. They suggest questions for local
+              discernment; they do not measure spiritual need, church health
+              or receptivity to the gospel.
+            </p>
+
+            <div
+              id="missionCards"
+              class="mission-grid"
+              aria-live="polite"
+            >
+              <p class="small">
+                Preparing the town’s mission reading…
+              </p>
+            </div>
+
+            <p class="mission-method">
+              <strong>How to use this section:</strong>
+              Check the evidence linked on each card, read the biblical passage
+              in context, and discuss the question with residents and local
+              churches. These are editorial reflections, not findings from
+              interviews or an assessment of which ministry will succeed.
+              The card colours distinguish panels; they do not score a town.
+            </p>
+          </section>
+
+          <section
+            id="field-guide"
+            class="report-section field-guide"
+          >
+            <p class="eyebrow">08 · Glúnta Field Guide</p>
             <h2>How to understand this town</h2>
 
             <p class="intro">
@@ -214,6 +269,7 @@
             <div class="guide-grid">
               <div>
                 <h3>1. Check the frame</h3>
+
                 <p>
                   Confirm the boundary, Census year and population covered by
                   each measure. Write down what the report includes and which
@@ -223,6 +279,7 @@
 
               <div>
                 <h3>2. Notice household life</h3>
+
                 <p>
                   Explore the routines of people living alone, parents, younger
                   adults and older residents. Ask which spaces and activities
@@ -232,24 +289,27 @@
 
               <div>
                 <h3>3. Listen across cultures</h3>
+
                 <p>
                   Ask residents how language, migration, faith and identity
-                  shape life here. Let people describe their own experience; a
-                  group percentage cannot explain an individual.
+                  shape life here. Let people describe their own experience;
+                  a group percentage cannot explain an individual.
                 </p>
               </div>
 
               <div>
                 <h3>4. Find community assets</h3>
+
                 <p>
                   Record trusted people, meeting places, local services and
-                  existing partnerships. Ask what residents value and what is
-                  already working well.
+                  existing partnerships. Ask what residents value and what
+                  is already working well.
                 </p>
               </div>
 
               <div>
                 <h3>5. Hear different experiences</h3>
+
                 <p>
                   Speak with people of different ages, backgrounds and lengths
                   of residence. Ask permission before recording or quoting them,
@@ -259,10 +319,11 @@
 
               <div>
                 <h3>6. Choose a small next step</h3>
+
                 <p>
                   Discuss what you have learned with local partners. Choose one
-                  practical way to listen, serve or collaborate, then return to
-                  ask whether it helped.
+                  practical way to listen, serve or collaborate, then return
+                  to ask whether it helped.
                 </p>
               </div>
             </div>
@@ -276,18 +337,22 @@
                   community facilities. Respect private property and local
                   activity.
                 </li>
+
                 <li>
-                  Notice who uses each space, at what time, and who may find it
-                  difficult to access.
+                  Notice who uses each space, at what time, and who may find
+                  it difficult to access.
                 </li>
+
                 <li>
                   When conversation is welcome, ask: “What do you value here?”
                   “What has changed?” “Who should we listen to?”
                 </li>
+
                 <li>
                   Pray for people and places with humility. Avoid treating
                   observations as diagnoses of residents.
                 </li>
+
                 <li>
                   Finish with three supported observations, two unanswered
                   questions and one agreed next step.
@@ -304,43 +369,54 @@
                 next action.
               </p>
 
-              <div class="writing-lines" aria-hidden="true"></div>
+              <div
+                class="writing-lines"
+                aria-hidden="true"
+              ></div>
             </div>
           </section>
 
           <section id="sources" class="report-section">
-            <p class="eyebrow">08 · Evidence &amp; limits</p>
+            <p class="eyebrow">09 · Evidence &amp; limits</p>
             <h2>Read the evidence carefully</h2>
 
             <ul class="source-list">
               <li>
                 <strong>Demographics:</strong>
+
                 <a href="https://www.cso.ie/en/census/census2022/census2022smallareapopulationstatistics/">
                   CSO Census 2022 Small Area Population Statistics
                 </a>,
                 Built Up Areas table.
+
                 <a href="SAPS_2022_BUA_270923.csv">
                   Download the table used by this report
                 </a>.
+
                 Census date: 3 April 2022. Counts are from the selected town’s
                 published row, not a sum of intersecting Small Areas.
               </li>
 
               <li>
                 <strong>Boundary:</strong>
+
                 the selected CSO urban-area feature supplied with the Glúnta map.
+
                 <a href="https://www.cso.ie/en/census/census2022/census2022urbanboundariesandbuiltupareas/">
                   Read about 2022 Built Up Areas
                 </a>.
+
                 A 2022 BUA is not automatically comparable with a 2016 settlement
                 boundary.
               </li>
 
               <li>
                 <strong>Church locations:</strong>
+
                 <a href="churches-points.csv">
                   Glúnta’s supplied church-points file
                 </a>.
+
                 Its update date and coverage have not been established here.
                 Listed locations are not a complete count of congregations,
                 people or all faith communities.
@@ -348,13 +424,17 @@
 
               <li>
                 <strong>Presentation inspiration:</strong>
+
                 <a href="https://bradbrisco.org/neighborhood-intelligence-report/sample">
                   Brad Brisco’s sample report
                 </a>
+
                 and
+
                 <a href="https://bradbrisco.org/neighborhood-intelligence-report/guide">
                   Field Guide
                 </a>.
+
                 Irish figures in this report come from the sources above.
               </li>
             </ul>
@@ -362,6 +442,7 @@
             <dl class="evidence-key">
               <div>
                 <dt>Published statistic</dt>
+
                 <dd>
                   A reported count with a stated date, geography and denominator.
                 </dd>
@@ -369,6 +450,7 @@
 
               <div>
                 <dt>Organisation record</dt>
+
                 <dd>
                   A supplied listing whose coverage and currency need local
                   verification.
@@ -377,6 +459,7 @@
 
               <div>
                 <dt>Local account</dt>
+
                 <dd>
                   A person’s experience, recorded with permission and context;
                   not a population estimate.
@@ -385,14 +468,17 @@
 
               <div>
                 <dt>Interpretation / question</dt>
+
                 <dd>
                   A suggested meaning or research prompt, distinct from a
-                  measured fact.
+                  measured fact. The Mission reading section applies this label
+                  to editorial reflections and local discussion questions.
                 </dd>
               </div>
 
               <div>
                 <dt>Unavailable</dt>
+
                 <dd>
                   Missing, withheld or unverified information. It must not be
                   read as zero.
@@ -402,16 +488,16 @@
 
             <p>
               Percentages use the denominator printed on each chart. “Not
-              stated” remains visible where the table supplies it. Rounding can
-              cause displayed percentages to sum to 99.9% or 100.1%.
+              stated” remains visible where the table supplies it. Rounding
+              can cause displayed percentages to sum to 99.9% or 100.1%.
             </p>
 
             <p>
               Town income, deprivation scores, health-service access and sourced
               local narratives are not included in this edition. Do not infer
-              these from religion, housing tenure, birthplace or education. Add
-              them only when their source, geography, date and method have been
-              checked.
+              these from religion, housing tenure, birthplace or education.
+              Add them only when their source, geography, date and method have
+              been checked.
             </p>
 
             <p id="reportStamp" class="caption"></p>
