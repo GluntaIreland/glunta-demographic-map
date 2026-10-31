@@ -1,14 +1,14 @@
 #mission-reading {
   margin: 2.4rem 0;
   padding: clamp(1.2rem, 3vw, 2rem);
-  border: 1px solid #d9e3e9;
+  border: 1px solid var(--line, #d9dfd5);
   border-radius: 22px;
-  background: #fff;
+  background: var(--white, #fff);
 }
 
 #mission-reading > .eyebrow {
   margin: 0 0 0.6rem;
-  color: #10564f;
+  color: var(--green, #185449);
   font-size: 0.76rem;
   font-weight: 800;
   letter-spacing: 0.18em;
@@ -16,7 +16,7 @@
 
 #mission-reading > h2 {
   margin: 0 0 1.1rem;
-  color: #192630;
+  color: var(--ink, #202d2a);
   font-family:
     system-ui,
     -apple-system,
@@ -31,7 +31,7 @@
 
 #mission-reading > .mission-intro {
   margin: 0 0 1.4rem;
-  color: #65727d;
+  color: var(--muted, #5e6c65);
   font-size: 0.88rem;
   line-height: 1.6;
 }
@@ -48,19 +48,19 @@
   flex-direction: column;
   min-width: 0;
   padding: clamp(1.15rem, 2vw, 1.6rem);
-  border: 1px solid #a8d2cd;
+  border: 1px solid var(--line, #d9dfd5);
   border-radius: 20px;
-  background: #edf8f5;
+  background: var(--soft, #eaf0e7);
 }
 
 .mission-card--soft {
-  border-color: #e1eaf0;
-  background: #f4f8f9;
+  border-color: var(--line, #d9dfd5);
+  background: var(--paper, #f6f4ed);
 }
 
 .mission-card h3 {
   margin: 0 0 0.7rem;
-  color: #10564f;
+  color: var(--green, #185449);
   font-family:
     system-ui,
     -apple-system,
@@ -76,7 +76,7 @@
 
 .mission-card > .mission-text {
   margin: 0;
-  color: #63717e;
+  color: var(--muted, #5e6c65);
   font-size: 0.99rem;
   line-height: 1.7;
   text-wrap: pretty;
@@ -85,13 +85,13 @@
 .mission-details {
   margin-top: auto;
   padding-top: 1rem;
-  color: #586b68;
+  color: var(--muted, #5e6c65);
   font-size: 0.76rem;
 }
 
 .mission-details summary {
   width: fit-content;
-  color: #3e7068;
+  color: var(--green, #185449);
   font-size: 0.73rem;
   font-weight: 600;
   cursor: pointer;
@@ -108,16 +108,16 @@
 }
 
 .mission-details strong {
-  color: #2b5952;
+  color: var(--green, #185449);
 }
 
 .mission-details a {
-  color: #28685e;
+  color: var(--green, #185449);
   text-underline-offset: 3px;
 }
 
 .mission-details summary:focus-visible {
-  outline: 3px solid #b58b46;
+  outline: 3px solid var(--gold, #b58b46);
   outline-offset: 4px;
 }
 
@@ -126,7 +126,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: #77818a;
+  color: var(--muted, #5e6c65);
   font-size: 0.73rem;
   line-height: 1.6;
 }
