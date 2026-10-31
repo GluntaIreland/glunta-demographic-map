@@ -36,6 +36,179 @@
       cursor: wait;
     }
 
+    .field-guide-intro {
+      max-width: 900px;
+      color: var(--muted, #52636a);
+      line-height: 1.7;
+    }
+
+    .field-guide-disclosure {
+      margin-top: 18px;
+      border-top: 1px solid var(--soft-border, #dce5e2);
+    }
+
+    .field-guide-disclosure > summary {
+      padding: 18px 0;
+      color: var(--green-dark, #0f4f49);
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .field-guide-disclosure > summary:focus-visible {
+      outline: 3px solid #087d73;
+      outline-offset: 5px;
+      border-radius: 4px;
+    }
+
+    .field-guide-body {
+      padding-top: 4px;
+    }
+
+    .field-guide-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .field-guide-card {
+      border: 1px solid var(--soft-border, #dce5e2);
+      border-radius: 16px;
+      padding: 22px;
+      background: var(--wash, #f2f7f5);
+    }
+
+    .field-guide-card h3 {
+      margin: 0 0 12px;
+      color: var(--green-dark, #0f4f49);
+      font-size: 1.12rem;
+      line-height: 1.35;
+    }
+
+    .field-guide-card p {
+      margin: 0;
+      color: var(--muted, #52636a);
+      line-height: 1.7;
+    }
+
+    .field-guide-card p + p {
+      margin-top: 14px;
+    }
+
+    .field-guide-card strong {
+      color: var(--ink, #172a2e);
+    }
+
+    .field-guide-section {
+      margin-top: 28px;
+      padding-top: 24px;
+      border-top: 1px solid var(--soft-border, #dce5e2);
+    }
+
+    .field-guide-section h3 {
+      margin: 0 0 14px;
+      color: var(--green-dark, #0f4f49);
+      font-size: 1.2rem;
+      line-height: 1.35;
+    }
+
+    .field-guide-section p {
+      color: var(--muted, #52636a);
+      line-height: 1.7;
+    }
+
+    .field-guide-steps,
+    .field-guide-checklist {
+      margin: 0;
+      padding-left: 24px;
+      color: var(--muted, #52636a);
+      line-height: 1.7;
+    }
+
+    .field-guide-steps li,
+    .field-guide-checklist li {
+      margin-bottom: 14px;
+      padding-left: 4px;
+    }
+
+    .field-guide-steps strong,
+    .field-guide-checklist strong {
+      color: var(--ink, #172a2e);
+    }
+
+    .field-guide-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 16px;
+    }
+
+    .field-guide-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.94rem;
+    }
+
+    .field-guide-table caption {
+      margin-bottom: 12px;
+      color: var(--muted, #52636a);
+      text-align: left;
+      line-height: 1.6;
+    }
+
+    .field-guide-table th,
+    .field-guide-table td {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--soft-border, #dce5e2);
+      vertical-align: top;
+      line-height: 1.6;
+    }
+
+    .field-guide-table th {
+      color: var(--green-dark, #0f4f49);
+      background: var(--wash, #f2f7f5);
+      font-weight: 800;
+    }
+
+    .field-guide-table td {
+      color: var(--muted, #52636a);
+    }
+
+    .field-guide-table td:first-child {
+      min-width: 150px;
+      color: var(--ink, #172a2e);
+      font-weight: 700;
+    }
+
+    .field-guide-callout {
+      margin-top: 22px;
+      padding: 18px 20px;
+      border-left: 4px solid #087d73;
+      border-radius: 0 12px 12px 0;
+      background: #edf8f5;
+    }
+
+    .field-guide-callout p {
+      margin: 0;
+      color: var(--green-dark, #0f4f49);
+      line-height: 1.7;
+    }
+
+    .field-guide-sources {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid var(--soft-border, #dce5e2);
+      color: var(--muted, #52636a);
+      font-size: 0.9rem;
+      line-height: 1.7;
+    }
+
+    .field-guide-sources a {
+      color: var(--green-dark, #0f4f49);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
     body.pdf-export-mode {
       background: #ffffff !important;
     }
@@ -66,6 +239,50 @@
       content: "Map-generated town view";
       font-size: 0.8rem;
     }
+
+    @media (max-width: 860px) {
+      .field-guide-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .field-guide-card {
+        padding: 18px;
+      }
+
+      .field-guide-table {
+        font-size: 0.85rem;
+      }
+
+      .field-guide-table th,
+      .field-guide-table td {
+        padding: 10px;
+      }
+    }
+
+    @media print {
+      .field-guide-card,
+      .field-guide-callout,
+      .field-guide-table tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .field-guide-table-wrap {
+        overflow: visible;
+      }
+
+      .field-guide-table thead {
+        display: table-header-group;
+      }
+
+      .field-guide-section h3,
+      .field-guide-card h3 {
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+    }
   </style>
 </head>
 
@@ -75,17 +292,422 @@
       <div class="profile-hero-text">
         <p class="eyebrow">Glúnta Research</p>
         <h1>Town Mission Profile</h1>
+
         <p class="hero-subtitle">
-          A mission-focused demographic profile for understanding towns, existing church presence,
-          and possible areas for prayer, partnership, and local research.
+          A mission-focused demographic profile for understanding towns,
+          existing church presence, and possible areas for prayer,
+          partnership, and local research.
         </p>
       </div>
 
       <div class="hero-actions">
-        <a class="secondary-button" href="index.html">Back to map</a>
-        <button id="downloadPdfButton" class="primary-button" type="button">Download PDF</button>
+        <a class="secondary-button" href="index.html">
+          Back to map
+        </a>
+
+        <a class="secondary-button" href="#townFieldGuide">
+          Field Guide
+        </a>
+
+        <button
+          id="downloadPdfButton"
+          class="primary-button"
+          type="button"
+        >
+          Download PDF
+        </button>
       </div>
     </header>
+
+    <section
+      id="townFieldGuide"
+      class="wide-panel"
+      aria-labelledby="townFieldGuideTitle"
+    >
+      <div class="panel-header">
+        <p class="eyebrow">Glúnta Field Guide</p>
+
+        <h2 id="townFieldGuideTitle">
+          How to understand this town
+        </h2>
+      </div>
+
+      <p class="field-guide-intro">
+        Begin with the figures, then spend time with the people.
+        This guide helps you examine the evidence, recognise what
+        it cannot establish, and develop a thoughtful understanding
+        of the town through observation, conversation and prayer.
+      </p>
+
+      <details class="field-guide-disclosure">
+        <summary>
+          Open the Field Guide: reading, listening and local research
+        </summary>
+
+        <div class="field-guide-body">
+          <div class="field-guide-grid">
+            <article class="field-guide-card">
+              <h3>1. Establish which place the figures describe</h3>
+
+              <p>
+                Census towns, Small Areas, Electoral Divisions and
+                Local Electoral Areas are different geographical units.
+                Their boundaries may differ from a parish, school
+                catchment or the place residents call their town.
+              </p>
+
+              <p>
+                <strong>Investigate:</strong>
+                Look at the town boundary. Which estates, neighbouring
+                villages and rural communities are outside it but share
+                its schools, shops, employment and community life?
+              </p>
+            </article>
+
+            <article class="field-guide-card">
+              <h3>2. Check what each number means</h3>
+
+              <p>
+                Read the source, year and denominator before
+                interpreting a percentage. A share of all residents
+                is different from a share of adults, households or
+                family units. A missing figure does not mean zero.
+              </p>
+
+              <p>
+                <strong>Investigate:</strong>
+                Choose three figures that surprised you. Check who
+                or what was counted, the area covered and the date.
+                Compare them with county or State figures only when
+                the definitions and reference periods match.
+              </p>
+            </article>
+
+            <article class="field-guide-card">
+              <h3>3. Explore households and everyday rhythms</h3>
+
+              <p>
+                Age, household composition, housing and employment
+                describe different aspects of daily life. Living alone
+                does not establish loneliness. Renting does not prove
+                that someone is temporary or disconnected.
+              </p>
+
+              <p>
+                <strong>Ask locally:</strong>
+                How do work, school, caring responsibilities and
+                transport shape the week? When are people present
+                in the town? What helps children, younger adults
+                and older residents participate in community life?
+              </p>
+            </article>
+
+            <article class="field-guide-card">
+              <h3>4. Read culture and religion with care</h3>
+
+              <p>
+                Birthplace, citizenship, ethnicity, language and
+                religious identity describe different things.
+                Census religious affiliation does not measure
+                attendance, personal faith or openness to Christianity.
+                A church directory can also miss congregations
+                and informal Christian activity.
+              </p>
+
+              <p>
+                <strong>Ask locally:</strong>
+                Which languages and experiences shape belonging here?
+                What do existing churches understand about the town?
+                Where might your own background limit what you notice?
+              </p>
+            </article>
+
+            <article class="field-guide-card">
+              <h3>5. Discover existing strengths and practical pressures</h3>
+
+              <p>
+                Identify the people, places and organisations already
+                contributing to the town: libraries, sports clubs,
+                community halls, businesses, schools, churches and
+                informal networks of care. A listed service does not
+                establish its current capacity or accessibility.
+              </p>
+
+              <p>
+                <strong>Investigate:</strong>
+                Visit a public gathering place and speak with a local
+                organisation. Find out what residents value, what
+                support already exists and which difficulties people
+                themselves identify. Check transport and access
+                on the ground.
+              </p>
+            </article>
+
+            <article class="field-guide-card">
+              <h3>6. Listen across different experiences</h3>
+
+              <p>
+                A town contains several overlapping stories.
+                Longstanding residents, newcomers, younger people,
+                carers, business owners and community workers may
+                experience the same place differently. A few interviews
+                or online comments cannot represent everyone.
+              </p>
+
+              <p>
+                <strong>Ask locally:</strong>
+                What has changed? What should be preserved?
+                Who helps people feel at home? Whose experience have
+                you not yet heard? Read local plans and historical
+                sources alongside these conversations.
+              </p>
+            </article>
+          </div>
+
+          <section
+            class="field-guide-section"
+            aria-labelledby="fieldGuideEvidenceTitle"
+          >
+            <p class="eyebrow">Understand the evidence</p>
+
+            <h3 id="fieldGuideEvidenceTitle">
+              Separate a finding from an interpretation
+            </h3>
+
+            <p>
+              When you bring information together, identify how each
+              statement is supported. These categories help you
+              distinguish published information from conclusions
+              that still need investigation.
+            </p>
+
+            <div class="field-guide-table-wrap">
+              <table class="field-guide-table">
+                <caption>
+                  A simple evidence guide for your own town research.
+                </caption>
+
+                <thead>
+                  <tr>
+                    <th scope="col">Evidence type</th>
+                    <th scope="col">What it means</th>
+                    <th scope="col">What to check</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <tr>
+                    <td>Published statistic</td>
+
+                    <td>
+                      A figure published by a named statistical source.
+                    </td>
+
+                    <td>
+                      Its definition, reference period, geographical
+                      area and denominator.
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td>Estimate or model</td>
+
+                    <td>
+                      A value estimated from a sample, administrative
+                      records or a statistical model.
+                    </td>
+
+                    <td>
+                      The method, coverage, published uncertainty
+                      and limitations.
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td>Documented activity</td>
+
+                    <td>
+                      A named organisation or document records a
+                      service, project or activity.
+                    </td>
+
+                    <td>
+                      Whether it is proposed, operating, completed
+                      or no longer available.
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td>Reported experience</td>
+
+                    <td>
+                      An individual or group describes their experience
+                      of the town.
+                    </td>
+
+                    <td>
+                      Who is speaking, when they spoke and whose
+                      experience is still missing.
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td>Interpretation</td>
+
+                    <td>
+                      A suggested explanation or implication drawn
+                      from the evidence.
+                    </td>
+
+                    <td>
+                      Other possible explanations and what further
+                      evidence could change the conclusion.
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td>Unavailable or withheld</td>
+
+                    <td>
+                      A figure or record was not found, is outside
+                      the source's coverage or has not been released.
+                    </td>
+
+                    <td>
+                      The reason for the gap. Do not treat it as
+                      a measured zero or proof of absence.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section
+            class="field-guide-section"
+            aria-labelledby="fieldGuideWalkTitle"
+          >
+            <p class="eyebrow">Take the guide into the town</p>
+
+            <h3 id="fieldGuideWalkTitle">
+              A simple listening and prayer walk
+            </h3>
+
+            <ol class="field-guide-steps">
+              <li>
+                <strong>Orient yourself.</strong>
+                Walk through the centre and towards a residential
+                area. Notice the relationship between the mapped
+                boundary and the town's everyday life.
+              </li>
+
+              <li>
+                <strong>Spend time in a shared place.</strong>
+                Visit a library, café, park or community venue.
+                Observe how the space works and who can comfortably
+                use it.
+              </li>
+
+              <li>
+                <strong>Learn from existing service.</strong>
+                Speak with a community organisation and an existing
+                church. Ask what they have learned through serving
+                locally.
+              </li>
+
+              <li>
+                <strong>Test one assumption.</strong>
+                Choose something you inferred from the report.
+                Seek evidence that might confirm, complicate or
+                overturn it.
+              </li>
+
+              <li>
+                <strong>Pray and identify a next step.</strong>
+                Give thanks for the town's people and strengths.
+                Bring its pressures before God and identify one
+                practical act of learning, friendship, service
+                or partnership.
+              </li>
+            </ol>
+          </section>
+
+          <section
+            class="field-guide-section"
+            aria-labelledby="fieldGuideFindingsTitle"
+          >
+            <p class="eyebrow">Bring your findings together</p>
+
+            <h3 id="fieldGuideFindingsTitle">
+              Write a short reading of the town
+            </h3>
+
+            <ul class="field-guide-checklist">
+              <li>
+                <strong>Three supported observations:</strong>
+                What have you learned, and what evidence supports
+                each observation?
+              </li>
+
+              <li>
+                <strong>Two unresolved questions:</strong>
+                What remains uncertain, and who or what could help
+                you investigate it?
+              </li>
+
+              <li>
+                <strong>One practical next step:</strong>
+                What will you do, with whom, and when?
+              </li>
+            </ul>
+
+            <p>
+              For each observation, identify whether it comes from
+              a published statistic, a document, a conversation or
+              your interpretation. Record dates and sources, and
+              seek permission before attributing someone's
+              personal account.
+            </p>
+
+            <div class="field-guide-callout">
+              <p>
+                <strong>Check your conclusions.</strong>
+                Can another person trace the evidence? Have you
+                distinguished a town-wide pattern from an individual
+                experience? What might change your mind?
+              </p>
+            </div>
+          </section>
+
+          <div class="field-guide-sources">
+            <p>
+              Irish statistical terminology:
+              <a
+                href="https://www.cso.ie/en/census/census2022/census2022smallareapopulationstatistics/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >CSO Census 2022 tables and glossary</a>
+              and
+              <a
+                href="https://www.cso.ie/en/census/census2022/census2022urbanboundariesandbuiltupareas/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >understanding town boundaries</a>.
+            </p>
+
+            <p>
+              The field-guide approach is informed by
+              <a
+                href="https://bradbrisco.org/neighborhood-intelligence-report/guide"
+                target="_blank"
+                rel="noopener noreferrer"
+              >Brad Brisco's Field Guide</a>.
+              This guidance is written for Glúnta's Irish town profiles.
+            </p>
+          </div>
+        </div>
+      </details>
+    </section>
 
     <section class="town-summary-card">
       <div class="town-map-preview-wrap">
@@ -97,7 +719,11 @@
           loading="eager"
         ></iframe>
 
-        <div id="townStaticMapPreview" class="town-static-map-preview" aria-hidden="true"></div>
+        <div
+          id="townStaticMapPreview"
+          class="town-static-map-preview"
+          aria-hidden="true"
+        ></div>
 
         <div class="map-preview-label">
           <span>Interactive town context map</span>
@@ -114,8 +740,9 @@
         </div>
 
         <p id="townDescription" class="town-description">
-          This page uses the selected town boundary, Small Area demographic data, and listed church
-          locations to create a focused mission profile.
+          This page uses the selected town boundary, Small Area
+          demographic data, and listed church locations to create
+          a focused mission profile.
         </p>
 
         <div id="loadingNotice" class="loading-notice">
@@ -128,25 +755,37 @@
       <article class="metric-card">
         <p class="metric-label">Population</p>
         <p id="populationValue" class="metric-value">—</p>
-        <p class="metric-note">Census 2022 urban area estimate from included Small Areas.</p>
+
+        <p class="metric-note">
+          Census 2022 urban area estimate from included Small Areas.
+        </p>
       </article>
 
       <article class="metric-card">
         <p class="metric-label">Small Areas</p>
         <p id="smallAreasValue" class="metric-value">—</p>
-        <p class="metric-note">Small Areas included within the town boundary.</p>
+
+        <p class="metric-note">
+          Small Areas included within the town boundary.
+        </p>
       </article>
 
       <article class="metric-card">
         <p class="metric-label">Churches listed</p>
         <p id="churchesValue" class="metric-value">—</p>
-        <p class="metric-note">Church points listed in the Glúnta dataset.</p>
+
+        <p class="metric-note">
+          Church points listed in the Glúnta dataset.
+        </p>
       </article>
 
       <article class="metric-card">
         <p class="metric-label">Nearby churches</p>
         <p id="nearbyChurchesValue" class="metric-value">—</p>
-        <p class="metric-note">Churches within 15 km of the town centre.</p>
+
+        <p class="metric-note">
+          Churches within 15 km of the town centre.
+        </p>
       </article>
     </section>
 
@@ -162,14 +801,17 @@
             <span>Children, 0 to 14</span>
             <strong id="ageChildren">—</strong>
           </div>
+
           <div class="data-row">
             <span>Young adults, 15 to 34</span>
             <strong id="ageYoungAdults">—</strong>
           </div>
+
           <div class="data-row">
             <span>Adults, 35 to 64</span>
             <strong id="ageAdults">—</strong>
           </div>
+
           <div class="data-row">
             <span>Older adults, 65+</span>
             <strong id="ageOlderAdults">—</strong>
@@ -188,14 +830,17 @@
             <span>Born outside Ireland</span>
             <strong id="bornOutsideIreland">—</strong>
           </div>
+
           <div class="data-row">
             <span>Non-Irish citizenship</span>
             <strong id="nonIrishCitizenship">—</strong>
           </div>
+
           <div class="data-row">
             <span>Foreign-language speakers</span>
             <strong id="foreignLanguageSpeakers">—</strong>
           </div>
+
           <div class="data-row">
             <span>Other White background</span>
             <strong id="otherWhiteBackground">—</strong>
@@ -214,14 +859,17 @@
             <span>Catholic</span>
             <strong id="religionCatholic">—</strong>
           </div>
+
           <div class="data-row">
             <span>Other religion</span>
             <strong id="religionOther">—</strong>
           </div>
+
           <div class="data-row">
             <span>No religion</span>
             <strong id="religionNone">—</strong>
           </div>
+
           <div class="data-row">
             <span>Religion not stated</span>
             <strong id="religionNotStated">—</strong>
@@ -237,6 +885,7 @@
 
         <div class="church-list-block">
           <h3>Inside this town</h3>
+
           <ul id="churchesInsideList" class="church-list">
             <li>Church list will appear here.</li>
           </ul>
@@ -244,13 +893,13 @@
 
         <div class="church-list-block">
           <h3>Nearby</h3>
+
           <ul id="nearbyChurchesList" class="church-list">
             <li>Nearby churches will appear here.</li>
           </ul>
         </div>
       </article>
     </section>
-
 
     <section class="wide-panel">
       <div class="panel-header">
@@ -264,8 +913,10 @@
             <p class="eyebrow">Loading</p>
             <h2>Demographic data</h2>
           </div>
+
           <p class="source-note">
-            Full Census 2022 Small Area profile data will appear here once the town is loaded.
+            Full Census 2022 Small Area profile data will appear
+            here once the town is loaded.
           </p>
         </article>
       </div>
@@ -280,17 +931,21 @@
       <div id="missionInsights" class="insight-list">
         <article class="insight-card">
           <h3>Begin with local listening</h3>
+
           <p>
-            This profile is intended to support prayer, partnership, and research. It should not be read
-            as a mechanical church planting recommendation.
+            This profile is intended to support prayer, partnership,
+            and research. It should not be read as a mechanical
+            church planting recommendation.
           </p>
         </article>
 
         <article class="insight-card">
           <h3>Read the data alongside people</h3>
+
           <p>
-            Demographic data can show patterns, but it cannot tell the full story of relationships,
-            history, local trust, existing witness, or spiritual openness.
+            Demographic data can show patterns, but it cannot tell
+            the full story of relationships, history, local trust,
+            existing witness, or spiritual openness.
           </p>
         </article>
       </div>
@@ -303,14 +958,15 @@
       </div>
 
       <p>
-        This profile draws from Census 2022 Built Up Area boundaries, Small Area boundaries,
-        processed Small Area demographic tables, and the Glúnta church points dataset. Figures should be
-        treated as planning and research aids, not as final local knowledge.
+        This profile draws from Census 2022 Built Up Area boundaries,
+        Small Area boundaries, processed Small Area demographic tables,
+        and the Glúnta church points dataset. Figures should be treated
+        as planning and research aids, not as final local knowledge.
       </p>
     </section>
   </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="town-profile.js"></script>
 </body>
