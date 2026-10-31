@@ -3,971 +3,962 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Town Mission Profile | Glúnta</title>
-
-  <link rel="stylesheet" href="town-profile.css" />
+  <title>Town Profile Map</title>
 
   <style>
-    .town-static-map-preview {
-      display: none;
-      position: absolute;
-      inset: 0;
+    html,
+    body,
+    #map {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #dfe9e7;
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
+
+    /*
+      Minimal Leaflet layout CSS.
+      Included directly so map layout does not depend on
+      external Leaflet CSS loading correctly.
+    */
+
+    .leaflet-container {
+      overflow: hidden;
       width: 100%;
       height: 100%;
       background: #dfe9e7;
+      outline: 0;
+      font: 12px/1.5 "Helvetica Neue", Arial, Helvetica, sans-serif;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    .static-town-map-svg {
-      width: 100%;
-      height: 100%;
+    .leaflet-pane,
+    .leaflet-tile,
+    .leaflet-marker-icon,
+    .leaflet-marker-shadow,
+    .leaflet-tile-container,
+    .leaflet-pane > svg,
+    .leaflet-pane > canvas,
+    .leaflet-zoom-box,
+    .leaflet-image-layer,
+    .leaflet-layer {
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+
+    .leaflet-container img {
+      max-width: none !important;
+      max-height: none !important;
+    }
+
+    .leaflet-tile {
+      width: 256px !important;
+      height: 256px !important;
+      max-width: none !important;
+      max-height: none !important;
+      min-width: 256px !important;
+      min-height: 256px !important;
+      object-fit: fill !important;
+      border: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    .leaflet-tile-container {
+      width: 256px;
+      height: 256px;
+    }
+
+    .leaflet-pane {
+      z-index: 400;
+    }
+
+    .leaflet-tile-pane {
+      z-index: 200;
+    }
+
+    .leaflet-overlay-pane {
+      z-index: 400;
+    }
+
+    .leaflet-shadow-pane {
+      z-index: 500;
+    }
+
+    .leaflet-marker-pane {
+      z-index: 600;
+    }
+
+    .leaflet-tooltip-pane {
+      z-index: 650;
+    }
+
+    .leaflet-popup-pane {
+      z-index: 700;
+    }
+
+    .leaflet-map-pane canvas {
+      z-index: 100;
+    }
+
+    .leaflet-map-pane svg {
+      z-index: 200;
+    }
+
+    .leaflet-vml-shape {
+      width: 1px;
+      height: 1px;
+    }
+
+    .lvml {
+      behavior: url(#default#VML);
+      display: inline-block;
+      position: absolute;
+    }
+
+    .leaflet-control {
+      position: relative;
+      z-index: 800;
+      pointer-events: visiblePainted;
+      pointer-events: auto;
+      float: left;
+      clear: both;
+    }
+
+    .leaflet-top,
+    .leaflet-bottom {
+      position: absolute;
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    .leaflet-top {
+      top: 0;
+    }
+
+    .leaflet-right {
+      right: 0;
+    }
+
+    .leaflet-bottom {
+      bottom: 0;
+    }
+
+    .leaflet-left {
+      left: 0;
+    }
+
+    .leaflet-right .leaflet-control {
+      float: right;
+    }
+
+    .leaflet-top .leaflet-control {
+      margin-top: 10px;
+    }
+
+    .leaflet-bottom .leaflet-control {
+      margin-bottom: 10px;
+    }
+
+    .leaflet-left .leaflet-control {
+      margin-left: 10px;
+    }
+
+    .leaflet-right .leaflet-control {
+      margin-right: 10px;
+    }
+
+    .leaflet-control-zoom a {
       display: block;
+      width: 26px;
+      height: 26px;
+      line-height: 26px;
+      text-align: center;
+      text-decoration: none;
+      color: #000;
+      background: #fff;
+      border-bottom: 1px solid #ccc;
+      font-size: 18px;
+      font-weight: bold;
     }
 
-    .static-map-fallback {
-      height: 100%;
-      display: grid;
-      place-items: center;
-      color: #5f6b76;
-      font-weight: 800;
+    .leaflet-control-zoom {
+      border: 2px solid rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+      overflow: hidden;
+      background: #fff;
     }
 
-    .primary-button:disabled {
-      opacity: 0.72;
-      cursor: wait;
+    .leaflet-control-zoom a:last-child {
+      border-bottom: 0;
     }
 
-    .field-guide-intro {
-      max-width: 900px;
-      color: var(--muted, #52636a);
-      line-height: 1.7;
+    .leaflet-control-attribution {
+      padding: 0 5px;
+      color: #333;
+      background: rgba(255, 255, 255, 0.8);
+      font-size: 10px;
+      line-height: 1.4;
     }
 
-    .field-guide-disclosure {
-      margin-top: 18px;
-      border-top: 1px solid var(--soft-border, #dce5e2);
+    .leaflet-control-attribution a {
+      color: #0078a8;
+      text-decoration: none;
     }
 
-    .field-guide-disclosure > summary {
-      padding: 18px 0;
-      color: var(--green-dark, #0f4f49);
-      font-size: 1rem;
-      font-weight: 800;
+    .leaflet-popup {
+      position: absolute;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .leaflet-popup-content-wrapper {
+      padding: 1px;
+      text-align: left;
+      border-radius: 14px;
+      background: white;
+      box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
+    }
+
+    .leaflet-popup-content {
+      margin: 10px 12px;
+      font-size: 13px;
+      line-height: 1.35;
+      min-width: 1px;
+    }
+
+    .leaflet-popup-tip-container {
+      width: 40px;
+      height: 20px;
+      position: absolute;
+      left: 50%;
+      margin-left: -20px;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .leaflet-popup-tip {
+      width: 17px;
+      height: 17px;
+      padding: 1px;
+      margin: -10px auto 0;
+      transform: rotate(45deg);
+      background: white;
+      box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
+    }
+
+    .leaflet-popup-close-button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      border: none;
+      text-align: center;
+      width: 24px;
+      height: 24px;
+      font: 16px/24px Tahoma, Verdana, sans-serif;
+      color: #757575;
+      text-decoration: none;
+      background: transparent;
+    }
+
+    .leaflet-interactive {
       cursor: pointer;
     }
 
-    .field-guide-disclosure > summary:focus-visible {
-      outline: 3px solid #087d73;
-      outline-offset: 5px;
-      border-radius: 4px;
+    .leaflet-grab {
+      cursor: grab;
     }
 
-    .field-guide-body {
-      padding-top: 4px;
+    .leaflet-dragging .leaflet-grab {
+      cursor: move;
+      cursor: grabbing;
     }
 
-    .field-guide-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
-    }
-
-    .field-guide-card {
-      border: 1px solid var(--soft-border, #dce5e2);
-      border-radius: 16px;
-      padding: 22px;
-      background: var(--wash, #f2f7f5);
-    }
-
-    .field-guide-card h3 {
-      margin: 0 0 12px;
-      color: var(--green-dark, #0f4f49);
-      font-size: 1.12rem;
-      line-height: 1.35;
-    }
-
-    .field-guide-card p {
-      margin: 0;
-      color: var(--muted, #52636a);
-      line-height: 1.7;
-    }
-
-    .field-guide-card p + p {
-      margin-top: 14px;
-    }
-
-    .field-guide-card strong {
-      color: var(--ink, #172a2e);
-    }
-
-    .field-guide-section {
-      margin-top: 28px;
-      padding-top: 24px;
-      border-top: 1px solid var(--soft-border, #dce5e2);
-    }
-
-    .field-guide-section h3 {
-      margin: 0 0 14px;
-      color: var(--green-dark, #0f4f49);
-      font-size: 1.2rem;
-      line-height: 1.35;
-    }
-
-    .field-guide-section p {
-      color: var(--muted, #52636a);
-      line-height: 1.7;
-    }
-
-    .field-guide-steps,
-    .field-guide-checklist {
-      margin: 0;
-      padding-left: 24px;
-      color: var(--muted, #52636a);
-      line-height: 1.7;
-    }
-
-    .field-guide-steps li,
-    .field-guide-checklist li {
-      margin-bottom: 14px;
-      padding-left: 4px;
-    }
-
-    .field-guide-steps strong,
-    .field-guide-checklist strong {
-      color: var(--ink, #172a2e);
-    }
-
-    .field-guide-table-wrap {
-      width: 100%;
-      overflow-x: auto;
-      margin-top: 16px;
-    }
-
-    .field-guide-table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: left;
-      font-size: 0.94rem;
-    }
-
-    .field-guide-table caption {
-      margin-bottom: 12px;
-      color: var(--muted, #52636a);
-      text-align: left;
-      line-height: 1.6;
-    }
-
-    .field-guide-table th,
-    .field-guide-table td {
-      padding: 13px 14px;
-      border-bottom: 1px solid var(--soft-border, #dce5e2);
-      vertical-align: top;
-      line-height: 1.6;
-    }
-
-    .field-guide-table th {
-      color: var(--green-dark, #0f4f49);
-      background: var(--wash, #f2f7f5);
+    .map-status {
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      z-index: 1200;
+      max-width: calc(100% - 28px);
+      border-radius: 999px;
+      padding: 8px 12px;
+      color: #0f4f49;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 10px 24px rgba(16, 24, 40, 0.12);
+      font-size: 13px;
       font-weight: 800;
     }
 
-    .field-guide-table td {
-      color: var(--muted, #52636a);
-    }
-
-    .field-guide-table td:first-child {
-      min-width: 150px;
-      color: var(--ink, #172a2e);
-      font-weight: 700;
-    }
-
-    .field-guide-callout {
-      margin-top: 22px;
-      padding: 18px 20px;
-      border-left: 4px solid #087d73;
-      border-radius: 0 12px 12px 0;
-      background: #edf8f5;
-    }
-
-    .field-guide-callout p {
-      margin: 0;
-      color: var(--green-dark, #0f4f49);
-      line-height: 1.7;
-    }
-
-    .field-guide-sources {
-      margin-top: 24px;
-      padding-top: 18px;
-      border-top: 1px solid var(--soft-border, #dce5e2);
-      color: var(--muted, #52636a);
-      font-size: 0.9rem;
-      line-height: 1.7;
-    }
-
-    .field-guide-sources a {
-      color: var(--green-dark, #0f4f49);
-      text-decoration: underline;
-      text-underline-offset: 3px;
-    }
-
-    body.pdf-export-mode {
-      background: #ffffff !important;
-    }
-
-    body.pdf-export-mode .profile-page {
-      width: 1100px;
-      max-width: 1100px;
-      padding: 24px 0 40px;
-    }
-
-    body.pdf-export-mode .hero-actions {
-      display: none !important;
-    }
-
-    body.pdf-export-mode .town-map-frame {
-      display: none !important;
-    }
-
-    body.pdf-export-mode .town-static-map-preview {
-      display: block !important;
-    }
-
-    body.pdf-export-mode .map-preview-label span {
-      font-size: 0;
-    }
-
-    body.pdf-export-mode .map-preview-label span::after {
-      content: "Map-generated town view";
-      font-size: 0.8rem;
-    }
-
-    @media (max-width: 860px) {
-      .field-guide-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media (max-width: 560px) {
-      .field-guide-card {
-        padding: 18px;
-      }
-
-      .field-guide-table {
-        font-size: 0.85rem;
-      }
-
-      .field-guide-table th,
-      .field-guide-table td {
-        padding: 10px;
-      }
-    }
-
-    @media print {
-      .field-guide-card,
-      .field-guide-callout,
-      .field-guide-table tr {
-        break-inside: avoid;
-        page-break-inside: avoid;
-      }
-
-      .field-guide-table-wrap {
-        overflow: visible;
-      }
-
-      .field-guide-table thead {
-        display: table-header-group;
-      }
-
-      .field-guide-section h3,
-      .field-guide-card h3 {
-        break-after: avoid;
-        page-break-after: avoid;
-      }
+    .map-status.is-hidden {
+      display: none;
     }
   </style>
 </head>
 
 <body>
-  <main class="profile-page">
-
-    <header class="profile-hero">
-      <div class="profile-hero-text">
-        <p class="eyebrow">Glúnta Research</p>
-
-        <h1>Town Mission Profile</h1>
-
-        <p class="hero-subtitle">
-          A mission-focused demographic profile for understanding towns,
-          existing church presence, and possible areas for prayer,
-          partnership, and local research.
-        </p>
-      </div>
-
-      <div class="hero-actions">
-        <a class="secondary-button" href="index.html">
-          Back to map
-        </a>
-
-        <a class="secondary-button" href="#townFieldGuide">
-          Field Guide
-        </a>
-
-        <button
-          id="downloadPdfButton"
-          class="primary-button"
-          type="button"
-        >
-          Download PDF
-        </button>
-      </div>
-    </header>
-
-    <section
-      id="townFieldGuide"
-      class="wide-panel"
-      aria-labelledby="townFieldGuideTitle"
-    >
-      <div class="panel-header">
-        <p class="eyebrow">Glúnta Field Guide</p>
-
-        <h2 id="townFieldGuideTitle">
-          How to understand this town
-        </h2>
-      </div>
-
-      <p class="field-guide-intro">
-        Begin with the figures, then spend time with the people.
-        This guide helps you examine the evidence, recognise what
-        it cannot establish, and develop a thoughtful understanding
-        of the town through observation, conversation and prayer.
-      </p>
-
-      <details class="field-guide-disclosure">
-        <summary>
-          Open the Field Guide: reading, listening and local research
-        </summary>
-
-        <div class="field-guide-body">
-
-          <div class="field-guide-grid">
-
-            <article class="field-guide-card">
-              <h3>1. Establish which place the figures describe</h3>
-
-              <p>
-                Census towns, Small Areas, Electoral Divisions and
-                Local Electoral Areas are different geographical units.
-                Their boundaries may differ from a parish, school
-                catchment or the place residents call their town.
-              </p>
-
-              <p>
-                <strong>Investigate:</strong>
-                Look at the town boundary. Which estates, neighbouring
-                villages and rural communities are outside it but share
-                its schools, shops, employment and community life?
-              </p>
-            </article>
-
-            <article class="field-guide-card">
-              <h3>2. Check what each number means</h3>
-
-              <p>
-                Read the source, year and denominator before
-                interpreting a percentage. A share of all residents
-                is different from a share of adults, households or
-                family units. A missing figure does not mean zero.
-              </p>
-
-              <p>
-                <strong>Investigate:</strong>
-                Choose three figures that surprised you. Check who
-                or what was counted, the area covered and the date.
-                Compare them with county or State figures only when
-                the definitions and reference periods match.
-              </p>
-            </article>
-
-            <article class="field-guide-card">
-              <h3>3. Explore households and everyday rhythms</h3>
-
-              <p>
-                Age, household composition, housing and employment
-                describe different aspects of daily life. Living alone
-                does not establish loneliness. Renting does not prove
-                that someone is temporary or disconnected.
-              </p>
-
-              <p>
-                <strong>Ask locally:</strong>
-                How do work, school, caring responsibilities and
-                transport shape the week? When are people present
-                in the town? What helps children, younger adults
-                and older residents participate in community life?
-              </p>
-            </article>
-
-            <article class="field-guide-card">
-              <h3>4. Read culture and religion with care</h3>
-
-              <p>
-                Birthplace, citizenship, ethnicity, language and
-                religious identity describe different things.
-                Census religious affiliation does not measure
-                attendance, personal faith or openness to Christianity.
-                A church directory can also miss congregations
-                and informal Christian activity.
-              </p>
-
-              <p>
-                <strong>Ask locally:</strong>
-                Which languages and experiences shape belonging here?
-                What do existing churches understand about the town?
-                Where might your own background limit what you notice?
-              </p>
-            </article>
-
-            <article class="field-guide-card">
-              <h3>5. Discover existing strengths and practical pressures</h3>
-
-              <p>
-                Identify the people, places and organisations already
-                contributing to the town: libraries, sports clubs,
-                community halls, businesses, schools, churches and
-                informal networks of care. A listed service does not
-                establish its current capacity or accessibility.
-              </p>
-
-              <p>
-                <strong>Investigate:</strong>
-                Visit a public gathering place and speak with a local
-                organisation. Find out what residents value, what
-                support already exists and which difficulties people
-                themselves identify. Check transport and access
-                on the ground.
-              </p>
-            </article>
-
-            <article class="field-guide-card">
-              <h3>6. Listen across different experiences</h3>
-
-              <p>
-                A town contains several overlapping stories.
-                Longstanding residents, newcomers, younger people,
-                carers, business owners and community workers may
-                experience the same place differently. A few interviews
-                or online comments cannot represent everyone.
-              </p>
-
-              <p>
-                <strong>Ask locally:</strong>
-                What has changed? What should be preserved?
-                Who helps people feel at home? Whose experience have
-                you not yet heard? Read local plans and historical
-                sources alongside these conversations.
-              </p>
-            </article>
-
-          </div>
-
-          <section
-            class="field-guide-section"
-            aria-labelledby="fieldGuideEvidenceTitle"
-          >
-            <p class="eyebrow">Understand the evidence</p>
-
-            <h3 id="fieldGuideEvidenceTitle">
-              Separate a finding from an interpretation
-            </h3>
-
-            <p>
-              When you bring information together, identify how each
-              statement is supported. These categories help you
-              distinguish published information from conclusions
-              that still need investigation.
-            </p>
-
-            <div class="field-guide-table-wrap">
-              <table class="field-guide-table">
-                <caption>
-                  A simple evidence guide for your own town research.
-                </caption>
-
-                <thead>
-                  <tr>
-                    <th scope="col">Evidence type</th>
-                    <th scope="col">What it means</th>
-                    <th scope="col">What to check</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  <tr>
-                    <td>Published statistic</td>
-                    <td>
-                      A figure published by a named statistical source.
-                    </td>
-                    <td>
-                      Its definition, reference period, geographical
-                      area and denominator.
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td>Estimate or model</td>
-                    <td>
-                      A value estimated from a sample, administrative
-                      records or a statistical model.
-                    </td>
-                    <td>
-                      The method, coverage, published uncertainty
-                      and limitations.
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td>Documented activity</td>
-                    <td>
-                      A named organisation or document records a
-                      service, project or activity.
-                    </td>
-                    <td>
-                      Whether it is proposed, operating, completed
-                      or no longer available.
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td>Reported experience</td>
-                    <td>
-                      An individual or group describes their experience
-                      of the town.
-                    </td>
-                    <td>
-                      Who is speaking, when they spoke and whose
-                      experience is still missing.
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td>Interpretation</td>
-                    <td>
-                      A suggested explanation or implication drawn
-                      from the evidence.
-                    </td>
-                    <td>
-                      Other possible explanations and what further
-                      evidence could change the conclusion.
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td>Unavailable or withheld</td>
-                    <td>
-                      A figure or record was not found, is outside
-                      the source's coverage or has not been released.
-                    </td>
-                    <td>
-                      The reason for the gap. Do not treat it as
-                      a measured zero or proof of absence.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section
-            class="field-guide-section"
-            aria-labelledby="fieldGuideWalkTitle"
-          >
-            <p class="eyebrow">Take the guide into the town</p>
-
-            <h3 id="fieldGuideWalkTitle">
-              A simple listening and prayer walk
-            </h3>
-
-            <ol class="field-guide-steps">
-              <li>
-                <strong>Orient yourself.</strong>
-                Walk through the centre and towards a residential
-                area. Notice the relationship between the mapped
-                boundary and the town's everyday life.
-              </li>
-
-              <li>
-                <strong>Spend time in a shared place.</strong>
-                Visit a library, café, park or community venue.
-                Observe how the space works and who can comfortably
-                use it.
-              </li>
-
-              <li>
-                <strong>Learn from existing service.</strong>
-                Speak with a community organisation and an existing
-                church. Ask what they have learned through serving
-                locally.
-              </li>
-
-              <li>
-                <strong>Test one assumption.</strong>
-                Choose something you inferred from the report.
-                Seek evidence that might confirm, complicate or
-                overturn it.
-              </li>
-
-              <li>
-                <strong>Pray and identify a next step.</strong>
-                Give thanks for the town's people and strengths.
-                Bring its pressures before God and identify one
-                practical act of learning, friendship, service
-                or partnership.
-              </li>
-            </ol>
-          </section>
-
-          <section
-            class="field-guide-section"
-            aria-labelledby="fieldGuideFindingsTitle"
-          >
-            <p class="eyebrow">Bring your findings together</p>
-
-            <h3 id="fieldGuideFindingsTitle">
-              Write a short reading of the town
-            </h3>
-
-            <ul class="field-guide-checklist">
-              <li>
-                <strong>Three supported observations:</strong>
-                What have you learned, and what evidence supports
-                each observation?
-              </li>
-
-              <li>
-                <strong>Two unresolved questions:</strong>
-                What remains uncertain, and who or what could help
-                you investigate it?
-              </li>
-
-              <li>
-                <strong>One practical next step:</strong>
-                What will you do, with whom, and when?
-              </li>
-            </ul>
-
-            <p>
-              For each observation, identify whether it comes from
-              a published statistic, a document, a conversation or
-              your interpretation. Record dates and sources, and
-              seek permission before attributing someone's
-              personal account.
-            </p>
-
-            <div class="field-guide-callout">
-              <p>
-                <strong>Check your conclusions.</strong>
-                Can another person trace the evidence? Have you
-                distinguished a town-wide pattern from an individual
-                experience? What might change your mind?
-              </p>
-            </div>
-          </section>
-
-          <div class="field-guide-sources">
-            <p>
-              Irish statistical terminology:
-              <a
-                href="https://www.cso.ie/en/census/census2022/census2022smallareapopulationstatistics/"
-                target="_blank"
-                rel="noopener noreferrer"
-              >CSO Census 2022 tables and glossary</a>
-              and
-              <a
-                href="https://www.cso.ie/en/census/census2022/census2022urbanboundariesandbuiltupareas/"
-                target="_blank"
-                rel="noopener noreferrer"
-              >understanding town boundaries</a>.
-            </p>
-
-            <p>
-              The field-guide approach is informed by
-              <a
-                href="https://bradbrisco.org/neighborhood-intelligence-report/guide"
-                target="_blank"
-                rel="noopener noreferrer"
-              >Brad Brisco's Field Guide</a>.
-              This guidance is written for Glúnta's Irish town profiles.
-            </p>
-          </div>
-
-        </div>
-      </details>
-    </section>
-
-    <section class="town-summary-card">
-      <div class="town-map-preview-wrap">
-        <iframe
-          id="townMapFrame"
-          class="town-map-frame"
-          title="Town context map"
-          src="town-profile-map.html"
-          loading="eager"
-        ></iframe>
-
-        <div
-          id="townStaticMapPreview"
-          class="town-static-map-preview"
-          aria-hidden="true"
-        ></div>
-
-        <div class="map-preview-label">
-          <span>Interactive town context map</span>
-        </div>
-      </div>
-
-      <div class="town-summary-content">
-        <p class="eyebrow">Selected town</p>
-
-        <h2 id="townName">Loading town...</h2>
-
-        <div class="summary-meta">
-          <span id="countyName">County: —</span>
-          <span id="urbanAreaCode">Urban Area Code: —</span>
-        </div>
-
-        <p id="townDescription" class="town-description">
-          This page uses the selected town boundary, Small Area
-          demographic data, and listed church locations to create
-          a focused mission profile.
-        </p>
-
-        <div id="loadingNotice" class="loading-notice">
-          Loading town boundary from the Glúnta demographic map data...
-        </div>
-      </div>
-    </section>
-
-    <section class="metric-grid" aria-label="Summary metrics">
-      <article class="metric-card">
-        <p class="metric-label">Population</p>
-
-        <p id="populationValue" class="metric-value">—</p>
-
-        <p class="metric-note">
-          Census 2022 urban area estimate from included Small Areas.
-        </p>
-      </article>
-
-      <article class="metric-card">
-        <p class="metric-label">Small Areas</p>
-
-        <p id="smallAreasValue" class="metric-value">—</p>
-
-        <p class="metric-note">
-          Small Areas included within the town boundary.
-        </p>
-      </article>
-
-      <article class="metric-card">
-        <p class="metric-label">Churches listed</p>
-
-        <p id="churchesValue" class="metric-value">—</p>
-
-        <p class="metric-note">
-          Church points listed in the Glúnta dataset.
-        </p>
-      </article>
-
-      <article class="metric-card">
-        <p class="metric-label">Nearby churches</p>
-
-        <p id="nearbyChurchesValue" class="metric-value">—</p>
-
-        <p class="metric-note">
-          Churches within 15 km of the town centre.
-        </p>
-      </article>
-    </section>
-
-    <section class="content-grid">
-      <article class="panel">
-        <div class="panel-header">
-          <p class="eyebrow">Demographic shape</p>
-          <h2>Population and age</h2>
-        </div>
-
-        <div class="data-list">
-          <div class="data-row">
-            <span>Children, 0 to 14</span>
-            <strong id="ageChildren">—</strong>
-          </div>
-
-          <div class="data-row">
-            <span>Young adults, 15 to 34</span>
-            <strong id="ageYoungAdults">—</strong>
-          </div>
-
-          <div class="data-row">
-            <span>Adults, 35 to 64</span>
-            <strong id="ageAdults">—</strong>
-          </div>
-
-          <div class="data-row">
-            <span>Older adults, 65+</span>
-            <strong id="ageOlderAdults">—</strong>
-          </div>
-        </div>
-      </article>
-
-      <article class="panel">
-        <div class="panel-header">
-          <p class="eyebrow">Cultural profile</p>
-          <h2>Migration, language, and background</h2>
-        </div>
-
-        <div class="data-list">
-          <div class="data-row">
-            <span>Born outside Ireland</span>
-            <strong id="bornOutsideIreland">—</strong>
-          </div>
-
-          <div class="data-row">
-            <span>Non-Irish citizenship</span>
-            <strong id="nonIrishCitizenship">—</strong>
-          </div>
-
-          <div class="data-row">
-            <span>Foreign-language speakers</span>
-            <strong id="foreignLanguageSpeakers">—</strong>
-          </div>
-
-          <div class="data-row">
-            <span>Other White background</span>
-            <strong id="otherWhiteBackground">—</strong>
-          </div>
-        </div>
-      </article>
-
-      <article class="panel">
-        <div class="panel-header">
-          <p class="eyebrow">Religious profile</p>
-          <h2>Religious affiliation</h2>
-        </div>
-
-        <div class="data-list">
-          <div class="data-row">
-            <span>Catholic</span>
-            <strong id="religionCatholic">—</strong>
-          </div>
-
-          <div class="data-row">
-            <span>Other religion</span>
-            <strong id="religionOther">—</strong>
-          </div>
-
-          <div class="data-row">
-            <span>No religion</span>
-            <strong id="religionNone">—</strong>
-          </div>
-
-          <div class="data-row">
-            <span>Religion not stated</span>
-            <strong id="religionNotStated">—</strong>
-          </div>
-        </div>
-      </article>
-
-      <article class="panel">
-        <div class="panel-header">
-          <p class="eyebrow">Church presence</p>
-          <h2>Listed churches</h2>
-        </div>
-
-        <div class="church-list-block">
-          <h3>Inside this town</h3>
-
-          <ul id="churchesInsideList" class="church-list">
-            <li>Church list will appear here.</li>
-          </ul>
-        </div>
-
-        <div class="church-list-block">
-          <h3>Nearby</h3>
-
-          <ul id="nearbyChurchesList" class="church-list">
-            <li>Nearby churches will appear here.</li>
-          </ul>
-        </div>
-      </article>
-    </section>
-
-    <section class="wide-panel">
-      <div class="panel-header">
-        <p class="eyebrow">Full demographic profile</p>
-        <h2>Town profile statistics</h2>
-      </div>
-
-      <div id="fullDemographicProfile" class="content-grid">
-        <article class="panel">
-          <div class="panel-header">
-            <p class="eyebrow">Loading</p>
-            <h2>Demographic data</h2>
-          </div>
-
-          <p class="source-note">
-            Full Census 2022 Small Area profile data will appear
-            here once the town is loaded.
-          </p>
-        </article>
-      </div>
-    </section>
-
-    <section class="wide-panel">
-      <div class="panel-header">
-        <p class="eyebrow">Mission reading</p>
-        <h2>Missiological observations</h2>
-      </div>
-
-      <div id="missionInsights" class="insight-list">
-        <article class="insight-card">
-          <h3>Begin with local listening</h3>
-
-          <p>
-            This profile is intended to support prayer, partnership,
-            and research. It should not be read as a mechanical
-            church planting recommendation.
-          </p>
-        </article>
-
-        <article class="insight-card">
-          <h3>Read the data alongside people</h3>
-
-          <p>
-            Demographic data can show patterns, but it cannot tell
-            the full story of relationships, history, local trust,
-            existing witness, or spiritual openness.
-          </p>
-        </article>
-      </div>
-    </section>
-
-    <section class="wide-panel muted-panel">
-      <div class="panel-header">
-        <p class="eyebrow">Data note</p>
-        <h2>Sources and method</h2>
-      </div>
-
-      <p>
-        This profile draws from Census 2022 Built Up Area boundaries,
-        Small Area boundaries, processed Small Area demographic tables,
-        and the Glúnta church points dataset. Figures should be treated
-        as planning and research aids, not as final local knowledge.
-      </p>
-    </section>
-
-  </main>
-
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <script src="town-profile.js"></script>
+  <div id="map"></div>
+  <div id="mapStatus" class="map-status">Loading town map...</div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const selectedCode = params.get("code");
+    const mapStatusEl = document.getElementById("mapStatus");
+
+    let map;
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function setStatus(message, hide = false) {
+      mapStatusEl.textContent = message;
+      mapStatusEl.classList.toggle("is-hidden", hide);
+    }
+
+    function parseCsvLine(line) {
+      const result = [];
+      let current = "";
+      let inQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        const next = line[i + 1];
+
+        if (char === '"' && inQuotes && next === '"') {
+          current += '"';
+          i++;
+        } else if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === "," && !inQuotes) {
+          result.push(current);
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+
+      result.push(current);
+      return result;
+    }
+
+    function parseCsv(text) {
+      const lines = text
+        .replace(/\r/g, "")
+        .split("\n")
+        .filter(line => line.trim().length > 0);
+
+      if (lines.length < 2) return [];
+
+      const headers = parseCsvLine(lines[0]).map(header => header.trim());
+
+      return lines.slice(1).map(line => {
+        const values = parseCsvLine(line);
+        const row = {};
+
+        headers.forEach((header, index) => {
+          row[header] = values[index] ? values[index].trim() : "";
+        });
+
+        return row;
+      });
+    }
+
+    function loadJson(url) {
+      return fetch(url).then(response => {
+        if (!response.ok) {
+          throw new Error(
+            `Could not load ${url}. HTTP status: ${response.status}`
+          );
+        }
+
+        return response.json();
+      });
+    }
+
+    function loadCsv(url) {
+      return fetch(url)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(
+              `Could not load ${url}. HTTP status: ${response.status}`
+            );
+          }
+
+          return response.text();
+        })
+        .then(parseCsv);
+    }
+
+    function getAreaName(props) {
+      return (
+        props.area_name ||
+        props.town_name ||
+        props.TOWN_NAME ||
+        props.URBAN_AREA_NAME ||
+        props.ENGLISH ||
+        props.name ||
+        props.NAME ||
+        "Unknown town"
+      );
+    }
+
+    function getUrbanAreaCode(props) {
+      return String(
+        props.urban_area_code ||
+        props.URBAN_AREA_CODE ||
+        props.urbanAreaCode ||
+        props.URBAN_CODE ||
+        props.BUA_CODE ||
+        props.CSO_CODE ||
+        props.code ||
+        props.CODE ||
+        ""
+      ).trim();
+    }
+
+    function getSmallAreaCode(props) {
+      return String(
+        props.SA_PUB2022 ||
+        props.SA_PUB2016 ||
+        props.SA_PUB2011 ||
+        ""
+      ).trim();
+    }
+
+    function propertyContainsSelectedCode(props, code) {
+      if (!code) return false;
+
+      const target = String(code).trim();
+
+      return Object.values(props).some(
+        value => String(value || "").trim() === target
+      );
+    }
+
+    function findTownFeature(data, code) {
+      if (!code) return null;
+
+      return data.features.find(feature => {
+        const props = feature.properties || {};
+        const directCode = getUrbanAreaCode(props);
+
+        if (directCode && directCode === String(code).trim()) {
+          return true;
+        }
+
+        return propertyContainsSelectedCode(props, code);
+      });
+    }
+
+    function collectCoordinates(geometry, output) {
+      if (!geometry) return;
+
+      if (geometry.type === "Polygon") {
+        geometry.coordinates.forEach(ring => {
+          ring.forEach(coord => output.push(coord));
+        });
+      }
+
+      if (geometry.type === "MultiPolygon") {
+        geometry.coordinates.forEach(polygon => {
+          polygon.forEach(ring => {
+            ring.forEach(coord => output.push(coord));
+          });
+        });
+      }
+    }
+
+    function getFeatureCentroid(feature) {
+      const coords = [];
+      collectCoordinates(feature.geometry, coords);
+
+      if (coords.length === 0) return null;
+
+      let lngTotal = 0;
+      let latTotal = 0;
+      let validCount = 0;
+
+      coords.forEach(coord => {
+        const lng = Number(coord[0]);
+        const lat = Number(coord[1]);
+
+        if (Number.isNaN(lng) || Number.isNaN(lat)) return;
+
+        lngTotal += lng;
+        latTotal += lat;
+        validCount++;
+      });
+
+      if (validCount === 0) return null;
+
+      return {
+        lng: lngTotal / validCount,
+        lat: latTotal / validCount
+      };
+    }
+
+    function getFeatureBounds(feature) {
+      const coords = [];
+      collectCoordinates(feature.geometry, coords);
+
+      if (coords.length === 0) return null;
+
+      let minLng = Infinity;
+      let minLat = Infinity;
+      let maxLng = -Infinity;
+      let maxLat = -Infinity;
+
+      coords.forEach(coord => {
+        const lng = Number(coord[0]);
+        const lat = Number(coord[1]);
+
+        if (Number.isNaN(lng) || Number.isNaN(lat)) return;
+
+        minLng = Math.min(minLng, lng);
+        minLat = Math.min(minLat, lat);
+        maxLng = Math.max(maxLng, lng);
+        maxLat = Math.max(maxLat, lat);
+      });
+
+      if (!Number.isFinite(minLng)) return null;
+
+      return {
+        minLng,
+        minLat,
+        maxLng,
+        maxLat
+      };
+    }
+
+    function boundsIntersect(a, b) {
+      if (!a || !b) return false;
+
+      return !(
+        b.minLng > a.maxLng ||
+        b.maxLng < a.minLng ||
+        b.minLat > a.maxLat ||
+        b.maxLat < a.minLat
+      );
+    }
+
+    function pointInRing(lng, lat, ring) {
+      let inside = false;
+
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const xi = Number(ring[i][0]);
+        const yi = Number(ring[i][1]);
+        const xj = Number(ring[j][0]);
+        const yj = Number(ring[j][1]);
+
+        const intersect =
+          yi > lat !== yj > lat &&
+          lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
+
+        if (intersect) inside = !inside;
+      }
+
+      return inside;
+    }
+
+    function pointInPolygon(lng, lat, rings) {
+      if (!rings || rings.length === 0) return false;
+
+      const insideOuter = pointInRing(lng, lat, rings[0]);
+      if (!insideOuter) return false;
+
+      for (let i = 1; i < rings.length; i++) {
+        if (pointInRing(lng, lat, rings[i])) return false;
+      }
+
+      return true;
+    }
+
+    function pointInGeometry(lng, lat, geometry) {
+      if (!geometry) return false;
+
+      if (geometry.type === "Polygon") {
+        return pointInPolygon(lng, lat, geometry.coordinates);
+      }
+
+      if (geometry.type === "MultiPolygon") {
+        return geometry.coordinates.some(
+          polygon => pointInPolygon(lng, lat, polygon)
+        );
+      }
+
+      return false;
+    }
+
+    function smallAreaLikelyOverlapsTown(
+      smallAreaFeature,
+      townGeometry,
+      townBounds
+    ) {
+      const smallAreaBounds = getFeatureBounds(smallAreaFeature);
+
+      if (
+        !smallAreaBounds ||
+        !townBounds ||
+        !boundsIntersect(smallAreaBounds, townBounds)
+      ) {
+        return false;
+      }
+
+      const centroid = getFeatureCentroid(smallAreaFeature);
+
+      if (
+        centroid &&
+        pointInGeometry(centroid.lng, centroid.lat, townGeometry)
+      ) {
+        return true;
+      }
+
+      const smallAreaPoints = [];
+      collectCoordinates(smallAreaFeature.geometry, smallAreaPoints);
+
+      for (const coord of smallAreaPoints) {
+        const lng = Number(coord[0]);
+        const lat = Number(coord[1]);
+
+        if (pointInGeometry(lng, lat, townGeometry)) return true;
+      }
+
+      const townPoints = [];
+      collectCoordinates(townGeometry, townPoints);
+
+      for (const coord of townPoints) {
+        const lng = Number(coord[0]);
+        const lat = Number(coord[1]);
+
+        if (pointInGeometry(lng, lat, smallAreaFeature.geometry)) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    function getColorForPopulation(value) {
+      const number = Number(value);
+
+      if (Number.isNaN(number)) return "#e5eef0";
+      if (number >= 800) return "#08306b";
+      if (number >= 600) return "#08519c";
+      if (number >= 400) return "#2171b5";
+      if (number >= 250) return "#4292c6";
+      if (number >= 100) return "#9ecae1";
+      return "#deebf7";
+    }
+
+    function buildSmallAreaLookup(rows) {
+      const lookup = {};
+
+      rows.forEach(row => {
+        const code = String(row.SA_PUB2022 || "").trim();
+        if (!code) return;
+
+        const clean = {};
+
+        Object.keys(row).forEach(key => {
+          if (key === "SA_PUB2022") {
+            clean[key] = row[key];
+            return;
+          }
+
+          const value = Number(row[key]);
+          clean[key] = Number.isNaN(value) ? null : value;
+        });
+
+        lookup[code] = clean;
+      });
+
+      return lookup;
+    }
+
+    function haversineKm(lat1, lng1, lat2, lng2) {
+      const radius = 6371;
+      const dLat = ((lat2 - lat1) * Math.PI) / 180;
+      const dLng = ((lng2 - lng1) * Math.PI) / 180;
+
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) *
+          Math.cos((lat2 * Math.PI) / 180) *
+          Math.sin(dLng / 2) *
+          Math.sin(dLng / 2);
+
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return radius * c;
+    }
+
+    function getChurchName(row) {
+      return (
+        row.name ||
+        row["Church Name"] ||
+        row.church_name ||
+        "Unnamed church"
+      );
+    }
+
+    function analyseChurches(churchRows, townFeature) {
+      const townGeometry = townFeature.geometry;
+      const townCentroid = getFeatureCentroid(townFeature);
+
+      const validChurches = churchRows
+        .map(row => {
+          const lat = Number(row.latitude || row.Latitude);
+          const lng = Number(row.longitude || row.Longitude);
+
+          if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+
+          return {
+            ...row,
+            lat,
+            lng,
+            distanceKm: townCentroid
+              ? haversineKm(
+                  townCentroid.lat,
+                  townCentroid.lng,
+                  lat,
+                  lng
+                )
+              : null
+          };
+        })
+        .filter(Boolean);
+
+      const inside = validChurches
+        .filter(church =>
+          pointInGeometry(church.lng, church.lat, townGeometry)
+        )
+        .sort((a, b) =>
+          getChurchName(a).localeCompare(getChurchName(b), "en-IE")
+        );
+
+      const nearby = validChurches
+        .filter(church =>
+          !pointInGeometry(church.lng, church.lat, townGeometry)
+        )
+        .filter(church =>
+          typeof church.distanceKm === "number" &&
+          church.distanceKm <= 15
+        )
+        .sort((a, b) => a.distanceKm - b.distanceKm)
+        .slice(0, 8);
+
+      return {
+        inside,
+        nearby
+      };
+    }
+
+    function initialiseMap() {
+      if (!window.L) {
+        setStatus("Leaflet did not load.");
+        return;
+      }
+
+      map = L.map("map", {
+        zoomControl: true,
+        attributionControl: true,
+        scrollWheelZoom: true,
+        dragging: true,
+        doubleClickZoom: true,
+        boxZoom: false,
+        keyboard: true
+      });
+
+      L.tileLayer(
+        "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+          maxZoom: 19,
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }
+      ).addTo(map);
+    }
+
+    function renderMap(
+      townFeature,
+      matchingSmallAreas,
+      lookup,
+      churchAnalysis
+    ) {
+      const smallAreaCollection = {
+        type: "FeatureCollection",
+        features: matchingSmallAreas.map(feature => {
+          const clone = JSON.parse(JSON.stringify(feature));
+          const code = getSmallAreaCode(clone.properties);
+          const data = lookup[code] || {};
+
+          clone.properties.population_2022 = data.population_2022;
+          return clone;
+        })
+      };
+
+      L.geoJSON(smallAreaCollection, {
+        style: feature => ({
+          fillColor: getColorForPopulation(
+            feature.properties.population_2022
+          ),
+          fillOpacity: 0.46,
+          color: "#0f172a",
+          weight: 0.55,
+          opacity: 0.65
+        }),
+        interactive: false
+      }).addTo(map);
+
+      const townLayer = L.geoJSON(townFeature, {
+        style: {
+          color: "#111827",
+          weight: 3,
+          opacity: 0.95,
+          fillColor: "transparent",
+          fillOpacity: 0
+        }
+      }).addTo(map);
+
+      churchAnalysis.inside.forEach(church => {
+        const marker = L.circleMarker([church.lat, church.lng], {
+          radius: 5.5,
+          color: "#111827",
+          weight: 2,
+          fillColor: "#ffffff",
+          fillOpacity: 1
+        });
+
+        marker.bindPopup(
+          `<strong>${escapeHtml(getChurchName(church))}</strong><br>Listed inside this town`
+        );
+
+        marker.addTo(map);
+      });
+
+      churchAnalysis.nearby.slice(0, 5).forEach(church => {
+        const marker = L.circleMarker([church.lat, church.lng], {
+          radius: 4,
+          color: "#0f4f49",
+          weight: 1.8,
+          fillColor: "#ffffff",
+          fillOpacity: 0.45
+        });
+
+        marker.bindPopup(
+          `<strong>${escapeHtml(getChurchName(church))}</strong><br>${church.distanceKm.toFixed(1)} km from town centre`
+        );
+
+        marker.addTo(map);
+      });
+
+      const bounds = townLayer.getBounds();
+
+      setTimeout(() => {
+        map.invalidateSize(true);
+
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, {
+            padding: [90, 90],
+            maxZoom: 12,
+            animate: false
+          });
+        }
+
+        townLayer.bringToFront();
+        setStatus("", true);
+      }, 350);
+    }
+
+    function loadMap() {
+      initialiseMap();
+
+      if (!map) return;
+
+      if (!selectedCode) {
+        setStatus("No town code provided.");
+        map.setView([53.4, -8.1], 7);
+        return;
+      }
+
+      Promise.all([
+        loadJson("urban-areas-boundaries.geojson"),
+        loadJson("small-areas-2022.geojson"),
+        loadCsv("small-area-demographics-2022.csv"),
+        loadCsv("churches-points.csv")
+      ])
+        .then(
+          ([
+            townData,
+            smallAreasData,
+            smallAreaDemographicsRows,
+            churches
+          ]) => {
+            const selectedTownFeature = findTownFeature(
+              townData,
+              selectedCode
+            );
+
+            if (!selectedTownFeature) {
+              setStatus("Town boundary not found.");
+              map.setView([53.4, -8.1], 7);
+              return;
+            }
+
+            const lookup = buildSmallAreaLookup(
+              smallAreaDemographicsRows
+            );
+
+            const townBounds = getFeatureBounds(
+              selectedTownFeature
+            );
+
+            const matchingSmallAreas =
+              smallAreasData.features.filter(feature => {
+                return smallAreaLikelyOverlapsTown(
+                  feature,
+                  selectedTownFeature.geometry,
+                  townBounds
+                );
+              });
+
+            const churchAnalysis = analyseChurches(
+              churches,
+              selectedTownFeature
+            );
+
+            renderMap(
+              selectedTownFeature,
+              matchingSmallAreas,
+              lookup,
+              churchAnalysis
+            );
+          }
+        )
+        .catch(error => {
+          console.error(error);
+          setStatus("Map data could not be loaded.");
+          map.setView([53.4, -8.1], 7);
+        });
+    }
+
+    loadMap();
+  </script>
 </body>
 </html>
