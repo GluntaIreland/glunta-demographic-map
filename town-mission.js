@@ -3,11 +3,6 @@
 
   const number = new Intl.NumberFormat('en-IE');
 
-  const bible = passage =>
-    'https://www.biblegateway.com/passage/?search=' +
-    encodeURIComponent(passage) +
-    '&version=ESV';
-
   const escape = value =>
     String(value ?? '').replace(/[&<>"']/g, character => ({
       '&': '&amp;',
@@ -31,10 +26,6 @@
       : null;
   }
 
-  /*
-   * Read the report's exact counts, rather than rounded percentages.
-   * Missing or inconsistent tables produce unavailable measures.
-   */
   function readChart(doc, id) {
     const card = doc
       .getElementById('chart-' + id)
@@ -50,7 +41,9 @@
         /denominator:\s*([\d,]+)(?:\s|·|$)/
       );
 
-    const total = match ? parseCount(match[1]) : null;
+    const total = match
+      ? parseCount(match[1])
+      : null;
 
     const entries = Array.from(
       card.querySelectorAll('tbody tr')
@@ -65,8 +58,9 @@
       entries.every(([label, count]) =>
         label && count !== null
       ) &&
-      new Set(entries.map(([label]) => label)).size ===
-        entries.length &&
+      new Set(
+        entries.map(([label]) => label)
+      ).size === entries.length &&
       entries.reduce(
         (sum, [, count]) => sum + count,
         0
@@ -163,7 +157,7 @@
     } = data;
 
     const missing =
-      'The supporting figure is unavailable or did not pass the report-table check. Use this as a general discussion question, without drawing a town-specific conclusion.';
+      'The supporting figure is unavailable or did not pass the table-total check. Treat this reflection as a general question, without drawing a town-specific conclusion.';
 
     const population = age?.total ?? null;
 
@@ -172,20 +166,20 @@
       'Born outside Ireland'
     );
 
-    const englishNotWell = value(
+    const notWell = value(
       english,
       'Not well'
     );
 
-    const englishNotAtAll = value(
+    const notAtAll = value(
       english,
       'Not at all'
     );
 
     const limitedEnglish =
-      englishNotWell !== null &&
-      englishNotAtAll !== null
-        ? englishNotWell + englishNotAtAll
+      notWell !== null &&
+      notAtAll !== null
+        ? notWell + notAtAll
         : null;
 
     const otherReligion = value(
@@ -218,12 +212,36 @@
       'Private landlord'
     );
 
-    const churchEvidence =
-      data.churchCount === null
-        ? 'Church-location records are unavailable. No conclusion about the presence or absence of churches can be drawn from this report.'
-        : data.churchCount === 0
-          ? 'Glúnta lists no church points inside this boundary. The dataset has incomplete or unverified coverage; zero listed points does not establish that no churches exist.'
-          : `Glúnta lists ${number.format(data.churchCount)} church-location record(s) inside this boundary. Their current activity, coverage and relationships need local verification.`;
+    let churchEvidence;
+    let churchReflection;
+
+    if (data.churchCount === null) {
+      churchEvidence =
+        'Church-location records are unavailable. No conclusion about the presence or absence of churches can be drawn from this report.';
+
+      churchReflection =
+        'Begin by finding out which congregations and Christian relationships are already present. Speak with residents and regional churches, learn the local history, and ask where partnership may be possible. The unavailable listing cannot determine whether strengthening an existing church, developing leaders or supporting a new congregation would best serve this town.';
+    } else if (data.churchCount === 0) {
+      churchEvidence =
+        'Glúnta lists no church points inside this boundary. Coverage is incomplete or unverified; zero listed points does not establish that no churches exist.';
+
+      churchReflection =
+        'No church locations are listed inside this boundary. Verify the picture with residents and regional churches, including congregations or house gatherings absent from the map. Learn the local history before describing the town as unreached, and explore relationships through which future work could be supported and sustained.';
+    } else {
+      const locations =
+        number.format(data.churchCount) +
+        (
+          data.churchCount === 1
+            ? ' church location'
+            : ' church locations'
+        );
+
+      churchEvidence =
+        `Glúnta lists ${locations} inside this boundary. Current activity and the dataset’s coverage require local verification.`;
+
+      churchReflection =
+        `Glúnta lists ${locations} inside this boundary. Begin by listening to local leaders and members, honouring existing ministry and understanding their convictions. Ask whether partnership, strengthening or multiplication would serve the town well. The number of listed locations cannot tell us about church health, capacity or the relationships already being formed.`;
+    }
 
     return [
       {
@@ -234,20 +252,17 @@
 
         evidence:
           population !== null
-            ? `CSO recorded ${number.format(population)} residents in this town’s 2022 Built Up Area. This is a geographic population count, not a measure of Christian witness.`
+            ? `CSO recorded ${number.format(population)} residents in this town’s 2022 Built Up Area. This is a population count, not a measure of Christian witness.`
             : missing,
 
         source: '#people',
         sourceLabel: 'Population and geography',
 
         reflection:
-          `The first task in ${town} is to understand how the gospel is already being proclaimed and embodied through congregations, households and daily work. Learn where Christian witness is present, how it is received, and who is seldom encountered. Consider what faithful, sustained presence would mean here before settling on a programme. A map can direct attention; it cannot reveal the whole relational life of a place.`,
+          `The first question for ${town} concerns faithful gospel presence: where Christians already share ordinary life with neighbours, where that witness is visible, and who is seldom encountered. The data should open conversations about patient presence, gospel proclamation and discipleship. Listen locally before deciding what form a new initiative should take.`,
 
         question:
-          'Where do Christians already share ordinary life with their neighbours, and which parts of the town do we understand least?',
-
-        scripture:
-          'Acts 17:16–34'
+          'Where is Christian witness already present, and which parts of the town do we understand least?'
       },
 
       {
@@ -265,15 +280,10 @@
         sourceLabel: 'Listed church locations',
 
         reflection:
-          data.churchCount > 0
-            ? 'Meet the listed congregations and ask what they have learned. Listen to their leaders and members, understand their convictions, and explore where partnership is possible. Strengthening an existing church, developing leaders or supporting a new congregation may each be appropriate; the number of map points cannot decide between them. Church health and capacity require conversation and careful judgement.'
-            : 'Before describing the town as unreached, ask residents and regional churches about congregations, house gatherings and Christians whose presence is absent from the map. Verify what exists and learn its history. Any proposal for new work should grow from this listening, with attention to faithful teaching, local relationships and the possibility of partnership.',
+          churchReflection,
 
         question:
-          'Who should we meet before proposing a new initiative, and what might we strengthen together?',
-
-        scripture:
-          '1 Corinthians 3:5–9'
+          'Who should we meet before proposing new work, and what could we strengthen together?'
       },
 
       {
@@ -292,25 +302,24 @@
 
         reflection:
           overseas === 0
-            ? 'A birthplace table cannot establish cultural uniformity. Listen for differences in background, identity, language and experience, including those among people born in Ireland. Ask whose habits shape church life and whether people with different experiences can contribute to its friendships, service and leadership.'
-            : 'Make room for residents from different backgrounds to contribute as neighbours, friends, fellow Christians and potential leaders. Ask how people describe their own identities and which relationships help them belong. Explore shared congregational life across cultural differences, without assuming that everyone born abroad is a recent arrival or needs the same form of support.',
+            ? 'A birthplace table cannot establish cultural uniformity. Listen for differences in identity, background and experience among people born in Ireland as well as those who have moved here. Ask whose habits shape church life, and whether people with different experiences can contribute to its friendships, service and leadership.'
+            : 'Explore which communities are present, how people describe their own identities, and where trust and friendship develop. Hospitality and shared congregational life can create space for people from different backgrounds to contribute. Avoid assuming that everyone born abroad is newly arrived, speaks another language or needs the same form of support.',
 
         question:
-          'Who could help us recognise cultural assumptions in our welcome, worship, friendships and leadership?',
-
-        scripture:
-          'Acts 17:16–34'
+          'Which cultural assumptions shape our welcome, worship, friendships and leadership?'
       },
 
       {
         id: 'language',
 
         title:
-          'Consider language and access',
+          'Language may shape access',
+
+        soft: true,
 
         evidence:
           english && limitedEnglish !== null
-            ? `In Census 2022, ${ratio(limitedEnglish, english.total)} people who spoke a language other than English or Irish at home reported speaking English “not well” or “not at all”. The denominator is this language group, not the whole town.`
+            ? `In Census 2022, ${ratio(limitedEnglish, english.total)} people who spoke a language other than English or Irish at home reported speaking English “not well” or “not at all”. This denominator is the language group, not the whole town.`
             : missing,
 
         source: '#chart-english',
@@ -318,21 +327,22 @@
 
         reflection:
           limitedEnglish === 0
-            ? 'No respondents in this table reported the two lowest English-proficiency categories. That does not settle every question about communication. Ask which languages people prefer for reading, prayer and conversation, and whether church language, unfamiliar terms or assumptions make participation difficult.'
-            : 'Ask residents what would make communication easier: clearer language, translated information, interpretation or multilingual friendships. A different home language does not itself imply difficulty with English. Listen before choosing a response, and involve multilingual Christians in shaping it. Language-specific ministry may be useful in some settings, but these figures alone cannot establish that it is needed here.',
+            ? 'This table records no respondents in the two lowest English-proficiency categories. Still ask which languages people prefer for reading, prayer and conversation. Clear communication, understandable church language and room for multilingual relationships can help people participate, even where reported English proficiency presents few difficulties.'
+            : 'Communication, friendship, translation and multilingual relationships may shape how people participate. Ask residents what makes understanding easier and where ordinary church habits create barriers. Listen before choosing a response, and involve multilingual Christians in shaping it. A different home language does not itself indicate difficulty with English or a need for separate services.',
 
         question:
-          'Can people understand what we say, participate in conversations and help shape the life of the church?',
-
-        scripture:
-          'Romans 12:9–13'
+          'Can people understand our communication, join conversations and help shape church life?'
       },
 
       {
         id: 'belief',
 
         title:
-          'Join neighbourly respect with gospel clarity',
+          otherReligion > 0
+            ? 'Religious plurality needs neighbourly clarity'
+            : 'Begin faith conversations with care',
+
+        soft: true,
 
         evidence:
           religion &&
@@ -345,20 +355,17 @@
         sourceLabel: 'Religion table',
 
         reflection:
-          'Ask people what faith, doubt, religious identity and church experience mean in their own lives. Neither a Catholic affiliation nor a response of no religion tells you how a person will receive the gospel. Be ready to explain Christian hope clearly and respectfully, while learning about the convictions and experiences of your neighbours. Religious categories should prompt conversation, not substitute for it.',
+          'Local mission calls for hospitality, careful listening and a gracious explanation of the gospel. Ask how people understand faith, doubt, religious identity and their experience of church. Neither a Catholic affiliation nor a response of no religion tells us how an individual will receive the gospel. Let conversations deepen the picture provided by the Census.',
 
         question:
-          'What questions are people actually asking, and how can we speak about Christ with clarity, gentleness and respect?',
-
-        scripture:
-          '1 Peter 3:15–16'
+          'What questions are neighbours asking, and how can we speak about Christ clearly and respectfully?'
       },
 
       {
         id: 'household-life',
 
         title:
-          'Make room for different households and generations',
+          'Make room for different households',
 
         evidence:
           age &&
@@ -376,20 +383,19 @@
         additionalSourceLabel: 'Age profile',
 
         reflection:
-          'Consider children, younger and older adults, couples, single people and households without children when planning discipleship and community life. Explore relationships around schools, clubs and shared activities, while asking who those settings may leave out. Living alone does not establish loneliness, and the number of children does not tell you which family programmes are needed. Ask residents what would serve them.',
+          'Consider children, younger and older adults, single people, couples and households without children when shaping discipleship and community life. Schools, clubs and shared activities may open relationships; ask whom they leave out. Living alone does not establish loneliness, and children’s numbers cannot decide which programmes are needed. Let residents help identify what would serve them.',
 
         question:
-          'Whose household situation or stage of life is least reflected in our present rhythms of friendship and ministry?',
-
-        scripture:
-          'Romans 12:9–13'
+          'Whose household situation or stage of life is least reflected in our present ministry?'
       },
 
       {
         id: 'housing',
 
         title:
-          'Explore housing, hospitality and belonging',
+          'Explore housing and belonging',
+
+        soft: true,
 
         evidence:
           tenure && privateRent !== null
@@ -400,13 +406,10 @@
         sourceLabel: 'Housing-tenure table',
 
         reflection:
-          'Ask renters and owners what helps them feel at home and participate in local relationships. Consider the cost, timing and accessibility of gatherings, and whether hospitality can extend beyond established friendship groups. Tenure alone does not establish income, residential mobility or weak local roots. Let residents describe their experience before deciding what practical support or ministry would be helpful.',
+          'Ask renters and owners what helps them feel at home and participate in local relationships. Hospitality, accessible gatherings and friendship beyond established circles may help. Housing tenure alone cannot establish income, mobility or weak local roots. Listen to residents before deciding what practical support or ministry would be useful.',
 
         question:
-          'What makes belonging easier or harder here, and what could our church change in response?',
-
-        scripture:
-          'Romans 12:9–13'
+          'What makes belonging easier or harder here, and what could our church change?'
       },
 
       {
@@ -416,81 +419,91 @@
           'Use the map as a prompt for fieldwork',
 
         evidence:
-          'The report supplies a town boundary and demographic tables. A verified local account of meeting places, community assets and residents’ experiences has not yet been added.',
+          'The report supplies a boundary and demographic tables. A verified local account of meeting places, community assets and residents’ experiences has not yet been added.',
 
         source: '#place',
         sourceLabel: 'Town map and boundary',
 
         reflection:
-          `Walk ${town}, return at different times, and speak with residents and community organisations when conversation is welcome. Notice places of work, recreation, worship and informal meeting without assuming what happens inside them. Keep observation, testimony and interpretation distinct. Bring what you learn into prayer and discussion with local churches, asking how gospel proclamation, discipleship and practical love might take root over time.`,
+          `Walk ${town}, return at different times, and speak with residents when conversation is welcome. Look for places where people work, meet, worship and relax. Keep observation, testimony and interpretation distinct. Bring what you learn into prayer and conversation with local churches, asking how gospel proclamation, discipleship and practical love might take root over time.`,
 
         question:
-          'What have we actually observed, what have residents told us, and which assumptions still need checking?',
-
-        scripture:
-          'Acts 17:16–34'
+          'What have we observed, what have residents told us, and which assumptions still need checking?'
       }
     ];
   }
 
   function cardHTML(card) {
-    const additionalSource = card.additionalSource
+    const extra = card.additionalSource
       ? `; <a href="${card.additionalSource}">${escape(card.additionalSourceLabel)}</a>`
       : '';
 
-    const passageURL = bible(
-      card.scripture.replace(/–/g, '-')
-    );
-
     return `
       <article
-        class="mission-card"
+        class="mission-card${card.soft ? ' mission-card--soft' : ''}"
         aria-labelledby="mission-${card.id}"
       >
-        <span class="mission-badge">
-          Interpretation · local discernment
-        </span>
-
         <h3 id="mission-${card.id}">
           ${escape(card.title)}
         </h3>
 
-        <p class="mission-evidence">
-          <strong>Evidence:</strong>
-          ${escape(card.evidence)}
-          <a href="${card.source}">
-            ${escape(card.sourceLabel)}
-          </a>${additionalSource}.
+        <p class="mission-text">
+          ${escape(card.reflection)}
         </p>
 
-        <p>${escape(card.reflection)}</p>
+        <details class="mission-details">
+          <summary>Evidence and local questions</summary>
 
-        <p class="mission-question">
-          <strong>Discuss locally:</strong>
-          ${escape(card.question)}
-        </p>
+          <p>
+            <strong>Reported evidence:</strong>
+            ${escape(card.evidence)}
 
-        <p class="mission-reference">
-          <strong>Biblical reflection:</strong>
-          <a
-            href="${escape(passageURL)}"
-            target="_blank"
-            rel="noopener noreferrer"
-          >${escape(card.scripture)}</a>.
-        </p>
+            <a href="${card.source}">
+              ${escape(card.sourceLabel)}
+            </a>${extra}.
+          </p>
+
+          <p>
+            <strong>Discuss locally:</strong>
+            ${escape(card.question)}
+          </p>
+        </details>
       </article>
     `;
   }
 
+  function openPrintDetails(root) {
+    const state = Array.from(
+      root.querySelectorAll('.mission-details')
+    ).map(detail => ({
+      detail,
+      open: detail.open
+    }));
+
+    state.forEach(({ detail }) => {
+      detail.open = true;
+    });
+
+    return state;
+  }
+
+  function restorePrintDetails(state) {
+    state?.forEach(({ detail, open }) => {
+      detail.open = open;
+    });
+  }
+
   function start() {
     const report = document.getElementById('report');
+    const section = document.getElementById('mission-reading');
     const cards = document.getElementById('missionCards');
 
-    if (!report || !cards) {
+    if (!report || !section || !cards) {
       return;
     }
 
     let rendered = false;
+    let printState = null;
 
     function render() {
       if (report.hidden || rendered) {
@@ -501,6 +514,26 @@
         cards.innerHTML = buildObservations(
           readReport(document)
         ).map(cardHTML).join('');
+
+        const intro = section
+          .querySelector('h2')
+          ?.nextElementSibling;
+
+        if (intro?.tagName === 'P') {
+          intro.classList.add('mission-intro');
+
+          intro.textContent =
+            'Reflections for local discernment. Open a card’s evidence and questions to explore its supporting figures.';
+        }
+
+        const method = section.querySelector(
+          '.mission-method'
+        );
+
+        if (method) {
+          method.textContent =
+            'These are interpretive prompts for discussion with residents and local churches. They do not measure spiritual need, church health or receptivity to the gospel. Card colours distinguish panels; they do not score the town.';
+        }
 
         rendered = true;
       } catch {
@@ -528,7 +561,18 @@
       observer.disconnect();
     }
 
-    window.addEventListener('beforeprint', render);
+    window.addEventListener('beforeprint', () => {
+      render();
+
+      if (printState === null) {
+        printState = openPrintDetails(section);
+      }
+    });
+
+    window.addEventListener('afterprint', () => {
+      restorePrintDetails(printState);
+      printState = null;
+    });
   }
 
   const api = {
@@ -537,7 +581,9 @@
     readReport,
     ratio,
     buildObservations,
-    cardHTML
+    cardHTML,
+    openPrintDetails,
+    restorePrintDetails
   };
 
   if (
