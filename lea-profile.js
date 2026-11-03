@@ -1,1344 +1,1989 @@
-// LEA Mission Profile
-// Parent profile page.
-// Loads selected LEA, aggregates Small Area demographics,
-// lists churches inside / near the town, generates rule-based missiological insights,
-// and passes the town code to the isolated iframe map.
+(() => {
+  'use strict';
 
-const params = new URLSearchParams(window.location.search);
-const selectedCode = params.get("code");
-
-const townMapFrameEl = document.getElementById("townMapFrame");
-
-const leaNameEl = document.getElementById("leaName");
-const countyNameEl = document.getElementById("countyName");
-const urbanAreaCodeEl = document.getElementById("urbanAreaCode");
-const loadingNoticeEl = document.getElementById("loadingNotice");
-
-const populationValueEl = document.getElementById("populationValue");
-const smallAreasValueEl = document.getElementById("smallAreasValue");
-const churchesValueEl = document.getElementById("churchesValue");
-const nearbyChurchesValueEl = document.getElementById("nearbyChurchesValue");
-
-const ageChildrenEl = document.getElementById("ageChildren");
-const ageYoungAdultsEl = document.getElementById("ageYoungAdults");
-const ageAdultsEl = document.getElementById("ageAdults");
-const ageOlderAdultsEl = document.getElementById("ageOlderAdults");
-
-const bornOutsideIrelandEl = document.getElementById("bornOutsideIreland");
-const nonIrishCitizenshipEl = document.getElementById("nonIrishCitizenship");
-const foreignLanguageSpeakersEl = document.getElementById("foreignLanguageSpeakers");
-const otherWhiteBackgroundEl = document.getElementById("otherWhiteBackground");
-
-const religionCatholicEl = document.getElementById("religionCatholic");
-const religionOtherEl = document.getElementById("religionOther");
-const religionNoneEl = document.getElementById("religionNone");
-const religionNotStatedEl = document.getElementById("religionNotStated");
-
-const churchesInsideListEl = document.getElementById("churchesInsideList");
-const nearbyChurchesListEl = document.getElementById("nearbyChurchesList");
-const missionInsightsEl = document.getElementById("missionInsights");
-const fullDemographicProfileEl = document.getElementById("fullDemographicProfile");
-const downloadPdfButtonEl = document.getElementById("downloadPdfButton");
-const townStaticMapPreviewEl = document.getElementById("townStaticMapPreview");
-
-let currentRenderedLeaName = "lea-mission-profile";
-let currentExportReady = false;
-
-function escapeHtml(value) {
-  return String(value || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-function formatNumber(value) {
-  const number = Number(value);
-  if (Number.isNaN(number)) return "—";
-  return number.toLocaleString("en-IE");
-}
-
-function formatPercent(value) {
-  const number = Number(value);
-  if (Number.isNaN(number)) return "—";
-  return number.toFixed(1) + "%";
-}
-
-function getAreaName(props) {
-  return (
-    props.area_name ||
-    props.town_name ||
-    props.TOWN_NAME ||
-    props.URBAN_AREA_NAME ||
-    props.ENGLISH ||
-    props.name ||
-    props.NAME ||
-    "Unknown town"
-  );
-}
-
-function getCountyName(props) {
-  return props.county || props.COUNTY || props.County || "—";
-}
-
-function getLeaCode(props) {
-  return String(
-    props.LEA_ID ||
-    props.lea_id ||
-    props.LEA_GUID ||
-    props.lea_guid ||
-    props.CSO_LEA ||
-    props.lea_name ||
-    props.area_name ||
-    props.code ||
-    props.CODE ||
-    ""
-  ).trim();
-}
-
-
-function getSmallAreaCode(props) {
-  return String(props.SA_PUB2022 || props.SA_PUB2016 || props.SA_PUB2011 || "").trim();
-}
-
-function propertyContainsSelectedCode(props, code) {
-  if (!code) return false;
-  const target = String(code).trim();
-
-  return Object.values(props).some(value => String(value || "").trim() === target);
-}
-
-function findLeaFeature(data, code) {
-  if (!code) return null;
-
-  return data.features.find(feature => {
-    const props = feature.properties || {};
-    const directCode = getLeaCode(props);
-
-    if (directCode && directCode === String(code).trim()) return true;
-
-    return propertyContainsSelectedCode(props, code);
-  });
-}
-
-function setNotice(message, state) {
-  loadingNoticeEl.textContent = message;
-  loadingNoticeEl.classList.remove("is-success", "is-error");
-
-  if (state === "success") loadingNoticeEl.classList.add("is-success");
-  if (state === "error") loadingNoticeEl.classList.add("is-error");
-}
-
-function parseCsvLine(line) {
-  const result = [];
-  let current = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    const next = line[i + 1];
-
-    if (char === '"' && inQuotes && next === '"') {
-      current += '"';
-      i++;
-    } else if (char === '"') {
-      inQuotes = !inQuotes;
-    } else if (char === "," && !inQuotes) {
-      result.push(current);
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-
-  result.push(current);
-  return result;
-}
-
-function parseCsv(text) {
-  const lines = text
-    .replace(/\r/g, "")
-    .split("\n")
-    .filter(line => line.trim().length > 0);
-
-  if (lines.length < 2) return [];
-
-  const headers = parseCsvLine(lines[0]).map(header => header.trim());
-
-  return lines.slice(1).map(line => {
-    const values = parseCsvLine(line);
-    const row = {};
-
-    headers.forEach((header, index) => {
-      row[header] = values[index] ? values[index].trim() : "";
-    });
-
-    return row;
-  });
-}
-
-function loadJson(url) {
-  return fetch(url).then(response => {
-    if (!response.ok) throw new Error(`Could not load ${url}. HTTP status: ${response.status}`);
-    return response.json();
-  });
-}
-
-function loadCsv(url) {
-  return fetch(url)
-    .then(response => {
-      if (!response.ok) throw new Error(`Could not load ${url}. HTTP status: ${response.status}`);
-      return response.text();
-    })
-    .then(parseCsv);
-}
-
-function collectCoordinates(geometry, output) {
-  if (!geometry) return;
-
-  if (geometry.type === "Polygon") {
-    geometry.coordinates.forEach(ring => {
-      ring.forEach(coord => output.push(coord));
-    });
-  }
-
-  if (geometry.type === "MultiPolygon") {
-    geometry.coordinates.forEach(polygon => {
-      polygon.forEach(ring => {
-        ring.forEach(coord => output.push(coord));
-      });
-    });
-  }
-}
-
-function getFeatureCentroid(feature) {
-  const coords = [];
-  collectCoordinates(feature.geometry, coords);
-
-  if (coords.length === 0) return null;
-
-  let lngTotal = 0;
-  let latTotal = 0;
-  let validCount = 0;
-
-  coords.forEach(coord => {
-    const lng = Number(coord[0]);
-    const lat = Number(coord[1]);
-
-    if (Number.isNaN(lng) || Number.isNaN(lat)) return;
-
-    lngTotal += lng;
-    latTotal += lat;
-    validCount++;
-  });
-
-  if (validCount === 0) return null;
-
-  return {
-    lng: lngTotal / validCount,
-    lat: latTotal / validCount
+  const FILES = {
+    census: 'SAPS_2022_CSOLEA270923.csv',
+    boundaries: 'lea-boundaries.geojson',
+    churches: 'churches-points.csv'
   };
-}
 
-function getFeatureBounds(feature) {
-  const coords = [];
-  collectCoordinates(feature.geometry, coords);
+  const CSO =
+    'https://www.cso.ie/en/census/census2022/census2022smallareapopulationstatistics/';
 
-  if (coords.length === 0) return null;
+  const colours = [
+    '#185449',
+    '#a87838',
+    '#729580',
+    '#b8b9ad'
+  ];
 
-  let minLng = Infinity;
-  let minLat = Infinity;
-  let maxLng = -Infinity;
-  let maxLat = -Infinity;
+  const integer = new Intl.NumberFormat('en-IE');
 
-  coords.forEach(coord => {
-    const lng = Number(coord[0]);
-    const lat = Number(coord[1]);
+  const escape = value =>
+    String(value ?? '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[c]));
 
-    if (Number.isNaN(lng) || Number.isNaN(lat)) return;
+  const count = value =>
+    value === null ? 'Unavailable' : integer.format(value);
 
-    minLng = Math.min(minLng, lng);
-    minLat = Math.min(minLat, lat);
-    maxLng = Math.max(maxLng, lng);
-    maxLat = Math.max(maxLat, lat);
-  });
+  const title = value =>
+    String(value ?? '')
+      .toLocaleLowerCase('en-IE')
+      .replace(
+        /(^|[\s-])\p{L}/gu,
+        c => c.toLocaleUpperCase('en-IE')
+      );
 
-  if (!Number.isFinite(minLng)) return null;
+  const normalise = value =>
+    String(value ?? '')
+      .trim()
+      .replace(/[{}]/g, '')
+      .toLowerCase();
 
-  return { minLng, minLat, maxLng, maxLat };
-}
+  function numeric(value) {
+    if (
+      value === null ||
+      value === undefined ||
+      String(value).trim() === ''
+    ) {
+      return null;
+    }
 
-function boundsIntersect(a, b) {
-  if (!a || !b) return false;
+    const text = String(value).trim();
 
-  return !(
-    b.minLng > a.maxLng ||
-    b.maxLng < a.minLng ||
-    b.minLat > a.maxLat ||
-    b.maxLat < a.minLat
-  );
-}
-
-function pointInRing(lng, lat, ring) {
-  let inside = false;
-
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const xi = Number(ring[i][0]);
-    const yi = Number(ring[i][1]);
-    const xj = Number(ring[j][0]);
-    const yj = Number(ring[j][1]);
-
-    const intersect =
-      yi > lat !== yj > lat &&
-      lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
-
-    if (intersect) inside = !inside;
+    return (
+      /^-?\d+(?:\.\d+)?$/.test(text) &&
+      Number.isFinite(Number(text))
+    )
+      ? Number(text)
+      : null;
   }
 
-  return inside;
-}
+  function sum(row, fields) {
+    const values = fields.map(field =>
+      numeric(row[field])
+    );
 
-function pointInPolygon(lng, lat, rings) {
-  if (!rings || rings.length === 0) return false;
-
-  const insideOuter = pointInRing(lng, lat, rings[0]);
-  if (!insideOuter) return false;
-
-  for (let i = 1; i < rings.length; i++) {
-    if (pointInRing(lng, lat, rings[i])) return false;
+    return values.some(value =>
+      value === null || value < 0
+    )
+      ? null
+      : values.reduce((a, b) => a + b, 0);
   }
 
-  return true;
-}
-
-function pointInGeometry(lng, lat, geometry) {
-  if (!geometry) return false;
-
-  if (geometry.type === "Polygon") {
-    return pointInPolygon(lng, lat, geometry.coordinates);
+  function percent(value, total) {
+    return (
+      value !== null &&
+      total !== null &&
+      total > 0 &&
+      value >= 0 &&
+      value <= total
+    )
+      ? value / total * 100
+      : null;
   }
 
-  if (geometry.type === "MultiPolygon") {
-    return geometry.coordinates.some(polygon => pointInPolygon(lng, lat, polygon));
+  function percentage(value, total) {
+    const result = percent(value, total);
+
+    return result === null
+      ? '—'
+      : result.toFixed(1) + '%';
   }
 
-  return false;
-}
+  function ratio(value, total) {
+    if (value === null || total === null) {
+      return 'Unavailable';
+    }
 
-function smallAreaLikelyOverlapsTown(smallAreaFeature, leaGeometry, leaBounds) {
-  const smallAreaBounds = getFeatureBounds(smallAreaFeature);
-
-  if (!smallAreaBounds || !leaBounds || !boundsIntersect(smallAreaBounds, leaBounds)) {
-    return false;
+    return (
+      `${count(value)} of ${count(total)}` +
+      (
+        total > 0
+          ? ` (${percentage(value, total)})`
+          : ' (no percentage denominator)'
+      )
+    );
   }
 
-  const centroid = getFeatureCentroid(smallAreaFeature);
+  function parseCSV(text) {
+    const rows = [];
 
-  if (centroid && pointInGeometry(centroid.lng, centroid.lat, leaGeometry)) {
-    return true;
-  }
+    let row = [];
+    let field = '';
+    let quoted = false;
 
-  const smallAreaPoints = [];
-  collectCoordinates(smallAreaFeature.geometry, smallAreaPoints);
+    text = text.replace(/^\uFEFF/, '');
 
-  for (const coord of smallAreaPoints) {
-    const lng = Number(coord[0]);
-    const lat = Number(coord[1]);
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
 
-    if (pointInGeometry(lng, lat, leaGeometry)) return true;
-  }
+      if (c === '"') {
+        if (quoted && text[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else {
+          quoted = !quoted;
+        }
+      } else if (c === ',' && !quoted) {
+        row.push(field);
+        field = '';
+      } else if (
+        (c === '\n' || c === '\r') &&
+        !quoted
+      ) {
+        row.push(field);
 
-  const townPoints = [];
-  collectCoordinates(leaGeometry, townPoints);
+        if (row.some(cell => cell.trim() !== '')) {
+          rows.push(row);
+        }
 
-  for (const coord of townPoints) {
-    const lng = Number(coord[0]);
-    const lat = Number(coord[1]);
+        row = [];
+        field = '';
 
-    if (pointInGeometry(lng, lat, smallAreaFeature.geometry)) return true;
-  }
-
-  return false;
-}
-
-function buildSmallAreaLookup(rows) {
-  const lookup = {};
-
-  rows.forEach(row => {
-    const code = String(row.SA_PUB2022 || row.sa_code || "").trim();
-    if (!code) return;
-
-    const clean = {};
-
-    Object.keys(row).forEach(key => {
-      if (key === "SA_PUB2022" || key === "sa_code") {
-        clean[key] = row[key];
-        return;
-      }
-
-      const value = Number(row[key]);
-      clean[key] = Number.isNaN(value) ? null : value;
-    });
-
-    lookup[code] = clean;
-  });
-
-  return lookup;
-}
-
-function aggregateSmallAreas(matchingFeatures, lookup) {
-  const profile = {};
-  const weightedTotals = {};
-  const weightedWeights = {};
-
-  matchingFeatures.forEach(feature => {
-    const code = getSmallAreaCode(feature.properties);
-    const data = lookup[code] || {};
-    const population = Number(data.population_2022);
-
-    Object.keys(data).forEach(key => {
-      if (key === "SA_PUB2022" || key === "sa_code") return;
-
-      const value = Number(data[key]);
-      if (Number.isNaN(value)) return;
-
-      if (key.endsWith("_pct")) {
-        if (!Number.isNaN(population) && population > 0) {
-          weightedTotals[key] = (weightedTotals[key] || 0) + value * population;
-          weightedWeights[key] = (weightedWeights[key] || 0) + population;
+        if (
+          c === '\r' &&
+          text[i + 1] === '\n'
+        ) {
+          i++;
         }
       } else {
-        profile[key] = (profile[key] || 0) + value;
+        field += c;
       }
+    }
+
+    if (quoted) {
+      throw new Error(
+        'The CSV has an unfinished quoted value.'
+      );
+    }
+
+    row.push(field);
+
+    if (row.some(cell => cell.trim() !== '')) {
+      rows.push(row);
+    }
+
+    if (!rows.length) {
+      return [];
+    }
+
+    const headers = rows.shift().map(header =>
+      header.trim()
+    );
+
+    if (new Set(headers).size !== headers.length) {
+      throw new Error('Duplicate CSV headings.');
+    }
+
+    return rows.map(cells => {
+      if (cells.length !== headers.length) {
+        throw new Error(
+          'A CSV row has the wrong number of columns.'
+        );
+      }
+
+      return Object.fromEntries(
+        headers.map((header, index) => [
+          header,
+          cells[index]
+        ])
+      );
     });
-  });
-
-  Object.keys(weightedTotals).forEach(key => {
-    profile[key] = weightedWeights[key] > 0 ? weightedTotals[key] / weightedWeights[key] : null;
-  });
-
-  return profile;
-}
-
-function haversineKm(lat1, lng1, lat2, lng2) {
-  const radius = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return radius * c;
-}
-
-function getChurchName(row) {
-  return row.name || row["Church Name"] || row.church_name || "Unnamed church";
-}
-
-function getChurchWebsite(row) {
-  return row.website || row.Website || "";
-}
-
-function renderChurchList(listEl, churches, emptyText, showDistance = false) {
-  listEl.innerHTML = "";
-
-  if (churches.length === 0) {
-    const li = document.createElement("li");
-    li.textContent = emptyText;
-    listEl.appendChild(li);
-    return;
   }
 
-  churches.forEach(church => {
-    const li = document.createElement("li");
-    const name = escapeHtml(getChurchName(church));
-    const website = getChurchWebsite(church);
-    const distance = showDistance && typeof church.distanceKm === "number"
-      ? `, ${church.distanceKm.toFixed(1)} km away`
-      : "";
+  const ageFields = (start, end) =>
+    Array.from(
+      { length: end - start + 1 },
+      (_, index) => `T1_1AGE${start + index}T`
+    );
 
-    if (website) {
-      li.innerHTML = `<a href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">${name}</a>${distance}`;
-    } else {
-      li.innerHTML = `${name}${distance}`;
-    }
-
-    listEl.appendChild(li);
-  });
-}
-
-function analyseChurches(churchRows, leaFeature) {
-  const leaGeometry = leaFeature.geometry;
-  const leaCentroid = getFeatureCentroid(leaFeature);
-
-  const validChurches = churchRows
-    .map(row => {
-      const lat = Number(row.latitude || row.Latitude);
-      const lng = Number(row.longitude || row.Longitude);
-
-      if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
-
-      return {
-        ...row,
-        lat,
-        lng,
-        distanceKm: leaCentroid ? haversineKm(leaCentroid.lat, leaCentroid.lng, lat, lng) : null
-      };
-    })
-    .filter(Boolean);
-
-  const inside = validChurches
-    .filter(church => pointInGeometry(church.lng, church.lat, leaGeometry))
-    .sort((a, b) => getChurchName(a).localeCompare(getChurchName(b), "en-IE"));
-
-  const nearby = validChurches
-    .filter(church => !pointInGeometry(church.lng, church.lat, leaGeometry))
-    .filter(church => typeof church.distanceKm === "number" && church.distanceKm <= 15)
-    .sort((a, b) => a.distanceKm - b.distanceKm)
-    .slice(0, 8);
-
-  return { inside, nearby };
-}
-
-
-function getMetric(profile, keys) {
-  for (const key of keys) {
-    const value = profile[key];
-    if (value !== null && value !== undefined && value !== "" && !Number.isNaN(Number(value))) {
-      return Number(value);
-    }
-  }
-
-  return null;
-}
-
-function hasMetric(profile, keys) {
-  return getMetric(profile, keys) !== null;
-}
-
-function formatCountAndPercent(profile, countKeys, pctKeys) {
-  const count = getMetric(profile, countKeys);
-  const pct = getMetric(profile, pctKeys);
-
-  if (count === null && pct === null) return "—";
-  if (count !== null && pct !== null) return `${formatNumber(count)} (${formatPercent(pct)})`;
-  if (count !== null) return formatNumber(count);
-  return formatPercent(pct);
-}
-
-function renderProfileSection(title, rows, note) {
-  const visibleRows = rows.filter(row => {
-    return hasMetric(row.profile, row.countKeys || []) || hasMetric(row.profile, row.pctKeys || []);
-  });
-
-  if (visibleRows.length === 0) return "";
-
-  const rowsHtml = visibleRows.map(row => `
-    <div class="data-row">
-      <span>${escapeHtml(row.label)}</span>
-      <strong>${escapeHtml(formatCountAndPercent(row.profile, row.countKeys || [], row.pctKeys || []))}</strong>
-    </div>
-  `).join("");
-
-  return `
-    <article class="panel">
-      <div class="panel-header">
-        <p class="eyebrow">Census 2022</p>
-        <h2>${escapeHtml(title)}</h2>
-      </div>
-      <div class="data-list">
-        ${rowsHtml}
-      </div>
-      ${note ? `<p class="source-note">${escapeHtml(note)}</p>` : ""}
-    </article>
-  `;
-}
-
-function renderFullDemographicProfile(profile) {
-  if (!fullDemographicProfileEl) return;
-
-  const sections = [
+  const groups = [
     {
-      title: "Population and age",
-      note: "Aggregated from the Small Areas inside this LEA boundary.",
+      id: 'ages',
+      target: 'peopleCharts',
+      title: 'Age profile',
+      denominator: 'T1_1AGETT',
+      universe: 'All residents',
+
       rows: [
-        { label: "Total population", profile, countKeys: ["population_2022"] },
-        { label: "Male", profile, countKeys: ["male_population_count"], pctKeys: ["male_population_pct"] },
-        { label: "Female", profile, countKeys: ["female_population_count"], pctKeys: ["female_population_pct"] },
-        { label: "Children, 0 to 14", profile, countKeys: ["age_0_14_count", "age_0_14"], pctKeys: ["age_0_14_pct"] },
-        { label: "Young adults, 15 to 34", profile, countKeys: ["age_15_34_count", "age_15_34"], pctKeys: ["age_15_34_pct"] },
-        { label: "Adults, 35 to 64", profile, countKeys: ["age_35_64_count", "age_35_64"], pctKeys: ["age_35_64_pct"] },
-        { label: "Older adults, 65+", profile, countKeys: ["age_65_plus_count", "age_65_plus"], pctKeys: ["age_65_plus_pct"] }
-      ]
+        [
+          'Children · 0–14',
+          ageFields(0, 14)
+        ],
+        [
+          'Young adults · 15–34',
+          [
+            ...ageFields(15, 19),
+            'T1_1AGE20_24T',
+            'T1_1AGE25_29T',
+            'T1_1AGE30_34T'
+          ]
+        ],
+        [
+          'Adults · 35–64',
+          [
+            '35_39',
+            '40_44',
+            '45_49',
+            '50_54',
+            '55_59',
+            '60_64'
+          ].map(age => `T1_1AGE${age}T`)
+        ],
+        [
+          'Older adults · 65+',
+          [
+            '65_69',
+            '70_74',
+            '75_79',
+            '80_84',
+            'GE_85'
+          ].map(age => `T1_1AGE${age}T`)
+        ]
+      ],
+
+      question:
+        'Which ages are well served by existing places and activities? Who could help you understand the gaps?'
     },
+
     {
-      title: "Marital status",
-      note: "Marital status is useful for reading household shape, loneliness, settledness, and pastoral care needs.",
+      id: 'birthplace',
+      target: 'peopleCharts',
+      title: 'Place of birth',
+      denominator: 'T2_1TBP',
+      universe: 'Population in the place-of-birth table',
+
       rows: [
-        { label: "Single", profile, countKeys: ["marital_single_count"], pctKeys: ["marital_single_pct"] },
-        { label: "Married", profile, countKeys: ["marital_married_count"], pctKeys: ["marital_married_pct"] },
-        { label: "Separated", profile, countKeys: ["marital_separated_count"], pctKeys: ["marital_separated_pct"] },
-        { label: "Divorced", profile, countKeys: ["marital_divorced_count"], pctKeys: ["marital_divorced_pct"] },
-        { label: "Widowed", profile, countKeys: ["marital_widowed_count"], pctKeys: ["marital_widowed_pct"] }
-      ]
+        [
+          'Born in Ireland',
+          ['T2_1IEBP']
+        ],
+        [
+          'Born outside Ireland',
+          [
+            'T2_1UKBP',
+            'T2_1PLBP',
+            'T2_1INBP',
+            'T2_1EUBP',
+            'T2_1RWBP'
+          ]
+        ]
+      ],
+
+      note:
+        'Birthplace is not citizenship, ethnicity or migration date. This table’s denominator may differ from the LEA population.',
+
+      question:
+        'What helps people who have moved here build friendships and feel at home?'
     },
+
     {
-      title: "Culture, religion, and language",
-      note: "These figures should prompt local listening rather than assumptions about identity or belief.",
+      id: 'citizenship',
+      target: 'peopleCharts',
+      title: 'Citizenship',
+      denominator: 'T2_1TC',
+      universe: 'Population in the citizenship table',
+
       rows: [
-        { label: "Born in Ireland", profile, countKeys: ["born_ireland_count", "birthplace_ireland_count"], pctKeys: ["born_ireland_pct", "birthplace_ireland_pct"] },
-        { label: "Born outside Ireland", profile, countKeys: ["born_outside_ireland_count"], pctKeys: ["born_outside_ireland_pct"] },
-        { label: "Catholic", profile, countKeys: ["religion_catholic_count"], pctKeys: ["religion_catholic_pct"] },
-        { label: "Other religion", profile, countKeys: ["religion_other_religion_count", "religion_other_count"], pctKeys: ["religion_other_religion_pct", "religion_other_pct"] },
-        { label: "No religion", profile, countKeys: ["religion_no_religion_count", "religion_none"], pctKeys: ["religion_no_religion_pct", "religion_none_pct"] },
-        { label: "Foreign-language speakers", profile, countKeys: ["foreign_language_speakers_count", "foreign_language_speakers"], pctKeys: ["foreign_language_speakers_pct"] },
-        { label: "Can speak Irish", profile, countKeys: ["irish_yes_count"], pctKeys: ["irish_yes_pct"] },
-        { label: "English not well / not at all", profile, countKeys: ["english_not_well_count", "english_not_at_all_count"], pctKeys: ["english_not_well_pct", "english_not_at_all_pct"] }
-      ]
+        [
+          'Irish',
+          ['T2_1IEC']
+        ],
+        [
+          'Other citizenship',
+          [
+            'T2_1UKC',
+            'T2_1PLC',
+            'T2_1INC',
+            'T2_1EUC',
+            'T2_1RWC'
+          ]
+        ],
+        [
+          'Not stated',
+          ['T2_1NSC']
+        ]
+      ],
+
+      question:
+        'Which local organisations already connect residents from different backgrounds?'
     },
+
     {
-      title: "Families and households",
-      note: "Household structure can shape ministry rhythms, hospitality, children’s work, and pastoral care.",
+      id: 'households',
+      target: 'homeCharts',
+      title: 'Household size',
+      denominator: 'T5_2_TH',
+      universe: 'Private households',
+
       rows: [
-        { label: "Families with children", profile, countKeys: ["families_with_children_count"], pctKeys: ["families_with_children_pct"] },
-        { label: "Families without children", profile, countKeys: ["families_without_children_count"], pctKeys: ["families_without_children_pct"] },
-        { label: "2-person households", profile, countKeys: ["household_2_persons_count"], pctKeys: ["household_2_persons_pct"] },
-        { label: "3-person households", profile, countKeys: ["household_3_persons_count"], pctKeys: ["household_3_persons_pct"] },
-        { label: "4-person households", profile, countKeys: ["household_4_persons_count"], pctKeys: ["household_4_persons_pct"] },
-        { label: "5+ person households", profile, countKeys: ["household_5_persons_count", "household_6_plus_persons_count"], pctKeys: ["household_5_persons_pct", "household_6_plus_persons_pct"] }
-      ]
+        ['One person', ['T5_2_1PH']],
+        ['Two people', ['T5_2_2PH']],
+        ['Three people', ['T5_2_3PH']],
+        ['Four people', ['T5_2_4PH']],
+        [
+          'Five or more',
+          [
+            'T5_2_5PH',
+            'T5_2_6PH',
+            'T5_2_7PH',
+            'T5_2_GE8PH'
+          ]
+        ]
+      ],
+
+      note:
+        'These are households, not counts of people or families. Living alone does not establish loneliness.',
+
+      question:
+        'Where can people living alone and larger households both find connection and practical support?'
     },
+
     {
-      title: "Housing",
-      note: "Housing tenure can hint at stability, transience, affordability pressures, and community rootedness.",
+      id: 'tenure',
+      target: 'homeCharts',
+      title: 'Housing tenure',
+      denominator: 'T6_3_TH',
+      universe: 'Permanent private households',
+
       rows: [
-        { label: "Owner occupied", profile, countKeys: ["housing_owner_occupied_count"], pctKeys: ["housing_owner_occupied_pct"] },
-        { label: "Owned with mortgage / loan", profile, countKeys: ["housing_owned_with_mortgage_or_loan_count"], pctKeys: ["housing_owned_with_mortgage_or_loan_pct"] },
-        { label: "Owned outright", profile, countKeys: ["housing_owned_outright_count"], pctKeys: ["housing_owned_outright_pct"] },
-        { label: "Rented", profile, countKeys: ["housing_rented_count"], pctKeys: ["housing_rented_pct"] },
-        { label: "Private rented", profile, countKeys: ["housing_rented_from_private_landlord_count"], pctKeys: ["housing_rented_from_private_landlord_pct"] },
-        { label: "Rented from local authority", profile, countKeys: ["housing_rented_from_local_authority_count"], pctKeys: ["housing_rented_from_local_authority_pct"] }
-      ]
+        [
+          'Owner occupied · mortgage',
+          ['T6_3_OMLH']
+        ],
+        [
+          'Owner occupied · outright',
+          ['T6_3_OOH']
+        ],
+        [
+          'Private landlord',
+          ['T6_3_RPLH']
+        ],
+        [
+          'Local authority',
+          ['T6_3_RLAH']
+        ],
+        [
+          'Voluntary / co-operative body',
+          ['T6_3_RVCHBH']
+        ],
+        [
+          'Occupied free of rent',
+          ['T6_3_OFRH']
+        ],
+        [
+          'Not stated',
+          ['T6_3_NSH']
+        ]
+      ],
+
+      note:
+        'Tenure does not measure income, housing quality, affordability or deprivation.',
+
+      question:
+        'How do residents describe housing stability, access and the experience of moving into the town?'
     },
+
     {
-      title: "Education and work",
-      note: "These figures help describe daily rhythms, pressures, and possible community connection points.",
+      id: 'religion',
+      target: 'cultureCharts',
+      title: 'Religion',
+      denominator: 'T2_4T',
+      type: 'donut',
+      universe: 'All residents in the religion table',
+
       rows: [
-        { label: "At work", profile, countKeys: ["status_at_work_count"], pctKeys: ["status_at_work_pct"] },
-        { label: "Student", profile, countKeys: ["status_student_count"], pctKeys: ["status_student_pct"] },
-        { label: "Unemployed", profile, countKeys: ["status_unemployed_count"], pctKeys: ["status_unemployed_pct"] },
-        { label: "Retired", profile, countKeys: ["status_retired_count"], pctKeys: ["status_retired_pct"] },
-        { label: "Unable to work due to sickness/disability", profile, countKeys: ["status_unable_work_disability_count"], pctKeys: ["status_unable_work_disability_pct"] },
-        { label: "Third level or higher", profile, countKeys: ["education_third_level_or_higher_count"], pctKeys: ["education_third_level_or_higher_pct"] }
-      ]
+        ['Roman Catholic', ['T2_4CA']],
+        ['Other religion', ['T2_4OR']],
+        ['No religion', ['T2_4NR']],
+        ['Not stated', ['T2_4NS']]
+      ],
+
+      note:
+        '“Other religion” combines different traditions. These responses do not measure church attendance or belief in detail.',
+
+      question:
+        'How do residents describe faith, belonging, trust and their experience of local churches?'
     },
+
     {
-      title: "Occupation and industry",
-      note: "Work patterns can shape availability, social networks, and the kind of local presence churches may need.",
+      id: 'english',
+      target: 'cultureCharts',
+      title: 'English proficiency',
+      denominator: 'T2_6T',
+
+      universe:
+        'Speakers of a language other than English or Irish at home',
+
       rows: [
-        { label: "Professional occupations", profile, countKeys: ["occupation_professional_occupations_count"], pctKeys: ["occupation_professional_occupations_pct"] },
-        { label: "Managers / directors / senior officials", profile, countKeys: ["occupation_managers_directors_senior_officials_count"], pctKeys: ["occupation_managers_directors_senior_officials_pct"] },
-        { label: "Skilled trades", profile, countKeys: ["occupation_skilled_trades_occupations_count"], pctKeys: ["occupation_skilled_trades_occupations_pct"] },
-        { label: "Elementary occupations", profile, countKeys: ["occupation_elementary_occupations_count"], pctKeys: ["occupation_elementary_occupations_pct"] },
-        { label: "Agriculture, forestry, fishing", profile, countKeys: ["industry_agriculture_forestry_fishing_count"], pctKeys: ["industry_agriculture_forestry_fishing_pct"] },
-        { label: "Construction", profile, countKeys: ["industry_construction_count"], pctKeys: ["industry_construction_pct"] },
-        { label: "Professional services", profile, countKeys: ["industry_professional_services_count"], pctKeys: ["industry_professional_services_pct"] }
-      ]
+        ['Very well', ['T2_6VW']],
+        ['Well', ['T2_6W']],
+        ['Not well', ['T2_6NW']],
+        ['Not at all', ['T2_6NAA']],
+        ['Not stated', ['T2_6NS']]
+      ],
+
+      note:
+        'Percentages describe this language group, not all residents.',
+
+      question:
+        'Which translated information, language support or multilingual relationships would residents find useful?'
+    },
+
+    {
+      id: 'status',
+      target: 'workCharts',
+      title: 'Principal economic status',
+      denominator: 'T8_1_TT',
+      universe: 'Population aged 15 years and over',
+
+      rows: [
+        [
+          'At work',
+          ['T8_1_WT']
+        ],
+        [
+          'Unemployed / seeking first job',
+          [
+            'T8_1_LFFJT',
+            'T8_1_STUT',
+            'T8_1_LTUT'
+          ]
+        ],
+        [
+          'Student',
+          ['T8_1_ST']
+        ],
+        [
+          'Looking after home / family',
+          ['T8_1_LAHFT']
+        ],
+        [
+          'Retired',
+          ['T8_1_RT']
+        ],
+        [
+          'Unable to work · sickness / disability',
+          ['T8_1_UTWSDT']
+        ],
+        [
+          'Other',
+          ['T8_1_OTHT']
+        ]
+      ],
+
+      note:
+        'The unemployment share here uses everyone in this table as its denominator. It is not the labour-force unemployment rate.',
+
+      question:
+        'How do work, care, study and retirement shape the times people can meet and participate?'
+    },
+
+    {
+      id: 'education',
+      target: 'workCharts',
+      title: 'Highest education completed',
+      denominator: 'T10_4_TT',
+
+      universe:
+        'Population aged 15+ in the highest-education-completed table',
+
+      rows: [
+        [
+          'No formal / primary education',
+          ['T10_4_NFT', 'T10_4_PT']
+        ],
+        [
+          'Lower secondary',
+          ['T10_4_LST']
+        ],
+        [
+          'Upper secondary',
+          ['T10_4_UST']
+        ],
+        [
+          'Technical / vocational',
+          ['T10_4_TVT']
+        ],
+        [
+          'Advanced certificate / apprenticeship',
+          ['T10_4_ACCAT']
+        ],
+        [
+          'Higher certificate, diploma or degree',
+          [
+            'T10_4_HCT',
+            'T10_4_ODNDT',
+            'T10_4_HDPQT',
+            'T10_4_PDT',
+            'T10_4_DT'
+          ]
+        ],
+        [
+          'Not stated',
+          ['T10_4_NST']
+        ]
+      ],
+
+      note:
+        'Use this table’s published total; it differs from the total population aged 15+. Qualifications do not measure a person’s full skills or experience.',
+
+      question:
+        'What skills, practical knowledge and learning opportunities could local partnerships bring together?'
     }
   ];
 
-  const html = sections
-    .map(section => renderProfileSection(section.title, section.rows, section.note))
-    .filter(Boolean)
-    .join("");
+  function buildChart(row, definition) {
+    const total = sum(row, [definition.denominator]);
 
-  fullDemographicProfileEl.innerHTML = html || `
-    <article class="panel">
-      <div class="panel-header">
-        <p class="eyebrow">No data</p>
-        <h2>Full profile unavailable</h2>
-      </div>
-      <p class="source-note">No matching rows were found in small-area-town-profile-2022.csv for the Small Areas inside this LEA.</p>
-    </article>
-  `;
-}
-
-function getFeatureCoords(geometry) {
-  const coords = [];
-  collectCoordinates(geometry, coords);
-  return coords
-    .map(coord => ({ lng: Number(coord[0]), lat: Number(coord[1]) }))
-    .filter(coord => !Number.isNaN(coord.lng) && !Number.isNaN(coord.lat));
-}
-
-function geometryBounds(features) {
-  const all = [];
-  features.forEach(feature => {
-    all.push(...getFeatureCoords(feature.geometry));
-  });
-  if (!all.length) return null;
-  return {
-    minLng: Math.min(...all.map(c => c.lng)),
-    maxLng: Math.max(...all.map(c => c.lng)),
-    minLat: Math.min(...all.map(c => c.lat)),
-    maxLat: Math.max(...all.map(c => c.lat))
-  };
-}
-
-function buildSvgPathForGeometry(geometry, project) {
-  if (!geometry) return "";
-
-  function ringToPath(ring) {
-    return ring
-      .map((coord, index) => {
-        const point = project(Number(coord[0]), Number(coord[1]));
-        return `${index === 0 ? "M" : "L"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
+    const rows = definition.rows.map(
+      ([label, fields]) => ({
+        label,
+        value: sum(row, fields)
       })
-      .join(" ") + " Z";
-  }
+    );
 
-  if (geometry.type === "Polygon") {
-    return geometry.coordinates.map(ringToPath).join(" ");
-  }
+    const consistent =
+      total !== null &&
+      rows.every(item => item.value !== null) &&
+      rows.reduce(
+        (result, item) => result + item.value,
+        0
+      ) === total;
 
-  if (geometry.type === "MultiPolygon") {
-    return geometry.coordinates
-      .flatMap(polygon => polygon.map(ringToPath))
-      .join(" ");
-  }
-
-  return "";
-}
-
-function renderStaticMapPreview(leaFeature, matchingSmallAreas, lookup, churchRows) {
-  if (!townStaticMapPreviewEl || !leaFeature) return;
-
-  const leaName = getAreaName(leaFeature.properties || {});
-  const width = 900;
-  const height = 520;
-  const padding = 34;
-  const features = [leaFeature, ...matchingSmallAreas];
-  const bounds = geometryBounds(features);
-
-  if (!bounds) {
-    townStaticMapPreviewEl.innerHTML = `<div class="static-map-fallback">Map boundary unavailable</div>`;
-    return;
-  }
-
-  const lngSpan = bounds.maxLng - bounds.minLng || 0.01;
-  const latSpan = bounds.maxLat - bounds.minLat || 0.01;
-  const scale = Math.min((width - padding * 2) / lngSpan, (height - padding * 2) / latSpan);
-  const usedWidth = lngSpan * scale;
-  const usedHeight = latSpan * scale;
-  const offsetX = (width - usedWidth) / 2;
-  const offsetY = (height - usedHeight) / 2;
-
-  function project(lng, lat) {
     return {
-      x: offsetX + (lng - bounds.minLng) * scale,
-      y: offsetY + (bounds.maxLat - lat) * scale
+      ...definition,
+      total,
+      rows,
+      consistent
     };
   }
 
-  const smallAreaPaths = matchingSmallAreas.map(feature => {
-    const code = getSmallAreaCode(feature.properties || {});
-    const data = lookup[code] || {};
-    const population = Number(data.population_2022);
-    const fill = Number.isNaN(population)
-      ? "#dbe7eb"
-      : population >= 600
-        ? "#5f8ebf"
-        : population >= 300
-          ? "#8fb4d1"
-          : "#c6dce8";
-    return `<path d="${buildSvgPathForGeometry(feature.geometry, project)}" fill="${fill}" fill-opacity="0.58" stroke="#1f3340" stroke-opacity="0.55" stroke-width="1"/>`;
-  }).join("");
+  function chartHTML(chart) {
+    const values = item => `
+      <span class="row-value">
+        ${count(item.value)}
+        <span>${percentage(item.value, chart.total)}</span>
+      </span>
+    `;
 
-  const townPath = `<path d="${buildSvgPathForGeometry(leaFeature.geometry, project)}" fill="none" stroke="#111827" stroke-width="4" stroke-linejoin="round"/>`;
+    let graphic;
 
-  const churchAnalysis = analyseChurches(churchRows || [], leaFeature);
-  const churchDots = churchAnalysis.inside.map(church => {
-    const point = project(church.lng, church.lat);
-    return `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="7" fill="#ffffff" stroke="#111827" stroke-width="3"><title>${escapeHtml(getChurchName(church))}</title></circle>`;
-  }).join("");
+    if (
+      chart.type === 'donut' &&
+      chart.consistent &&
+      chart.total > 0
+    ) {
+      const circumference = 2 * Math.PI * 46;
+      let offset = 0;
 
-  townStaticMapPreviewEl.innerHTML = `
-    <svg class="static-town-map-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Map of ${escapeHtml(leaName)}">
-      <rect width="${width}" height="${height}" fill="#dfe9e7"/>
-      <g opacity="0.65">
-        <path d="M0 ${height * 0.68} C ${width * 0.22} ${height * 0.58}, ${width * 0.42} ${height * 0.78}, ${width} ${height * 0.6}" fill="none" stroke="#c7d6d3" stroke-width="26" stroke-linecap="round"/>
-        <path d="M${width * 0.08} ${height * 0.18} L${width * 0.92} ${height * 0.84}" stroke="#eef2d5" stroke-width="18" stroke-linecap="round"/>
-        <path d="M${width * 0.08} ${height * 0.18} L${width * 0.92} ${height * 0.84}" stroke="#d5c16a" stroke-width="3" stroke-linecap="round"/>
-      </g>
-      ${smallAreaPaths}
-      ${townPath}
-      ${churchDots}
-      <text x="24" y="42" font-size="24" font-weight="800" fill="#0f4f49">${escapeHtml(leaName)}</text>
-      <text x="24" y="72" font-size="15" fill="#5f6b76">LEA boundary, Small Areas, and listed churches</text>
-    </svg>
-  `;
-}
+      const arcs = chart.rows.map((item, index) => {
+        const length =
+          item.value / chart.total * circumference;
 
-function slugifyFileName(value) {
-  return String(value || "lea-mission-profile")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "lea-mission-profile";
-}
+        const arc = `
+          <circle
+            cx="60"
+            cy="60"
+            r="46"
+            fill="none"
+            stroke="${colours[index]}"
+            stroke-width="16"
+            stroke-dasharray="${length} ${circumference - length}"
+            stroke-dashoffset="${-offset}"
+            transform="rotate(-90 60 60)"
+          />
+        `;
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+        offset += length;
+        return arc;
+      }).join('');
 
-function getPdfBlocks() {
-  const blocks = [];
-  const hero = document.querySelector(".profile-hero");
-  const summary = document.querySelector(".town-summary-card");
-  const metrics = document.querySelector(".metric-grid");
-  const topPanelGrid = document.querySelector(".content-grid");
-  const fullProfilePanel = document.querySelector("#fullProfileSection") || document.querySelector(".wide-panel:has(#fullDemographicProfile)");
-  const missionPanel = document.querySelector("#missionReadingSection") || document.querySelector(".wide-panel:has(#missionInsights)");
-  const muted = document.querySelector(".muted-panel");
+      graphic = `
+        <div class="donut-layout">
+          <svg
+            class="donut"
+            viewBox="0 0 120 120"
+            aria-hidden="true"
+          >
+            ${arcs}
 
-  [hero, summary, metrics, topPanelGrid, fullProfilePanel, missionPanel, muted].forEach(el => {
-    if (el) blocks.push(el);
-  });
+            <text
+              x="60"
+              y="58"
+              text-anchor="middle"
+              font-size="16"
+              fill="#185449"
+            >${count(chart.total)}</text>
 
-  return blocks;
-}
+            <text
+              x="60"
+              y="73"
+              text-anchor="middle"
+              font-size="7"
+              fill="#5e6c65"
+            >residents</text>
+          </svg>
 
-async function addElementToPdf(pdf, element, layout) {
-  const canvas = await html2canvas(element, {
-    scale: 2,
-    backgroundColor: "#ffffff",
-    useCORS: true,
-    allowTaint: true,
-    logging: false,
-    windowWidth: document.documentElement.scrollWidth,
-    windowHeight: document.documentElement.scrollHeight
-  });
+          <div>
+            ${chart.rows.map((item, index) => `
+              <div class="legend-row">
+                <span
+                  class="swatch"
+                  style="--swatch:${colours[index]}"
+                ></span>
 
-  const imgData = canvas.toDataURL("image/jpeg", 0.96);
-  const imgWidth = layout.contentWidth;
-  const imgHeight = canvas.height * imgWidth / canvas.width;
-
-  if (layout.currentY + imgHeight > layout.pageHeight - layout.margin && layout.currentY > layout.margin) {
-    pdf.addPage();
-    layout.currentY = layout.margin;
-  }
-
-  if (imgHeight <= layout.pageHeight - layout.margin * 2) {
-    pdf.addImage(imgData, "JPEG", layout.margin, layout.currentY, imgWidth, imgHeight);
-    layout.currentY += imgHeight + layout.gap;
-    return;
-  }
-
-  const pageCanvas = document.createElement("canvas");
-  const pageCtx = pageCanvas.getContext("2d");
-  const sliceHeight = Math.floor(canvas.width * (layout.pageHeight - layout.margin * 2) / imgWidth);
-  pageCanvas.width = canvas.width;
-  pageCanvas.height = sliceHeight;
-
-  let sourceY = 0;
-  while (sourceY < canvas.height) {
-    pageCtx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
-    pageCtx.fillStyle = "#ffffff";
-    pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-    pageCtx.drawImage(canvas, 0, sourceY, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
-    const sliceData = pageCanvas.toDataURL("image/jpeg", 0.96);
-    const actualSliceHeight = Math.min(sliceHeight, canvas.height - sourceY) * imgWidth / canvas.width;
-    if (layout.currentY > layout.margin) {
-      pdf.addPage();
-      layout.currentY = layout.margin;
-    }
-    pdf.addImage(sliceData, "JPEG", layout.margin, layout.currentY, imgWidth, actualSliceHeight);
-    sourceY += sliceHeight;
-    if (sourceY < canvas.height) {
-      pdf.addPage();
-      layout.currentY = layout.margin;
+                <span>${escape(item.label)}</span>
+                ${values(item)}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
     } else {
-      layout.currentY += actualSliceHeight + layout.gap;
+      graphic = chart.rows.map(item => `
+        <div class="chart-row">
+          <span class="row-label">
+            ${escape(item.label)}
+          </span>
+
+          <svg
+            class="bar"
+            viewBox="0 0 100 12"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <rect
+              width="100"
+              height="12"
+              fill="#edf0e9"
+            />
+
+            <rect
+              width="${percent(item.value, chart.total) ?? 0}"
+              height="12"
+              fill="#185449"
+            />
+          </svg>
+
+          ${values(item)}
+        </div>
+      `).join('');
+    }
+
+    const warning = chart.consistent
+      ? ''
+      : `
+        <p class="notice error">
+          Some counts are unavailable or do not match the published
+          total. Check the source before interpreting this chart.
+        </p>
+      `;
+
+    return `
+      <section
+        class="chart-card"
+        aria-labelledby="chart-${chart.id}"
+      >
+        <h3 id="chart-${chart.id}">
+          ${escape(chart.title)}
+        </h3>
+
+        <p class="universe">
+          ${escape(chart.universe)}
+          · denominator: ${count(chart.total)}
+          · Census 2022
+        </p>
+
+        ${warning}
+        ${graphic}
+
+        <p class="chart-note">
+          <span class="badge">Published statistic</span>
+          <a href="${CSO}">CSO Census 2022</a>.
+          ${escape(
+            chart.note ||
+            'Percentages use the published total shown above.'
+          )}
+        </p>
+
+        <p class="chart-prompt">
+          <strong>Local listening question:</strong>
+          ${escape(chart.question)}
+        </p>
+
+        <details>
+          <summary>View the figures as a table</summary>
+
+          <div class="table-scroll">
+            <table>
+              <caption>
+                ${escape(chart.title)}
+                · denominator ${count(chart.total)}
+              </caption>
+
+              <thead>
+                <tr>
+                  <th scope="col">Category</th>
+                  <th scope="col">Count</th>
+                  <th scope="col">Share</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                ${chart.rows.map(item => `
+                  <tr>
+                    <th scope="row">
+                      ${escape(item.label)}
+                    </th>
+                    <td>${count(item.value)}</td>
+                    <td>
+                      ${percentage(item.value, chart.total)}
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+    `;
+  }
+
+  function polygons(geometry) {
+    if (geometry.type === 'Polygon') {
+      return [geometry.coordinates];
+    }
+
+    if (geometry.type === 'MultiPolygon') {
+      return geometry.coordinates;
+    }
+
+    throw new Error(
+      'The LEA boundary must be a Polygon or MultiPolygon.'
+    );
+  }
+
+  function* coordinates(geometry) {
+    for (const polygon of polygons(geometry)) {
+      for (const ring of polygon) {
+        for (const point of ring) {
+          yield point;
+        }
+      }
     }
   }
-}
 
-async function downloadProfilePdf() {
-  if (!downloadPdfButtonEl) return;
+  function extent(geometry) {
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
 
-  if (!currentExportReady) {
-    alert("The profile is still loading. Please wait a moment and try again.");
-    return;
+    for (const [x, y] of coordinates(geometry)) {
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+
+    if (
+      ![minX, minY, maxX, maxY].every(Number.isFinite)
+    ) {
+      throw new Error(
+        'The LEA boundary has invalid coordinates.'
+      );
+    }
+
+    return { minX, minY, maxX, maxY };
   }
 
-  if (!window.html2canvas || !window.jspdf) {
-    alert("The PDF tools did not load. Please refresh the page and try again.");
-    return;
-  }
+  function toWGS84(feature, crsName, projector) {
+    const crs = String(crsName || '');
+    const box = extent(feature.geometry);
 
-  const originalText = downloadPdfButtonEl.textContent;
-  downloadPdfButtonEl.disabled = true;
-  downloadPdfButtonEl.textContent = "Creating PDF...";
-  document.body.classList.add("pdf-export-mode");
+    if (!crs || /4326|CRS84/i.test(crs)) {
+      if (
+        box.minX < -180 ||
+        box.maxX > 180 ||
+        box.minY < -90 ||
+        box.maxY > 90
+      ) {
+        throw new Error(
+          'Projected boundary coordinates need a recognised coordinate system.'
+        );
+      }
 
-  try {
-    await sleep(250);
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF("p", "mm", "a4");
-    const layout = {
-      margin: 10,
-      gap: 5,
-      pageWidth: 210,
-      pageHeight: 297,
-      contentWidth: 190,
-      currentY: 10
+      return feature;
+    }
+
+    if (!/2157$/.test(crs)) {
+      throw new Error(
+        'The boundary coordinate system is unsupported: ' + crs
+      );
+    }
+
+    if (typeof projector !== 'function') {
+      throw new Error(
+        'The coordinate conversion library could not load. Refresh the report to load Proj4js.'
+      );
+    }
+
+    const itm =
+      '+proj=tmerc +lat_0=53.5 +lon_0=-8 +k=0.99982 ' +
+      '+x_0=600000 +y_0=750000 +ellps=GRS80 ' +
+      '+towgs84=0,0,0,0,0,0,0 +units=m +no_defs';
+
+    const convert = values =>
+      typeof values[0] === 'number'
+        ? projector(
+            itm,
+            'EPSG:4326',
+            values.slice(0, 2)
+          )
+        : values.map(convert);
+
+    const converted = {
+      ...feature,
+      geometry: {
+        ...feature.geometry,
+        coordinates: convert(
+          feature.geometry.coordinates
+        )
+      }
     };
 
-    const blocks = getPdfBlocks();
-    for (const block of blocks) {
-      await addElementToPdf(pdf, block, layout);
+    const result = extent(converted.geometry);
+
+    if (
+      result.minX < -180 ||
+      result.maxX > 180 ||
+      result.minY < -90 ||
+      result.maxY > 90
+    ) {
+      throw new Error(
+        'Boundary coordinate conversion failed.'
+      );
     }
 
-    const filename = `${slugifyFileName(currentRenderedLeaName)}-lea-mission-profile.pdf`;
-    pdf.save(filename);
-  } catch (error) {
-    console.error(error);
-    alert("The PDF could not be created. Please try refreshing the page, then use Download PDF again.");
-  } finally {
-    document.body.classList.remove("pdf-export-mode");
-    downloadPdfButtonEl.disabled = false;
-    downloadPdfButtonEl.textContent = originalText;
+    return converted;
   }
-}
 
-if (downloadPdfButtonEl) {
-  downloadPdfButtonEl.addEventListener("click", downloadProfilePdf);
-}
+  function ringContains([x, y], ring) {
+    let inside = false;
 
-function renderProfileData(leaFeature, matchingSmallAreas, summaryLookup, fullLookup, churches) {
-  const props = leaFeature.properties || {};
-  const leaName = getAreaName(props);
-  const countyName = getCountyName(props);
-  const leaCode = getLeaCode(props) || selectedCode || "—";
-  const summaryProfile = aggregateSmallAreas(matchingSmallAreas, summaryLookup);
-  const fullProfile = aggregateSmallAreas(matchingSmallAreas, fullLookup);
-  const profile = { ...summaryProfile, ...fullProfile };
-  const churchAnalysis = analyseChurches(churches, leaFeature);
-  currentRenderedLeaName = leaName;
-  currentExportReady = false;
+    for (
+      let i = 0, j = ring.length - 1;
+      i < ring.length;
+      j = i++
+    ) {
+      const [xi, yi] = ring[i];
+      const [xj, yj] = ring[j];
 
-  leaNameEl.textContent = leaName;
-  countyNameEl.textContent = "County: " + countyName;
-  urbanAreaCodeEl.textContent = "LEA Code: " + leaCode;
-  document.title = `${leaName} LEA Mission Profile | Glúnta`;
+      const cross =
+        (x - xi) * (yj - yi) -
+        (y - yi) * (xj - xi);
 
-  populationValueEl.textContent = formatNumber(getMetric(profile, ["population_2022"]));
-  smallAreasValueEl.textContent = formatNumber(matchingSmallAreas.length);
+      if (
+        Math.abs(cross) < 1e-10 &&
+        x >= Math.min(xi, xj) &&
+        x <= Math.max(xi, xj) &&
+        y >= Math.min(yi, yj) &&
+        y <= Math.max(yi, yj)
+      ) {
+        return true;
+      }
 
-  ageChildrenEl.textContent = formatPercent(getMetric(profile, ["age_0_14_pct"]));
-  ageYoungAdultsEl.textContent = formatPercent(getMetric(profile, ["age_15_34_pct"]));
-  ageAdultsEl.textContent = formatPercent(getMetric(profile, ["age_35_64_pct"]));
-  ageOlderAdultsEl.textContent = formatPercent(getMetric(profile, ["age_65_plus_pct"]));
+      if (
+        (yi > y) !== (yj > y) &&
+        x < (xj - xi) * (y - yi) / (yj - yi) + xi
+      ) {
+        inside = !inside;
+      }
+    }
 
-  bornOutsideIrelandEl.textContent = formatPercent(getMetric(profile, ["born_outside_ireland_pct"]));
-  nonIrishCitizenshipEl.textContent = formatPercent(getMetric(profile, ["non_irish_citizenship_pct"]));
-  foreignLanguageSpeakersEl.textContent = formatPercent(getMetric(profile, ["foreign_language_speakers_pct"]));
-  otherWhiteBackgroundEl.textContent = formatPercent(getMetric(profile, ["ethnicity_other_white_pct"]));
+    return inside;
+  }
 
-  religionCatholicEl.textContent = formatPercent(getMetric(profile, ["religion_catholic_pct"]));
-  religionOtherEl.textContent = formatPercent(getMetric(profile, ["religion_other_religion_pct", "religion_other_pct"]));
-  religionNoneEl.textContent = formatPercent(getMetric(profile, ["religion_no_religion_pct", "religion_none_pct"]));
-  religionNotStatedEl.textContent = formatPercent(getMetric(profile, ["religion_not_stated_pct"]));
-
-  churchesValueEl.textContent = formatNumber(churchAnalysis.inside.length);
-  nearbyChurchesValueEl.textContent = formatNumber(churchAnalysis.nearby.length);
-
-  renderChurchList(
-    churchesInsideListEl,
-    churchAnalysis.inside,
-    "No listed churches inside this LEA boundary."
-  );
-
-  renderChurchList(
-    nearbyChurchesListEl,
-    churchAnalysis.nearby,
-    "No listed churches within 15 km.",
-    true
-  );
-
-  renderFullDemographicProfile(profile);
-  renderMissiologicalInsights(profile, churchAnalysis, leaName);
-  renderStaticMapPreview(leaFeature, matchingSmallAreas, summaryLookup, churches);
-  currentExportReady = true;
-}
-
-function addInsight(insights, title, text, priority = false) {
-  insights.push({ title, text, priority });
-}
-
-function safeMetric(profile, keys) {
-  const value = getMetric(profile, keys);
-  return value === null ? NaN : Number(value);
-}
-
-function metricIsAtLeast(profile, keys, threshold) {
-  const value = safeMetric(profile, keys);
-  return !Number.isNaN(value) && value >= threshold;
-}
-
-function renderMissiologicalInsights(profile, churchAnalysis, leaName) {
-  const insights = [];
-
-  const population = safeMetric(profile, ["population_2022"]);
-  const children = safeMetric(profile, ["age_0_14_pct"]);
-  const youngAdults = safeMetric(profile, ["age_15_34_pct"]);
-  const olderAdults = safeMetric(profile, ["age_65_plus_pct"]);
-  const bornOutside = safeMetric(profile, ["born_outside_ireland_pct", "birthplace_rest_world_pct"]);
-  const nonIrishCitizenship = safeMetric(profile, ["non_irish_citizenship_pct"]);
-  const foreignLanguage = safeMetric(profile, ["foreign_language_speakers_pct"]);
-  const noReligion = safeMetric(profile, ["religion_no_religion_pct", "religion_none_pct"]);
-  const otherReligion = safeMetric(profile, ["religion_other_religion_pct", "religion_other_pct"]);
-  const privateRenting = safeMetric(profile, ["housing_rented_from_private_landlord_pct"]);
-  const localAuthorityRenting = safeMetric(profile, ["housing_rented_from_local_authority_pct"]);
-  const ownerOccupied = safeMetric(profile, ["housing_owner_occupied_pct"]);
-  const thirdLevel = safeMetric(profile, ["education_third_level_or_higher_pct"]);
-  const atWork = safeMetric(profile, ["status_at_work_pct"]);
-  const students = safeMetric(profile, ["status_student_pct"]);
-  const retired = safeMetric(profile, ["status_retired_pct"]);
-  const unableWork = safeMetric(profile, ["status_unable_work_disability_pct", "status_unable_to_work_pct"]);
-  const unemployment = safeMetric(profile, ["status_unemployed_pct"]);
-  const households2 = safeMetric(profile, ["household_2_persons_pct"]);
-  const familiesWithChildren = safeMetric(profile, ["families_with_children_pct"]);
-  const professionalOccupations = safeMetric(profile, ["occupation_professional_occupations_pct"]);
-  const skilledTrades = safeMetric(profile, ["occupation_skilled_trades_occupations_pct"]);
-  const elementaryOccupations = safeMetric(profile, ["occupation_elementary_occupations_pct"]);
-  const agriculture = safeMetric(profile, ["industry_agriculture_forestry_fishing_pct"]);
-  const construction = safeMetric(profile, ["industry_construction_pct"]);
-  const professionalServices = safeMetric(profile, ["industry_professional_services_pct"]);
-
-  addInsight(
-    insights,
-    "Start with the question of presence",
-    `The first question for ${leaName} is not simply whether a church could be planted, but what kind of faithful gospel presence is already here, where it is visible, and where it is absent. The data should begin conversations, not end them.`,
-    true
-  );
-
-  if (churchAnalysis.inside.length > 0) {
-    addInsight(
-      insights,
-      "Begin with existing witness",
-      "There is at least one listed church inside this LEA boundary. Any new work should begin with listening, honouring existing ministry, and asking whether partnership, strengthening, or multiplication is wiser than starting something disconnected.",
-      true
-    );
-  } else {
-    addInsight(
-      insights,
-      "Verify the gospel presence on the ground",
-      `No listed church appears inside this LEA boundary in the current dataset. That should not be treated as proof that there is no Christian witness, but it does make ${leaName} a place for careful local research, prayer, and conversation with nearby churches.`,
-      true
+  function contains(geometry, point) {
+    return polygons(geometry).some(rings =>
+      ringContains(point, rings[0]) &&
+      !rings.slice(1).some(ring =>
+        ringContains(point, ring)
+      )
     );
   }
 
-  if (!Number.isNaN(population) && population >= 5000 && churchAnalysis.inside.length === 0) {
-    addInsight(
-      insights,
-      "Population without listed church presence",
-      "The LEA has a meaningful population but no listed church inside the boundary. That combination should raise the priority of local research, especially around meeting places, community rhythms, and whether believers are already travelling elsewhere for fellowship.",
-      true
+  function segmentDistance(point, a, b) {
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+
+    const length = dx * dx + dy * dy;
+
+    const t = length
+      ? Math.max(
+          0,
+          Math.min(
+            1,
+            (
+              (point[0] - a[0]) * dx +
+              (point[1] - a[1]) * dy
+            ) / length
+          )
+        )
+      : 0;
+
+    return Math.hypot(
+      point[0] - a[0] - t * dx,
+      point[1] - a[1] - t * dy
     );
   }
 
-  if ((!Number.isNaN(bornOutside) && bornOutside >= 15) || (!Number.isNaN(nonIrishCitizenship) && nonIrishCitizenship >= 10)) {
-    addInsight(
-      insights,
-      "Think interculturally from the beginning",
-      "The migration profile suggests that ministry here should not assume one settled Irish cultural pathway. A planter or partner church should ask which communities are present, what languages are spoken at home, where newcomers build trust, and whether hospitality could become a central missionary practice.",
-      true
+  function boundaryDistance(geometry, [lng, lat]) {
+    const radians = Math.PI / 180;
+
+    const scaleX =
+      6371 * radians * Math.cos(lat * radians);
+
+    const scaleY = 6371 * radians;
+
+    const project = point => [
+      (point[0] - lng) * scaleX,
+      (point[1] - lat) * scaleY
+    ];
+
+    let nearest = Infinity;
+
+    for (const polygon of polygons(geometry)) {
+      for (const ring of polygon) {
+        for (
+          let i = 0, j = ring.length - 1;
+          i < ring.length;
+          j = i++
+        ) {
+          nearest = Math.min(
+            nearest,
+            segmentDistance(
+              [0, 0],
+              project(ring[j]),
+              project(ring[i])
+            )
+          );
+        }
+      }
+    }
+
+    return nearest;
+  }
+
+  function classifyChurches(records, geometry) {
+    const inside = [];
+    const nearby = [];
+    const box = extent(geometry);
+
+    let invalid = 0;
+
+    for (const record of records) {
+      const lat = numeric(record.latitude);
+      const lng = numeric(record.longitude);
+
+      if (
+        lat === null ||
+        lng === null ||
+        Math.abs(lat) > 90 ||
+        Math.abs(lng) > 180
+      ) {
+        invalid++;
+        continue;
+      }
+
+      const item = {
+        ...record,
+        name: String(record.name || 'Unnamed location'),
+        lat,
+        lng
+      };
+
+      if (contains(geometry, [lng, lat])) {
+        inside.push(item);
+      } else if (
+        lat >= box.minY - 0.3 &&
+        lat <= box.maxY + 0.3 &&
+        lng >= box.minX - 0.6 &&
+        lng <= box.maxX + 0.6
+      ) {
+        const km = boundaryDistance(
+          geometry,
+          [lng, lat]
+        );
+
+        if (km <= 15) {
+          nearby.push({ ...item, km });
+        }
+      }
+    }
+
+    inside.sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+
+    nearby.sort((a, b) =>
+      a.km - b.km ||
+      a.name.localeCompare(b.name)
+    );
+
+    return {
+      inside,
+      nearby,
+      invalid
+    };
+  }
+
+  function selectFeature(features, code) {
+    const matches = features.filter(feature =>
+      ['LEA_ID', 'LEA_GUID', 'CSO_LEA'].some(key =>
+        normalise(feature.properties[key]) ===
+        normalise(code)
+      )
+    );
+
+    return matches.length === 1
+      ? matches[0]
+      : null;
+  }
+
+  function selectRow(records, feature) {
+    const p = feature.properties;
+
+    const matches = records.filter(row =>
+      String(row.GEOGID).trim() ===
+      String(p.LEA_ID).trim()
+    );
+
+    if (matches.length !== 1) {
+      throw new Error(
+        'A unique Census row could not be found for this LEA. Check the LEA CSV.'
+      );
+    }
+
+    if (
+      !p.LEA_GUID ||
+      normalise(matches[0].GUID) !==
+        normalise(p.LEA_GUID)
+    ) {
+      throw new Error(
+        'The Census row and LEA boundary have different GUIDs. Check the data versions.'
+      );
+    }
+
+    return matches[0];
+  }
+
+  function safeURL(value) {
+    try {
+      const url = new URL(value);
+
+      return ['https:', 'http:'].includes(url.protocol)
+        ? url.href
+        : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function churchList(records, nearby) {
+    if (!records.length) {
+      return `
+        <p class="small">
+          No locations are listed in this dataset for this area.
+          This does not establish that no churches exist.
+        </p>
+      `;
+    }
+
+    return `
+      <ul class="church-list">
+        ${records.map(item => {
+          const url = safeURL(item.website);
+
+          const name = url
+            ? `
+              <a
+                href="${escape(url)}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >${escape(item.name)}</a>
+            `
+            : escape(item.name);
+
+          const note = nearby
+            ? ` · approximately ${item.km.toFixed(1)} km from the LEA boundary`
+            : ' · point inside this LEA';
+
+          return `
+            <li>
+              <strong>${name}</strong>
+              <small>
+                ${escape(item.county || 'County not supplied')}
+                ${note}
+              </small>
+            </li>
+          `;
+        }).join('')}
+      </ul>
+    `;
+  }
+
+  function simplify(points, tolerance = 0.6) {
+    if (points.length < 4) {
+      return points;
+    }
+
+    const keep = new Uint8Array(points.length);
+    const stack = [[0, points.length - 1]];
+
+    keep[0] = keep[points.length - 1] = 1;
+
+    while (stack.length) {
+      const [first, last] = stack.pop();
+
+      let maximum = tolerance;
+      let chosen = -1;
+
+      for (let i = first + 1; i < last; i++) {
+        const distance = segmentDistance(
+          points[i],
+          points[first],
+          points[last]
+        );
+
+        if (distance > maximum) {
+          maximum = distance;
+          chosen = i;
+        }
+      }
+
+      if (chosen >= 0) {
+        keep[chosen] = 1;
+
+        stack.push(
+          [first, chosen],
+          [chosen, last]
+        );
+      }
+    }
+
+    return points.filter((_, index) =>
+      keep[index]
     );
   }
 
-  if (!Number.isNaN(foreignLanguage) && foreignLanguage >= 10) {
-    addInsight(
-      insights,
-      "Language may shape access",
-      "A noticeable foreign-language speaking population means that communication, friendship, translation, and multilingual relationships may matter. This does not necessarily mean launching language-specific services, but it does mean asking who is being unintentionally excluded by ordinary church habits."
+  function staticMap(feature, churches) {
+    const project = ([lng, lat]) => [
+      lng * Math.PI / 180,
+      -Math.log(
+        Math.tan(
+          Math.PI / 4 + lat * Math.PI / 360
+        )
+      )
+    ];
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    for (const point of coordinates(feature.geometry)) {
+      const [x, y] = project(point);
+
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y);
+    }
+
+    const spanX = maxX - minX;
+    const spanY = maxY - minY;
+
+    const scale = Math.min(
+      640 / (spanX || 1),
+      280 / (spanY || 1)
+    );
+
+    const xy = point => {
+      const [x, y] = project(point);
+
+      return [
+        30 +
+          (640 - spanX * scale) / 2 +
+          (x - minX) * scale,
+
+        20 +
+          (280 - spanY * scale) / 2 +
+          (y - minY) * scale
+      ];
+    };
+
+    const paths = polygons(feature.geometry)
+      .map(polygon => {
+        const path = polygon.map(ring =>
+          simplify(ring.map(xy))
+            .map((point, index) =>
+              `${index ? 'L' : 'M'}${point.map(
+                n => n.toFixed(1)
+              ).join(',')}`
+            )
+            .join(' ') + ' Z'
+        ).join(' ');
+
+        return `
+          <path
+            d="${path}"
+            fill="#eaf0e7"
+            stroke="#185449"
+            stroke-width="1.5"
+            fill-rule="evenodd"
+          />
+        `;
+      }).join('');
+
+    const dots = churches.map(item => {
+      const [x, y] = xy([item.lng, item.lat]);
+
+      return `
+        <circle
+          cx="${x.toFixed(1)}"
+          cy="${y.toFixed(1)}"
+          r="4"
+          fill="#a87838"
+          stroke="#fff"
+          stroke-width="1"
+        />
+      `;
+    }).join('');
+
+    return `
+      <svg
+        viewBox="0 0 700 320"
+        role="img"
+        aria-label="${escape(
+          title(feature.properties.CSO_LEA)
+        )} LEA boundary and listed church points"
+      >
+        ${paths}
+        ${dots}
+      </svg>
+
+      <figcaption>
+        Simplified Census 2022 statistical LEA boundary; gold points
+        show listed church locations inside it. Classification uses
+        the full supplied boundary. Basemap tiles are omitted from
+        this print diagram.
+      </figcaption>
+    `;
+  }
+
+  function drawMap(feature, churches) {
+    const message = document.getElementById('mapStatus');
+
+    if (!window.L) {
+      message.textContent =
+        'The interactive map library could not load. A boundary diagram remains available when printing.';
+      return;
+    }
+
+    const box = extent(feature.geometry);
+
+    const map = L.map('townContextMap', {
+      scrollWheelZoom: false
+    }).setView(
+      [
+        (box.minY + box.maxY) / 2,
+        (box.minX + box.maxX) / 2
+      ],
+      10
+    );
+
+    const tiles = L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {
+        maxZoom: 19,
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }
+    ).addTo(map);
+
+    tiles.on('tileerror', () => {
+      message.textContent =
+        'Some basemap tiles could not load. The boundary and listed points remain available.';
+    });
+
+    const boundary = L.geoJSON(feature, {
+      style: {
+        color: '#185449',
+        weight: 2.5,
+        fillColor: '#729580',
+        fillOpacity: 0.16
+      }
+    }).addTo(map);
+
+    const markerGroups = [
+      [churches.inside, '#a87838'],
+      [churches.nearby, '#185449']
+    ];
+
+    for (const [records, colour] of markerGroups) {
+      records.forEach(item => {
+        L.circleMarker([item.lat, item.lng], {
+          radius: 6,
+          color: '#fff',
+          weight: 1.5,
+          fillColor: colour,
+          fillOpacity: 1
+        })
+          .bindPopup(`
+            <strong>${escape(item.name)}</strong>
+            <br>
+            ${escape(item.county || '')}
+          `)
+          .addTo(map);
+      });
+    }
+
+    map.fitBounds(boundary.getBounds(), {
+      padding: [25, 25],
+      maxZoom: 13
+    });
+
+    message.textContent =
+      'Gold points: inside the LEA. Green points: nearby. Zoom out to explore beyond the boundary.';
+
+    requestAnimationFrame(() =>
+      map.invalidateSize()
     );
   }
 
-  if (!Number.isNaN(noReligion) && noReligion >= 20) {
-    addInsight(
-      insights,
-      "Evangelism may need to begin further back",
-      "A higher non-religious profile suggests that mission may need to begin with patient trust-building, Bible discovery, apologetics, table fellowship, and visible community life rather than assuming people already share Christian categories.",
-      true
+  function observations(row, charts, name, churches) {
+    const chart = id =>
+      charts.find(c => c.id === id);
+
+    const item = (id, index) =>
+      chart(id)?.consistent
+        ? chart(id).rows[index].value
+        : null;
+
+    const evidence = (id, index, statement) => {
+      const c = chart(id);
+      const v = item(id, index);
+
+      return c?.consistent && v !== null
+        ? `${ratio(v, c.total)} ${statement}`
+        : 'The supporting measure is unavailable or inconsistent. Treat this as a general question without a local statistical conclusion.';
+    };
+
+    const churchCount = churches.available
+      ? churches.inside.length
+      : null;
+
+    const limited = chart('english')?.consistent
+      ? item('english', 2) + item('english', 3)
+      : null;
+
+    return [
+      [
+        'places',
+        'Read the LEA as a network of places',
+
+        `CSO recorded ${count(
+          sum(row, ['T1_1AGETT'])
+        )} residents across this statistical LEA in 2022.`,
+
+        '#place',
+
+        `${name} LEA is a statistical frame for exploring local mission. Ask which distinct neighbourhoods and communities it contains, how they relate, and where Christian witness is already present. An area-wide profile cannot show every local difference. Use the map to choose places for closer listening and to connect what you learn across the region.`,
+
+        'Which communities need their own closer profile, and which relationships connect them?'
+      ],
+
+      [
+        'witness',
+
+        churchCount > 0
+          ? 'Begin with existing witness'
+          : 'Verify the local Christian witness',
+
+        churchCount === null
+          ? 'Church-location data is unavailable.'
+          : `${count(churchCount)} church-location record(s) fall inside the supplied boundary. Coverage and current activity require verification.`,
+
+        '#community',
+
+        churchCount > 0
+          ? 'Meet local leaders and members, honour existing ministry and understand their convictions. Ask where people travel from and which places remain difficult to reach. Partnership, strengthening, leadership development and new congregations may each have a place. A count of church points cannot decide what is needed or establish the health and capacity of existing churches.'
+          : 'Ask residents and regional churches about congregations, house gatherings and Christian relationships missing from the map. An empty or unavailable listing cannot establish an absence of witness. Learn the local history and explore partnerships before deciding what future work could serve the area.',
+
+        'Who should we meet, and what could existing churches strengthen together?'
+      ],
+
+      [
+        'culture',
+        'Think interculturally across the area',
+
+        evidence(
+          'birthplace',
+          1,
+          'people in the 2022 birthplace table were born outside Ireland. Birthplace does not establish ethnicity, language or length of residence.'
+        ),
+
+        '#chart-birthplace',
+
+        'Explore which communities are present and how people describe their identities. Ask whether experiences differ between neighbourhoods or settlements. Hospitality and shared congregational life can make space for people from different backgrounds to contribute. Avoid assuming that everyone born abroad is recently arrived or needs the same form of support.',
+
+        'Whose voices and cultural experiences are least represented in our relationships and leadership?'
+      ],
+
+      [
+        'language',
+        'Language may shape access',
+
+        limited === null
+          ? 'English-proficiency counts are unavailable.'
+          : `${ratio(limited, chart('english').total)} people speaking another language at home reported English “not well” or “not at all” in 2022. The denominator is this language group.`,
+
+        '#chart-english',
+
+        'Ask how people access information, conversation and church life in different parts of the LEA. Clear language, translation and multilingual friendships may help. A different home language does not itself indicate difficulty with English. Listen before choosing a response and involve multilingual Christians in shaping it.',
+
+        'Which communication barriers have residents actually identified, and who could help address them?'
+      ],
+
+      [
+        'belief',
+        'Join neighbourly respect with gospel clarity',
+
+        evidence(
+          'religion',
+          2,
+          'residents in the 2022 religion table reported no religion. Affiliation does not measure belief, attendance or receptivity.'
+        ),
+
+        '#chart-religion',
+
+        'Ask what faith, doubt, religious identity and church experience mean in local lives. Differences within the LEA may be as important as the area-wide totals. Religious categories should open conversations. Offer a gracious, clear explanation of the gospel while learning about neighbours’ convictions and experiences.',
+
+        'What questions are people asking in the different communities we hope to serve?'
+      ],
+
+      [
+        'households',
+        'Make room for different households',
+
+        evidence(
+          'households',
+          0,
+          'private households in the 2022 household-size table had one person. Living alone does not establish loneliness.'
+        ),
+
+        '#chart-households',
+
+        'Consider children, older people, single adults, couples and households without children when shaping discipleship and community life. Ask how care, work and transport affect participation. A programme accessible in one part of the LEA may be impractical elsewhere. Let residents help identify useful places, times and relationships.',
+
+        'Who finds our present arrangements difficult to access, and what would make participation possible?'
+      ],
+
+      [
+        'housing',
+        'Explore housing and belonging',
+
+        evidence(
+          'tenure',
+          2,
+          'permanent private households in the 2022 tenure table rented from a private landlord. This is a household measure.'
+        ),
+
+        '#chart-tenure',
+
+        'Ask renters and owners what helps them feel at home and develop local relationships. Housing tenure alone cannot establish income, mobility or weak local roots. Explore hospitality and accessible gatherings across different communities, while listening carefully before deciding what practical support would be helpful.',
+
+        'How does the experience of belonging differ between communities within this LEA?'
+      ],
+
+      [
+        'fieldwork',
+        'Follow relationships beyond the boundary',
+
+        'The report supplies a boundary and demographic tables. Verified local journeys, meeting places and residents’ accounts have not yet been added.',
+
+        '#field-guide',
+
+        'Visit several places, return at different times and follow the everyday journeys residents describe. School, work, friendship and church relationships may cross the LEA boundary. Keep observation, testimony and interpretation distinct. Bring what you learn into prayer and discussion with local churches before agreeing a practical next step.',
+
+        'Which journeys and relationships should we understand before proposing new work?'
+      ]
+    ].map(
+      (
+        [id, heading, basis, source, text, question],
+        index
+      ) => ({
+        id,
+        heading,
+        basis,
+        source,
+        text,
+        question,
+        soft: [3, 4, 6].includes(index)
+      })
     );
   }
 
-  if (!Number.isNaN(otherReligion) && otherReligion >= 8) {
-    addInsight(
-      insights,
-      "Religious plurality needs neighbourly clarity",
-      "The presence of other religious affiliation calls for a posture that is both hospitable and clear. Local mission should be prepared for interfaith friendships, careful listening, and gracious explanation of the gospel without reducing people to census categories."
-    );
-  }
+  function missionHTML(card) {
+    return `
+      <article
+        class="mission-card${card.soft ? ' mission-card--soft' : ''}"
+        aria-labelledby="mission-${card.id}"
+      >
+        <h3 id="mission-${card.id}">
+          ${escape(card.heading)}
+        </h3>
 
-  if (!Number.isNaN(children) && children >= 20 && !Number.isNaN(familiesWithChildren) && familiesWithChildren >= 50) {
-    addInsight(
-      insights,
-      "Family networks may be a primary doorway",
-      "The combination of children and families with children suggests that schools, sports clubs, parent-and-toddler relationships, children’s ministry, and practical support for households may be significant pathways into community life.",
-      true
-    );
-  } else if (!Number.isNaN(children) && children >= 20) {
-    addInsight(
-      insights,
-      "Family rhythms may be a key doorway",
-      "A significant children’s population points toward the importance of schools, sports clubs, parent networks, and practical support for households. Mission may move through ordinary family relationships before it moves through formal events."
-    );
-  }
+        <p class="mission-text">
+          ${escape(card.text)}
+        </p>
 
-  if (!Number.isNaN(youngAdults) && youngAdults >= 25 && !Number.isNaN(privateRenting) && privateRenting >= 20) {
-    addInsight(
-      insights,
-      "Younger adults may be mobile and relationally unsettled",
-      "The profile combines a noticeable younger adult population with private renting. That often points to mobility, thinner local roots, and friendship networks built around work, cafés, gyms, sport, and shared housing rather than inherited community structures.",
-      true
-    );
-  } else if (!Number.isNaN(youngAdults) && youngAdults >= 25) {
-    addInsight(
-      insights,
-      "Do not ignore younger adult networks",
-      "The younger adult profile suggests paying attention to work, rental housing, cafés, gyms, sports, and informal friendship networks. A church plant that only imagines Sunday attendance may miss where younger adults actually build community."
-    );
-  }
+        <details class="mission-details">
+          <summary>Evidence and local questions</summary>
 
-  if (!Number.isNaN(olderAdults) && olderAdults >= 20 && !Number.isNaN(retired) && retired >= 18) {
-    addInsight(
-      insights,
-      "Pastoral presence among older adults matters",
-      "The age and retirement profile suggest that loneliness, bereavement, transport, healthcare, weekday availability, and trusted pastoral presence may be central to faithful ministry. A strategy focused only on young families would read the place too narrowly.",
-      true
-    );
-  }
+          <p>
+            <strong>Reported evidence:</strong>
+            ${escape(card.basis)}
 
-  if (!Number.isNaN(ownerOccupied) && ownerOccupied >= 65) {
-    addInsight(
-      insights,
-      "This may be a settled community",
-      "A high owner-occupied housing profile can indicate stability and long local memory. New ministry here may need patience, consistency, and visible faithfulness over time rather than quick programme-driven activity."
-    );
-  }
+            <a href="${card.source}">
+              View supporting section
+            </a>.
+          </p>
 
-  if (!Number.isNaN(privateRenting) && privateRenting >= 25) {
-    addInsight(
-      insights,
-      "Housing may shape belonging",
-      "A higher private-renting profile may mean people are more mobile, newer to the area, or less rooted in older local networks. Hospitality, small groups, and low-barrier community spaces could be unusually important."
-    );
-  }
-
-  if (!Number.isNaN(localAuthorityRenting) && localAuthorityRenting >= 18) {
-    addInsight(
-      insights,
-      "Pay attention to disadvantage without making assumptions",
-      "A higher level of local-authority renting may point toward particular pastoral and community needs. This should lead to listening, dignity, practical friendship, and partnership with local workers, not crude assumptions about poverty or receptivity."
-    );
-  }
-
-  if (!Number.isNaN(thirdLevel) && thirdLevel >= 45 && !Number.isNaN(noReligion) && noReligion >= 20) {
-    addInsight(
-      insights,
-      "Apologetics and trust may belong together",
-      "The combination of higher education and a sizeable non-religious population suggests that mission may need both intellectual clarity and relational credibility. People may not simply need an invitation to church; they may need space to reconsider whether Christianity is believable at all.",
-      true
-    );
-  }
-
-  if (!Number.isNaN(atWork) && atWork >= 62) {
-    addInsight(
-      insights,
-      "Daily rhythms may be shaped by work pressure",
-      "A high proportion of adults at work suggests that evening availability, commuting, childcare, tiredness, and weekend patterns should be considered carefully. Ministry rhythms that assume endless volunteer capacity may struggle here."
-    );
-  }
-
-  if (!Number.isNaN(students) && students >= 12) {
-    addInsight(
-      insights,
-      "Students may be a distinct mission field",
-      "The student profile suggests the need to ask where younger adults gather, whether there are colleges nearby, and how transient student life affects discipleship, hospitality, and continuity."
-    );
-  }
-
-  if (!Number.isNaN(unableWork) && unableWork >= 8) {
-    addInsight(
-      insights,
-      "Accessibility and care should not be secondary",
-      "A noticeable share of people unable to work because of sickness or disability should shape how churches think about access, transport, pastoral care, daytime presence, and the dignity of those often left at the edge of busy church life."
-    );
-  }
-
-  if (!Number.isNaN(unemployment) && unemployment >= 8) {
-    addInsight(
-      insights,
-      "Work, dignity, and hope may be live questions",
-      "A higher unemployment profile may point to economic pressure, discouragement, and fragile confidence. Local mission should avoid treating people as projects, but practical care, friendship, and pathways into purposeful community may matter deeply."
-    );
-  }
-
-  if (!Number.isNaN(households2) && households2 >= 45 && !Number.isNaN(olderAdults) && olderAdults >= 18) {
-    addInsight(
-      insights,
-      "Small households may hide loneliness",
-      "A high share of two-person households alongside an older age profile may indicate settled couples, empty nesters, widows and widowers, or smaller household units. Pastoral visiting and neighbourly attention may matter more than a purely event-led strategy."
-    );
-  }
-
-  if (!Number.isNaN(professionalOccupations) && professionalOccupations >= 20 || !Number.isNaN(professionalServices) && professionalServices >= 25) {
-    addInsight(
-      insights,
-      "Professional networks may shape community life",
-      "The work profile suggests that professional networks, commuting patterns, and time pressure may shape how people form relationships. In a place like this, careful teaching, thoughtful apologetics, and flexible discipleship rhythms may carry particular weight."
-    );
-  }
-
-  if (!Number.isNaN(skilledTrades) && skilledTrades >= 12 || !Number.isNaN(construction) && construction >= 12) {
-    addInsight(
-      insights,
-      "Practical credibility may matter",
-      "A strong trades or construction profile suggests that churches should not only think in terms of formal programmes. Practical service, reliability, embodied community, and everyday usefulness may speak loudly."
-    );
-  }
-
-  if (!Number.isNaN(agriculture) && agriculture >= 10) {
-    addInsight(
-      insights,
-      "Rural working patterns may shape ministry",
-      "An agricultural profile may mean seasonal pressure, dispersed relationships, and a different rhythm of availability. Ministry here may need to account for farming calendars, local marts, parish memory, and the slow work of trust."
-    );
-  }
-
-  if (!Number.isNaN(elementaryOccupations) && elementaryOccupations >= 12) {
-    addInsight(
-      insights,
-      "Do not design ministry only for the articulate and available",
-      "A noticeable elementary-occupations profile should remind churches not to build everything around middle-class assumptions of time, confidence, education, and communication style. Plain speech, practical friendship, and non-performative community may be important."
-    );
-  }
-
-  if (churchAnalysis.nearby.length >= 3 && churchAnalysis.inside.length === 0) {
-    addInsight(
-      insights,
-      "Nearby churches may be partners, not competitors",
-      `There are several listed churches within 15 km. Before asking whether ${leaName} needs a separate new church, it would be wise to ask whether nearby congregations already have relationships here, whether a Bible study or outreach could be supported, and what collaboration might look like.`
-    );
-  }
-
-  addInsight(
-    insights,
-    "Use the map as a prompt for fieldwork",
-    "The next step is not just more data. Walk the area. Notice schools, estates, cafés, marts, shops, community halls, sports clubs, direct provision or migrant housing where relevant, and the places where people already gather. Good missiology starts with attention.",
-    true
-  );
-
-  missionInsightsEl.innerHTML = insights
-    .map(insight => `
-      <article class="insight-card ${insight.priority ? "is-priority" : ""}">
-        <h3>${escapeHtml(insight.title)}</h3>
-        <p>${escapeHtml(insight.text)}</p>
+          <p>
+            <strong>Discuss locally:</strong>
+            ${escape(card.question)}
+          </p>
+        </details>
       </article>
-    `)
-    .join("");
-}
+    `;
+  }
 
-function showMissingCodeState() {
-  leaNameEl.textContent = "No LEA selected";
-  countyNameEl.textContent = "County: —";
-  urbanAreaCodeEl.textContent = "LEA Code: —";
+  async function request(path, type) {
+    const response = await fetch(path);
 
-  setNotice(
-    "No LEA code was provided. Open this page with a URL like lea-profile.html?code=13190402.",
-    "error"
-  );
-}
-
-function showTownNotFoundState(code) {
-  leaNameEl.textContent = "LEA not found";
-  countyNameEl.textContent = "County: —";
-  urbanAreaCodeEl.textContent = "LEA Code: " + code;
-
-  setNotice(
-    "The LEA boundary could not be found for this code. The code may not match LEA_ID, LEA_GUID, CSO_LEA, or area_name in lea-demographics-map.geojson.",
-    "error"
-  );
-}
-
-function loadLeaProfile() {
-  if (townMapFrameEl) {
-    if (selectedCode) {
-      townMapFrameEl.src = `lea-profile-map.html?code=${encodeURIComponent(selectedCode)}&v=iframe1`;
-    } else {
-      townMapFrameEl.src = "lea-profile-map.html?v=iframe1";
+    if (!response.ok) {
+      throw new Error(
+        `Could not load ${path} (HTTP ${response.status}). Upload it beside lea-profile.html.`
+      );
     }
+
+    if (type === 'json') {
+      return response.json();
+    }
+
+    const bytes = await response.arrayBuffer();
+
+    let text;
+
+    try {
+      text = new TextDecoder(
+        'utf-8',
+        { fatal: true }
+      ).decode(bytes);
+    } catch {
+      text = new TextDecoder(
+        'windows-1252'
+      ).decode(bytes);
+    }
+
+    return parseCSV(text);
   }
 
-  if (!selectedCode) {
-    showMissingCodeState();
-    return;
-  }
+  function printSupport() {
+    let previous = null;
 
-  urbanAreaCodeEl.textContent = "LEA Code: " + selectedCode;
-
-  Promise.all([
-    loadJson("lea-demographics-map.geojson"),
-    loadJson("small-areas-2022.geojson"),
-    loadCsv("small-area-demographics-2022.csv").catch(error => {
-      console.warn("Summary demographic file could not be loaded. Continuing with full LEA profile file only.", error);
-      return [];
-    }),
-    loadCsv("small-area-town-profile-2022.csv"),
-    loadCsv("churches-points.csv")
-  ])
-    .then(([leaData, smallAreasData, smallAreaDemographicsRows, fullProfileRows, churches]) => {
-      const selectedLeaFeature = findLeaFeature(leaData, selectedCode);
-
-      if (!selectedLeaFeature) {
-        console.warn("Available sample properties:", leaData.features?.[0]?.properties || {});
-        showTownNotFoundState(selectedCode);
+    window.addEventListener('beforeprint', () => {
+      if (previous !== null) {
         return;
       }
 
-      const summaryLookup = buildSmallAreaLookup(smallAreaDemographicsRows);
-      const fullLookup = buildSmallAreaLookup(fullProfileRows);
-      const leaBounds = getFeatureBounds(selectedLeaFeature);
+      previous = Array.from(
+        document.querySelectorAll('.mission-details')
+      ).map(detail => ({
+        detail,
+        open: detail.open
+      }));
 
-      const matchingSmallAreas = smallAreasData.features.filter(feature => {
-        return smallAreaLikelyOverlapsTown(feature, selectedLeaFeature.geometry, leaBounds);
+      previous.forEach(({ detail }) => {
+        detail.open = true;
+      });
+    });
+
+    window.addEventListener('afterprint', () => {
+      previous?.forEach(({ detail, open }) => {
+        detail.open = open;
       });
 
-      renderProfileData(selectedLeaFeature, matchingSmallAreas, summaryLookup, fullLookup, churches);
-
-      setNotice(
-        "LEA profile loaded from the Glúnta demographic map data. Church presence is based on the current Glúnta church points dataset.",
-        "success"
-      );
-    })
-    .catch(error => {
-      console.error(error);
-
-      leaNameEl.textContent = "Data could not be loaded";
-
-      setNotice(
-        "One or more profile files could not be loaded. Check that urban-areas-boundaries.geojson, small-areas-2022.geojson, small-area-town-profile-2022.csv, and churches-points.csv are in the root of this GitHub Pages site.",
-        "error"
-      );
+      previous = null;
     });
-}
+  }
 
-loadLeaProfile();
+  async function init() {
+    const status = document.getElementById('loadStatus');
+    const button = document.getElementById('printButton');
+
+    const params = new URLSearchParams(location.search);
+    const code = params.get('code');
+
+    const set = (id, text) => {
+      document.getElementById(id).textContent = text;
+    };
+
+    try {
+      const data = await request(
+        FILES.boundaries,
+        'json'
+      );
+
+      if (!Array.isArray(data.features)) {
+        throw new Error(
+          'The boundary file is not a FeatureCollection.'
+        );
+      }
+
+      const features = data.features.filter(feature =>
+        feature.properties?.LEA_ID &&
+        feature.properties?.LEA_GUID
+      );
+
+      const selected = code
+        ? selectFeature(features, code)
+        : null;
+
+      if (!selected) {
+        status.textContent = code
+          ? 'That LEA code is missing or ambiguous. Choose an area below.'
+          : 'Choose a Local Electoral Area to open its report.';
+
+        const select = document.getElementById('areaSelect');
+
+        features
+          .sort((a, b) =>
+            a.properties.CSO_LEA.localeCompare(
+              b.properties.CSO_LEA
+            )
+          )
+          .forEach(item => {
+            const p = item.properties;
+
+            select.add(
+              new Option(
+                `${title(p.CSO_LEA)} · ${title(p.COUNTY)} · ${p.LEA_ID}`,
+                p.LEA_ID
+              )
+            );
+          });
+
+        document.getElementById('areaPicker').hidden = false;
+        return;
+      }
+
+      const feature = toWGS84(
+        selected,
+        data.crs?.properties?.name,
+        window.proj4
+      );
+
+      status.textContent =
+        'Boundary loaded. Preparing the Census charts and church listings…';
+
+      const [records, churchResult] = await Promise.all([
+        request(FILES.census, 'csv'),
+
+        request(FILES.churches, 'csv').then(
+          value => ({ value }),
+          error => ({ error })
+        )
+      ]);
+
+      const row = selectRow(records, feature);
+      const p = feature.properties;
+      const name = title(p.CSO_LEA);
+
+      const charts = groups.map(definition =>
+        buildChart(row, definition)
+      );
+
+      const population = sum(row, ['T1_1AGETT']);
+
+      if (population === null || population <= 0) {
+        throw new Error(
+          'The published LEA population is missing or invalid.'
+        );
+      }
+
+      const churches = churchResult.error
+        ? {
+            available: false,
+            inside: [],
+            nearby: [],
+            invalid: 0
+          }
+        : {
+            available: true,
+            ...classifyChurches(
+              churchResult.value,
+              feature.geometry
+            )
+          };
+
+      set('leaName', name);
+
+      set(
+        'areaMeta',
+        `${title(p.COUNTY)} · LEA ${p.LEA_ID} · Census 2022 statistical boundary`
+      );
+
+      document.title =
+        `${name} LEA | Glúnta Research`;
+
+      set(
+        'boundaryNote',
+        `This report covers the Census 2022 statistical LEA of ${name}, ${title(p.COUNTY)}. It uses the matching published CSO LEA row, rather than combining towns or averaging Small Area percentages.`
+      );
+
+      if (p.LEA_OFFICIAL === 'N') {
+        set(
+          'boundaryAdjustment',
+          'CSO statistical boundary adjustment: the supplied dataset marks this LEA as differing from its statutory electoral boundary. The figures and map here use the matching Census 2022 statistical geography.'
+        );
+
+        document.getElementById(
+          'boundaryAdjustment'
+        ).hidden = false;
+      }
+
+      const age = charts.find(c =>
+        c.id === 'ages'
+      );
+
+      const birth = charts.find(c =>
+        c.id === 'birthplace'
+      );
+
+      const stats = [
+        [
+          count(population),
+          'Residents across the LEA',
+          'Census 2022 · all residents'
+        ],
+        [
+          count(sum(row, ['T5_2_TH'])),
+          'Private households',
+          'Census 2022 · household total'
+        ],
+        [
+          percentage(
+            age.rows[0].value,
+            age.total
+          ),
+          'Aged 0–14',
+          `Denominator: ${count(age.total)} residents`
+        ],
+        [
+          percentage(
+            birth.rows[1].value,
+            birth.total
+          ),
+          'Born outside Ireland',
+          `Denominator: ${count(birth.total)} in birthplace table`
+        ]
+      ];
+
+      document.getElementById(
+        'headlineStats'
+      ).innerHTML = stats.map(
+        ([value, label, note]) => `
+          <div class="stat">
+            <strong>${escape(value)}</strong>
+            <span>${escape(label)}</span>
+            <small>${escape(note)}</small>
+          </div>
+        `
+      ).join('');
+
+      set(
+        'peopleSummary',
+        `${count(population)} residents were recorded across this LEA in 2022. These are area-wide figures. They are not the population or demographic profile of any one town within it.`
+      );
+
+      for (const chart of charts) {
+        document
+          .getElementById(chart.target)
+          .insertAdjacentHTML(
+            'beforeend',
+            chartHTML(chart)
+          );
+      }
+
+      if (!churches.available) {
+        set(
+          'churchSummary',
+          'Church records are unavailable. The demographic report remains usable; no church count can be inferred.'
+        );
+
+        set(
+          'insideChurches',
+          'Unavailable. Check churches-points.csv.'
+        );
+
+        set(
+          'nearbyChurches',
+          'Unavailable. Check churches-points.csv.'
+        );
+      } else {
+        const invalidNote = churches.invalid
+          ? ` ${count(churches.invalid)} record(s) with invalid coordinates were excluded from geographic counts.`
+          : '';
+
+        set(
+          'churchSummary',
+          `${count(churches.inside.length)} listed location(s) fall inside the LEA. ${count(churches.nearby.length)} further listed location(s) lie outside it and within approximately 15 km of the nearest boundary. These are dataset records, not a complete church census.${invalidNote}`
+        );
+
+        document.getElementById(
+          'insideChurches'
+        ).innerHTML = churchList(
+          churches.inside,
+          false
+        );
+
+        document.getElementById(
+          'nearbyChurches'
+        ).innerHTML = churchList(
+          churches.nearby.slice(0, 8),
+          true
+        );
+      }
+
+      document.getElementById(
+        'missionCards'
+      ).innerHTML = observations(
+        row,
+        charts,
+        name,
+        churches
+      ).map(missionHTML).join('');
+
+      document.getElementById(
+        'printMap'
+      ).innerHTML = staticMap(
+        feature,
+        churches.inside
+      );
+
+      const openedDate = new Date().toLocaleDateString(
+        'en-IE',
+        {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        }
+      );
+
+      set(
+        'reportStamp',
+        `Report opened ${openedDate}. Statistics remain dated 2022; this is not a live population estimate.`
+      );
+
+      document.getElementById('report').hidden = false;
+      status.hidden = true;
+
+      printSupport();
+
+      button.disabled = false;
+
+      button.addEventListener('click', () =>
+        window.print()
+      );
+
+      try {
+        drawMap(feature, churches);
+      } catch {
+        set(
+          'mapStatus',
+          'The interactive map could not be displayed. The report and printable boundary diagram remain available.'
+        );
+      }
+
+      if (params.get('print') === '1') {
+        await document.fonts.ready;
+
+        await new Promise(resolve =>
+          requestAnimationFrame(() =>
+            requestAnimationFrame(resolve)
+          )
+        );
+
+        window.print();
+      }
+    } catch (error) {
+      status.hidden = false;
+      status.classList.add('error');
+
+      status.textContent =
+        `${error.message} Open the report through your website or a local web server.`;
+
+      button.disabled = true;
+    }
+  }
+
+  const api = {
+    numeric,
+    sum,
+    percent,
+    parseCSV,
+    groups,
+    buildChart,
+    chartHTML,
+    contains,
+    extent,
+    toWGS84,
+    boundaryDistance,
+    classifyChurches,
+    selectFeature,
+    selectRow,
+    simplify,
+    staticMap,
+    observations,
+    missionHTML,
+    safeURL
+  };
+
+  if (
+    typeof module !== 'undefined' &&
+    module.exports
+  ) {
+    module.exports = api;
+  }
+
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener(
+        'DOMContentLoaded',
+        init
+      );
+    } else {
+      init();
+    }
+  }
+})();
