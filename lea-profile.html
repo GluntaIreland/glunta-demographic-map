@@ -1,317 +1,523 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en-IE">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LEA Mission Profile | Glúnta</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <link rel="stylesheet" href="town-profile.css" />
+  <meta
+    name="description"
+    content="A Glúnta Local Electoral Area mission profile with Census 2022 charts, local research questions and a practical Field Guide."
+  >
 
-  <style>
-    .town-static-map-preview {
-      display: none;
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      background: #dfe9e7;
-    }
+  <title>LEA Mission Profile | Glúnta Research</title>
 
-    .static-town-map-svg {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  >
+  <link rel="stylesheet" href="town-profile.css">
+  <link rel="stylesheet" href="town-mission.css">
 
-    .static-map-fallback {
-      height: 100%;
-      display: grid;
-      place-items: center;
-      color: #5f6b76;
-      font-weight: 800;
-    }
-
-    .primary-button:disabled {
-      opacity: 0.72;
-      cursor: wait;
-    }
-
-    body.pdf-export-mode {
-      background: #ffffff !important;
-    }
-
-    body.pdf-export-mode .profile-page {
-      width: 1100px;
-      max-width: 1100px;
-      padding: 24px 0 40px;
-    }
-
-    body.pdf-export-mode .hero-actions {
-      display: none !important;
-    }
-
-    body.pdf-export-mode .town-map-frame {
-      display: none !important;
-    }
-
-    body.pdf-export-mode .town-static-map-preview {
-      display: block !important;
-    }
-
-    body.pdf-export-mode .map-preview-label span {
-      font-size: 0;
-    }
-
-    body.pdf-export-mode .map-preview-label span::after {
-      content: "Map-generated LEA view";
-      font-size: 0.8rem;
-    }
-  </style>
+  <script
+    defer
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  ></script>
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/proj4@2.22.0/dist/proj4.js"
+  ></script>
+  <script defer src="lea-profile.js"></script>
 </head>
 
 <body>
-  <main class="profile-page">
-    <header class="profile-hero">
-      <div class="profile-hero-text">
-        <p class="eyebrow">Glúnta Research</p>
-        <h1>LEA Mission Profile</h1>
-        <p class="hero-subtitle">
-          A mission-focused demographic profile for understanding Local Electoral Areas, existing church presence,
-          and possible areas for prayer, partnership, and local research.
-        </p>
-      </div>
+  <a class="skip-link" href="#main">Skip to report</a>
 
-      <div class="hero-actions">
-        <a class="secondary-button" href="index.html">Back to map</a>
-        <button id="downloadPdfButton" class="primary-button" type="button">Download PDF</button>
-      </div>
-    </header>
+  <header class="site-header">
+    <a class="brand" href="index.html">
+      GLÚNTA <span>RESEARCH</span>
+    </a>
 
-    <section class="town-summary-card">
-      <div class="town-map-preview-wrap">
-        <iframe
-          id="townMapFrame"
-          class="town-map-frame"
-          title="LEA context map"
-          src="lea-profile-map.html"
-          loading="eager"
-        ></iframe>
+    <nav aria-label="Report navigation">
+      <a href="index.html">Back to map</a>
+      <a href="#mission-reading">Mission reading</a>
+      <a href="#field-guide">Field Guide</a>
 
-        <div id="townStaticMapPreview" class="town-static-map-preview" aria-hidden="true"></div>
+      <button id="printButton" type="button" disabled>
+        Print / save PDF
+      </button>
+    </nav>
+  </header>
 
-        <div class="map-preview-label">
-          <span>Interactive LEA context map</span>
-        </div>
-      </div>
+  <main id="main">
+    <p
+      id="loadStatus"
+      class="notice"
+      role="status"
+      aria-live="polite"
+    >
+      Loading the LEA boundary and Census data…
+    </p>
 
-      <div class="town-summary-content">
-        <p class="eyebrow">Selected LEA</p>
-        <h2 id="leaName">Loading LEA...</h2>
+    <form id="areaPicker" class="picker" hidden>
+      <label for="areaSelect">Choose a Local Electoral Area</label>
+      <select id="areaSelect" name="code" required></select>
+      <button type="submit">Open report</button>
+    </form>
 
-        <div class="summary-meta">
-          <span id="countyName">County: —</span>
-          <span id="urbanAreaCode">LEA Code: —</span>
-        </div>
-
-        <p id="townDescription" class="town-description">
-          This page uses the selected LEA boundary, Small Area demographic data, and listed church
-          locations to create a focused mission profile.
+    <article id="report" hidden>
+      <section class="hero" aria-labelledby="leaName">
+        <p class="eyebrow">
+          Local Electoral Area · Mission Profile
         </p>
 
-        <div id="loadingNotice" class="loading-notice">
-          Loading LEA boundary from the Glúnta demographic map data...
+        <h1 id="leaName"></h1>
+        <p id="areaMeta" class="hero-meta"></p>
+
+        <p class="intro">
+          Understand the people, places and relationships across this area.
+          Begin with the figures, then listen within the communities they
+          describe.
+        </p>
+
+        <p class="evidence">
+          <span class="badge">Published statistics</span>
+          Census 2022 ·
+          <span class="badge record">Organisation records</span>
+          Glúnta church locations
+        </p>
+
+        <div id="headlineStats" class="stats"></div>
+      </section>
+
+      <div class="report-layout">
+        <aside class="contents">
+          <p class="eyebrow">In this report</p>
+
+          <nav aria-label="Report contents">
+            <a href="#place">01 · The area</a>
+            <a href="#people">02 · The people</a>
+            <a href="#homes">03 · Homes &amp; households</a>
+            <a href="#culture">04 · Culture &amp; belief</a>
+            <a href="#work">05 · Work &amp; education</a>
+            <a href="#community">06 · Church locations</a>
+            <a href="#mission-reading">07 · Mission reading</a>
+            <a href="#field-guide">08 · Field Guide</a>
+            <a href="#sources">09 · Sources &amp; limits</a>
+          </nav>
+        </aside>
+
+        <div class="report-body">
+          <section id="place" class="report-section">
+            <p class="eyebrow">01 · Geography</p>
+            <h2>The area</h2>
+
+            <p id="boundaryNote"></p>
+            <p id="boundaryAdjustment" class="notice" hidden></p>
+
+            <div
+              id="townContextMap"
+              aria-label="Interactive LEA boundary and listed church locations"
+            ></div>
+
+            <p
+              id="mapStatus"
+              class="small screen-only"
+              role="status"
+            ></p>
+
+            <figure id="printMap" class="print-map"></figure>
+
+            <p class="caption">
+              The shaded shape is the Census 2022 statistical LEA. An electoral
+              area can contain distinct neighbourhoods, towns, villages and
+              rural communities. Its boundary does not establish a single
+              community or ministry catchment.
+            </p>
+
+            <div class="question">
+              <strong>Explore locally</strong>
+              <p>
+                Which places do residents use for school, work, shopping,
+                worship and friendship? Notice where their everyday journeys
+                cross the LEA boundary.
+              </p>
+            </div>
+          </section>
+
+          <section id="people" class="report-section">
+            <p class="eyebrow">02 · Population</p>
+            <h2>The people</h2>
+
+            <p id="peopleSummary"></p>
+            <div id="peopleCharts" class="chart-grid"></div>
+          </section>
+
+          <section id="homes" class="report-section">
+            <p class="eyebrow">03 · Everyday life</p>
+            <h2>Homes &amp; households</h2>
+
+            <p>
+              A household is not necessarily a family. These totals cover the
+              whole LEA and may conceal substantial differences between its
+              communities.
+            </p>
+
+            <div id="homeCharts" class="chart-grid"></div>
+          </section>
+
+          <section id="culture" class="report-section">
+            <p class="eyebrow">04 · Identity &amp; conversation</p>
+            <h2>Culture &amp; belief</h2>
+
+            <p>
+              Religion describes a Census response about affiliation. It does
+              not measure attendance, personal commitment or receptivity to
+              the gospel.
+            </p>
+
+            <div id="cultureCharts" class="chart-grid"></div>
+          </section>
+
+          <section id="work" class="report-section">
+            <p class="eyebrow">05 · Skills &amp; routines</p>
+            <h2>Work &amp; education</h2>
+
+            <p>
+              Read each table’s population and denominator carefully.
+              Different work, study and care routines may shape participation
+              across the area.
+            </p>
+
+            <div id="workCharts" class="chart-grid"></div>
+          </section>
+
+          <section id="community" class="report-section">
+            <p class="eyebrow">06 · Organisation records</p>
+            <h2>Listed church locations</h2>
+
+            <p id="churchSummary"></p>
+
+            <div class="church-columns">
+              <div>
+                <h3>Inside this LEA</h3>
+                <div id="insideChurches"></div>
+              </div>
+
+              <div>
+                <h3>Outside and nearby</h3>
+                <div id="nearbyChurches"></div>
+              </div>
+            </div>
+
+            <p class="caption">
+              Nearby records lie outside the LEA and within approximately
+              15 km of its nearest boundary, measured in a straight line.
+              This is not driving distance or travel time. Up to eight nearby
+              records are displayed; all listed records inside the LEA are
+              shown.
+            </p>
+
+            <div class="question">
+              <strong>Verify the relationships</strong>
+
+              <p>
+                Ask which communities these churches actually serve, where
+                members travel from, and which relationships extend into
+                neighbouring LEAs. A point on a map cannot establish church
+                health, capacity or coverage.
+              </p>
+            </div>
+          </section>
+
+          <section
+            id="mission-reading"
+            class="report-section"
+            aria-labelledby="missionTitle"
+          >
+            <p class="eyebrow">07 · Mission reading</p>
+            <h2 id="missionTitle">Missiological observations</h2>
+
+            <p class="mission-intro">
+              Reflections for local discernment. Open a card’s evidence and
+              questions to explore its supporting figures.
+            </p>
+
+            <div id="missionCards" class="mission-grid"></div>
+
+            <p class="mission-method">
+              These are interpretive prompts for discussion with residents
+              and local churches. They do not measure spiritual need, church
+              health or receptivity to the gospel. Card colours distinguish
+              panels; they do not score the area.
+            </p>
+          </section>
+
+          <section
+            id="field-guide"
+            class="report-section field-guide"
+          >
+            <p class="eyebrow">08 · Glúnta Field Guide</p>
+            <h2>How to understand this LEA</h2>
+
+            <p class="intro">
+              Use the area-wide picture to decide where to listen more
+              closely. Visit different communities and connect what you learn
+              across the region.
+            </p>
+
+            <div class="guide-grid">
+              <div>
+                <h3>1. Check the geography</h3>
+                <p>
+                  Confirm the Census year and statistical boundary. Identify
+                  the neighbourhoods, settlements and rural areas it includes.
+                  Note important places just outside it.
+                </p>
+              </div>
+
+              <div>
+                <h3>2. Compare local experiences</h3>
+                <p>
+                  Visit several parts of the LEA. Ask whether age, housing and
+                  cultural patterns differ between them. An area-wide
+                  percentage should not be assigned to every neighbourhood.
+                </p>
+              </div>
+
+              <div>
+                <h3>3. Follow everyday journeys</h3>
+                <p>
+                  Ask where people travel for school, work, care, shopping
+                  and friendship. Check transport, journey times and the
+                  practical accessibility of church gatherings.
+                </p>
+              </div>
+
+              <div>
+                <h3>4. Meet existing churches</h3>
+                <p>
+                  Verify the listings and listen to leaders and members. Ask
+                  about their relationships, convictions, history and
+                  capacity, and where collaboration could be fruitful.
+                </p>
+              </div>
+
+              <div>
+                <h3>5. Record community assets</h3>
+                <p>
+                  Find trusted people, libraries, schools, clubs, community
+                  organisations and informal meeting places. Record what
+                  residents value, with a source and date.
+                </p>
+              </div>
+
+              <div>
+                <h3>6. Choose a shared next step</h3>
+                <p>
+                  Discuss your observations with local partners. Agree one
+                  practical way to listen, serve or develop discipleship.
+                  Return to ask whether it helped and what needs to change.
+                </p>
+              </div>
+            </div>
+
+            <div class="walk-plan">
+              <h3>A listening and prayer route</h3>
+
+              <ol>
+                <li>
+                  Choose two or three contrasting places within the LEA.
+                  Plan realistic travel between them and respect private
+                  property.
+                </li>
+
+                <li>
+                  Visit at different times. Notice gathering places and
+                  access, without assuming what happens inside a building.
+                </li>
+
+                <li>
+                  When conversation is welcome, ask what people value, what
+                  has changed and who else you should hear.
+                </li>
+
+                <li>
+                  Keep direct observation, residents’ accounts and your
+                  interpretation distinct. Ask permission before recording
+                  or quoting anyone.
+                </li>
+
+                <li>
+                  Finish with three supported observations, two unanswered
+                  questions and one agreed next step.
+                </li>
+              </ol>
+            </div>
+
+            <div class="notes">
+              <h3>Your local research notes</h3>
+
+              <p>
+                Record: place or topic · source or person’s role · date ·
+                evidence type · uncertainty · next action. Name the
+                particular community rather than attributing every
+                observation to the whole LEA.
+              </p>
+
+              <div
+                class="writing-lines"
+                aria-hidden="true"
+              ></div>
+            </div>
+          </section>
+
+          <section id="sources" class="report-section">
+            <p class="eyebrow">09 · Evidence &amp; limits</p>
+            <h2>Read the evidence carefully</h2>
+
+            <ul class="source-list">
+              <li>
+                <strong>Demographics:</strong>
+
+                <a href="https://www.cso.ie/en/census/census2022/census2022smallareapopulationstatistics/">
+                  CSO Census 2022 Small Area Population Statistics
+                </a>,
+
+                published Local Electoral Areas table (166 areas).
+
+                <a href="SAPS_2022_CSOLEA270923.csv">
+                  Download the table used here
+                </a>.
+
+                Census date: 3 April 2022. The report selects the published
+                LEA row by its code and verifies its GUID against the mapped
+                boundary.
+              </li>
+
+              <li>
+                <strong>Geography:</strong>
+
+                <a href="lea-boundaries.geojson">
+                  Census 2022 statistical LEA boundaries supplied with Glúnta
+                </a>.
+
+                CSO explains that some statistical LEAs differ from statutory
+                electoral boundaries. The report flags the supplied boundary’s
+                adjustment indicator. The source Irish Transverse Mercator
+                coordinates are converted for the map and church-point checks
+                using <a href="https://proj4js.org/">Proj4js</a>. These are
+                2022 geographies, not a claim about current electoral
+                arrangements.
+              </li>
+
+              <li>
+                <strong>Church records:</strong>
+
+                <a href="churches-points.csv">
+                  Glúnta’s supplied church-points file
+                </a>.
+
+                Its update date and coverage have not been established here.
+                Listings are not a complete census of congregations or all
+                faith communities. Coordinates and current activity require
+                local verification.
+              </li>
+
+              <li>
+                <strong>Basemap:</strong>
+
+                the interactive map uses
+
+                <a href="https://www.openstreetmap.org/copyright">
+                  OpenStreetMap contributors
+                </a>.
+
+                The printable diagram shows a simplified boundary and listed
+                church points, without basemap tiles.
+              </li>
+
+              <li>
+                <strong>Presentation inspiration:</strong>
+
+                <a href="https://bradbrisco.org/neighborhood-intelligence-report/sample">
+                  Brad Brisco’s sample report
+                </a>
+
+                and
+
+                <a href="https://bradbrisco.org/neighborhood-intelligence-report/guide">
+                  Field Guide
+                </a>.
+
+                The figures here come from the Irish sources above.
+              </li>
+            </ul>
+
+            <dl class="evidence-key">
+              <div>
+                <dt>Published statistic</dt>
+                <dd>
+                  A reported count with a stated geography, year and
+                  denominator.
+                </dd>
+              </div>
+
+              <div>
+                <dt>Organisation record</dt>
+                <dd>
+                  A supplied listing whose coverage and currency need local
+                  verification.
+                </dd>
+              </div>
+
+              <div>
+                <dt>Local account</dt>
+                <dd>
+                  A person’s experience, recorded with permission and
+                  context; not a population estimate.
+                </dd>
+              </div>
+
+              <div>
+                <dt>Interpretation / question</dt>
+                <dd>
+                  A suggested implication or discussion prompt. The mission
+                  cards use this category.
+                </dd>
+              </div>
+
+              <div>
+                <dt>Unavailable</dt>
+                <dd>
+                  Missing, withheld or unverified information. It must not
+                  be read as zero.
+                </dd>
+              </div>
+            </dl>
+
+            <p>
+              Each chart uses its own published denominator. “Not stated”
+              stays visible where supplied. Displayed percentages may total
+              slightly above or below 100% because of rounding. LEA-wide
+              figures can conceal local variation.
+            </p>
+
+            <p>
+              Income, deprivation scores and verified local narratives are
+              not included in this edition. Do not infer them from housing
+              tenure, birthplace, religion or education.
+            </p>
+
+            <p id="reportStamp" class="caption"></p>
+          </section>
         </div>
       </div>
-    </section>
 
-    <section class="metric-grid" aria-label="Summary metrics">
-      <article class="metric-card">
-        <p class="metric-label">Population</p>
-        <p id="populationValue" class="metric-value">—</p>
-        <p class="metric-note">Census 2022 LEA total from included Small Areas.</p>
-      </article>
-
-      <article class="metric-card">
-        <p class="metric-label">Small Areas</p>
-        <p id="smallAreasValue" class="metric-value">—</p>
-        <p class="metric-note">Small Areas included within the LEA boundary.</p>
-      </article>
-
-      <article class="metric-card">
-        <p class="metric-label">Churches listed</p>
-        <p id="churchesValue" class="metric-value">—</p>
-        <p class="metric-note">Church points listed in the Glúnta dataset.</p>
-      </article>
-
-      <article class="metric-card">
-        <p class="metric-label">Nearby churches</p>
-        <p id="nearbyChurchesValue" class="metric-value">—</p>
-        <p class="metric-note">Churches within 15 km of the town centre.</p>
-      </article>
-    </section>
-
-    <section class="content-grid">
-      <article class="panel">
-        <div class="panel-header">
-          <p class="eyebrow">Demographic shape</p>
-          <h2>Population and age</h2>
-        </div>
-
-        <div class="data-list">
-          <div class="data-row">
-            <span>Children, 0 to 14</span>
-            <strong id="ageChildren">—</strong>
-          </div>
-          <div class="data-row">
-            <span>Young adults, 15 to 34</span>
-            <strong id="ageYoungAdults">—</strong>
-          </div>
-          <div class="data-row">
-            <span>Adults, 35 to 64</span>
-            <strong id="ageAdults">—</strong>
-          </div>
-          <div class="data-row">
-            <span>Older adults, 65+</span>
-            <strong id="ageOlderAdults">—</strong>
-          </div>
-        </div>
-      </article>
-
-      <article class="panel">
-        <div class="panel-header">
-          <p class="eyebrow">Cultural profile</p>
-          <h2>Migration, language, and background</h2>
-        </div>
-
-        <div class="data-list">
-          <div class="data-row">
-            <span>Born outside Ireland</span>
-            <strong id="bornOutsideIreland">—</strong>
-          </div>
-          <div class="data-row">
-            <span>Non-Irish citizenship</span>
-            <strong id="nonIrishCitizenship">—</strong>
-          </div>
-          <div class="data-row">
-            <span>Foreign-language speakers</span>
-            <strong id="foreignLanguageSpeakers">—</strong>
-          </div>
-          <div class="data-row">
-            <span>Other White background</span>
-            <strong id="otherWhiteBackground">—</strong>
-          </div>
-        </div>
-      </article>
-
-      <article class="panel">
-        <div class="panel-header">
-          <p class="eyebrow">Religious profile</p>
-          <h2>Religious affiliation</h2>
-        </div>
-
-        <div class="data-list">
-          <div class="data-row">
-            <span>Catholic</span>
-            <strong id="religionCatholic">—</strong>
-          </div>
-          <div class="data-row">
-            <span>Other religion</span>
-            <strong id="religionOther">—</strong>
-          </div>
-          <div class="data-row">
-            <span>No religion</span>
-            <strong id="religionNone">—</strong>
-          </div>
-          <div class="data-row">
-            <span>Religion not stated</span>
-            <strong id="religionNotStated">—</strong>
-          </div>
-        </div>
-      </article>
-
-      <article class="panel">
-        <div class="panel-header">
-          <p class="eyebrow">Church presence</p>
-          <h2>Listed churches</h2>
-        </div>
-
-        <div class="church-list-block">
-          <h3>Inside this LEA</h3>
-          <ul id="churchesInsideList" class="church-list">
-            <li>Church list will appear here.</li>
-          </ul>
-        </div>
-
-        <div class="church-list-block">
-          <h3>Nearby</h3>
-          <ul id="nearbyChurchesList" class="church-list">
-            <li>Nearby churches will appear here.</li>
-          </ul>
-        </div>
-      </article>
-    </section>
-
-
-    <section class="wide-panel">
-      <div class="panel-header">
-        <p class="eyebrow">Full demographic profile</p>
-        <h2>LEA profile statistics</h2>
-      </div>
-
-      <div id="fullDemographicProfile" class="content-grid">
-        <article class="panel">
-          <div class="panel-header">
-            <p class="eyebrow">Loading</p>
-            <h2>Demographic data</h2>
-          </div>
-          <p class="source-note">
-            Full Census 2022 Small Area profile data will appear here once the LEA is loaded.
-          </p>
-        </article>
-      </div>
-    </section>
-
-    <section class="wide-panel">
-      <div class="panel-header">
-        <p class="eyebrow">Mission reading</p>
-        <h2>Missiological observations</h2>
-      </div>
-
-      <div id="missionInsights" class="insight-list">
-        <article class="insight-card">
-          <h3>Begin with local listening</h3>
-          <p>
-            This profile is intended to support prayer, partnership, and research. It should not be read
-            as a mechanical church planting recommendation.
-          </p>
-        </article>
-
-        <article class="insight-card">
-          <h3>Read the data alongside people</h3>
-          <p>
-            Demographic data can show patterns, but it cannot tell the full story of relationships,
-            history, local trust, existing witness, or spiritual openness.
-          </p>
-        </article>
-      </div>
-    </section>
-
-    <section class="wide-panel muted-panel">
-      <div class="panel-header">
-        <p class="eyebrow">Data note</p>
-        <h2>Sources and method</h2>
-      </div>
-
-      <p>
-        This profile draws from Census 2022 Local Electoral Area boundaries, Small Area boundaries,
-        processed Small Area demographic tables, and the Glúnta church points dataset. Figures should be
-        treated as planning and research aids, not as final local knowledge.
-      </p>
-    </section>
+      <footer class="report-footer">
+        Glúnta Research · LEA Mission Profile · Listen locally, record
+        sources, revisit assumptions.
+      </footer>
+    </article>
   </main>
-
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <script src="lea-profile.js"></script>
 </body>
 </html>
