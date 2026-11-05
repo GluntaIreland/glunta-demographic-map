@@ -11,3 +11,14 @@ Glúnta Research, Glúnta Demographic Map, https://gluntaireland.github.io/glunt
 This repository incorporates Irish Public Sector Data, including Census 2022 data published by the Central Statistics Office (CSO), and boundary datasets made available through Tailte Éireann and data.gov.ie.
 
 Users should verify local church information before making ministry, partnership, or church planting decisions based on these datasets.
+
+## Pobal HP Deprivation Index 2022
+
+Source: Pobal HP Deprivation Index 2022, developed by Trutz Haase and Jonathan Pratschke and funded by Pobal, based on Census 2022.
+
+Original dataset: https://www.pobal.ie/wp-content/uploads/2024/01/hp-deprivation-index-scores-2022.csv
+
+Licensed under Creative Commons Attribution 4.0 International:
+https://creativecommons.org/licenses/by/4.0/
+
+The CSV is reproduced as supplied, without modification.
